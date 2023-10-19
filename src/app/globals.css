@@ -25,3 +25,11 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+.map-container {
+  height: 100vh;
+}
+
+.mapboxgl-popup-content {
+  color: black;
+}

@@ -1,46 +1,88 @@
 "use client";
 
-import Image from 'next/image'
-import mapboxgl from "mapbox-gl"
-import { useEffect, useRef, useState } from 'react';
-import useSWR from 'swr';
-import 'mapbox-gl/dist/mapbox-gl.css'
+import { useEffect, useRef, useState } from "react";
+import useSWR from "swr";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-mapboxgl.accessToken = "***REMOVED***";
-
-const fetcher = (url: string) => fetch(url).then(r => r.json())
-
-export default function Home() {
+export default function MapPage() {
   const mapContainer = useRef(null),
-    map = useRef<mapboxgl.Map | null>(null),
+    map = useRef<maplibregl.Map | null>(null),
     [lng, setLng] = useState(-1.239991),
-    [lat, setLat] = useState(54.576020),
+    [lat, setLat] = useState(54.57602),
     [zoom, setZoom] = useState(15),
-    [markers, setMarkers] = useState<mapboxgl.Marker[]>([]),
-    { data, error, isLoading } = useSWR("/api/datafeed", fetcher, { refreshInterval: 10000 });
+    [markers, setMarkers] = useState<maplibregl.Marker[]>([]),
+    { data, error, isLoading } = useSWR("/api/datafeed", fetcher, {
+      refreshInterval: 10000,
+    });
   useEffect(() => {
     if (map.current) return; // initialize map only once
-    map.current = new mapboxgl.Map({
+    map.current = new maplibregl.Map({
       container: mapContainer.current as unknown as HTMLElement,
-      style: 'mapbox://styles/mapbox/streets-v12',
+      style: {
+        version: 8,
+        sources: {
+          "raster-tiles": {
+            type: "raster",
+            tiles: [
+              // NOTE: Layers from Stadia Maps do not require an API key for localhost development or most production
+              // web deployments. See https://docs.stadiamaps.com/authentication/ for details.
+              "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            ],
+            tileSize: 256,
+            attribution:
+              '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+          },
+        },
+        layers: [
+          {
+            id: "tiles",
+            type: "raster",
+            source: "raster-tiles",
+            minzoom: 0,
+            maxzoom: 22,
+          },
+        ],
+      },
       center: [lng, lat],
-      zoom: zoom
+      zoom: zoom,
     });
   }, []);
   useEffect(() => {
     if (!data || isLoading) return;
-    markers.forEach((marker: mapboxgl.Marker) => marker.remove());
-    const newMarkers: mapboxgl.Marker[] = [];
-    data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0].VehicleActivity.forEach((va: Record<string, unknown>) => {
-      const popup = new mapboxgl.Popup({ offset: 25 }).setText(`${(va.MonitoredVehicleJourney as any)[0].PublishedLineName} - ${(va.MonitoredVehicleJourney as any)[0].DestinationName}`), 
-        marker = new mapboxgl.Marker().setLngLat([Number((va.MonitoredVehicleJourney as any)[0].VehicleLocation[0].Longitude), Number((va.MonitoredVehicleJourney as any)[0].VehicleLocation[0].Latitude)]).setPopup(popup).addTo(map.current as mapboxgl.Map);
-      markers.push(marker);
-    });
+    markers.forEach((marker: maplibregl.Marker) => marker.remove());
+    const newMarkers: maplibregl.Marker[] = [];
+    data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0].VehicleActivity.forEach(
+      (va: Record<string, unknown>) => {
+        const popup = new maplibregl.Popup({ offset: 25 }).setText(
+            `${(va.MonitoredVehicleJourney as any)[0].PublishedLineName} - ${
+              (va.MonitoredVehicleJourney as any)[0].DestinationName
+            }`
+          ),
+          marker = new maplibregl.Marker()
+            .setLngLat([
+              Number(
+                (va.MonitoredVehicleJourney as any)[0].VehicleLocation[0]
+                  .Longitude
+              ),
+              Number(
+                (va.MonitoredVehicleJourney as any)[0].VehicleLocation[0]
+                  .Latitude
+              ),
+            ])
+            .setPopup(popup)
+            .addTo(map.current as maplibregl.Map);
+        markers.push(marker);
+      }
+    );
     setMarkers(newMarkers);
-   }, [data]);
+  }, [data]);
 
-  return <div>
-    <div ref={mapContainer} className="map-container" />
-  </div>
+  return (
+    <div>
+      <div ref={mapContainer} className="map-container" />
+    </div>
+  );
 }

@@ -30,6 +30,6 @@ body {
   height: 100vh;
 }
 
-.mapboxgl-popup-content {
+.maplibregl-popup-content {
   color: black;
 }

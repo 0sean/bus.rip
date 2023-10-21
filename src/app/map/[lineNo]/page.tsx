@@ -20,9 +20,8 @@ const inter = Inter({ subsets: ["latin"] });
 export default function MapPage({ params }: { params: { lineNo: string } }) {
   const mapContainer = useRef(null),
     map = useRef<maplibregl.Map | null>(null),
-    [lng, setLng] = useState(-1.239991),
-    [lat, setLat] = useState(54.57602),
-    [zoom, setZoom] = useState(15),
+    [lng, setLng] = useState<number | null>(null),
+    [lat, setLat] = useState<number | null>(null),
     [markers, setMarkers] = useState<maplibregl.Marker[]>([]),
     { data, error, isLoading } = useSWR(`/api/datafeed/${params.lineNo}`, fetcher, {
       refreshInterval: 10000,
@@ -39,8 +38,6 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
           "raster-tiles": {
             type: "raster",
             tiles: [
-              // NOTE: Layers from Stadia Maps do not require an API key for localhost development or most production
-              // web deployments. See https://docs.stadiamaps.com/authentication/ for details.
               "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
             ],
             tileSize: 256,
@@ -58,8 +55,8 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
           },
         ],
       },
-      center: [lng, lat],
-      zoom: zoom,
+      center: (lng != null && lat != null) ? [lng, lat] : undefined,
+      zoom: 15,
     });
   }, []);
   useEffect(() => {
@@ -68,6 +65,10 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
     markers.forEach((marker: maplibregl.Marker) => marker.remove());
     const newMarkers: maplibregl.Marker[] = [];
     if(data.data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0].VehicleActivity) {
+      if(!lng || !lat) {
+        setLng(Number((data.data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0].VehicleActivity[0].MonitoredVehicleJourney as any)[0].VehicleLocation[0].Longitude));
+        setLat(Number((data.data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0].VehicleActivity[0].MonitoredVehicleJourney as any)[0].VehicleLocation[0].Latitude));
+      }
       data.data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0].VehicleActivity.forEach(
         (va: Record<string, unknown>) => {
           if(new Date((va.ValidUntilTime as string[])[0] + "Z") < new Date() || (Number(new Date()) - Number(new Date((va.RecordedAtTime as string[])[0]))) >= 900000) return; // if no longer valid or more than 15 minutes old
@@ -115,6 +116,22 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
     setMarkers(newMarkers);
     reset();
   }, [data]);
+  useEffect(() => {
+    if(navigator.geolocation) {
+      navigator.permissions.query({ name: "geolocation" }).then(result => {
+        if(result.state == "granted" || result.state == "prompt") {
+          navigator.geolocation.getCurrentPosition(pos => {
+            setLng(pos.coords.longitude);
+            setLat(pos.coords.latitude);
+          });
+        }
+      });
+    }
+  }, []);
+  useEffect(() => {
+    if(!map.current || lng == null || lat == null) return;
+    map.current.setCenter([lng, lat]);
+  }, [lng, lat])
 
   return <>
     <div className="fixed top-0 left-0 p-2 w-screen flex justify-center z-10">

@@ -3,11 +3,10 @@ import { cache } from "react";
 
 export const revalidate = 2630000;
 
-export const getNocLines = cache(async () => {
-    const prisma = new PrismaClient(),
-        nocLines = await prisma.nocLine.findMany();
+const prisma = new PrismaClient();
 
-    prisma.$disconnect();
+export const getNocLines = cache(async () => {
+    const nocLines = await prisma.nocLine.findMany();
 
     return nocLines;
 })

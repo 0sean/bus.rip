@@ -13,13 +13,13 @@ export async function GET(request: Request, { params }: { params: { lineNo: stri
         prisma.$disconnect();
         return Response.json({ error: "Invalid lineNo" }, { status: 404 });
     } else {
-        const r = await fetch(`https://data.bus-data.dft.gov.uk/api/v1/datafeed/706/?operatorRef=${nocLine.nocCode}&api_key=***REMOVED***`, {
+        const r = await fetch(`https://data.bus-data.dft.gov.uk/api/v1/datafeed/?operatorRef=${nocLine.nocCode}&api_key=***REMOVED***`, {
                 next: { revalidate: 10 }
             }),
             xml = await r.text(),
             json = await parseStringPromise(xml);
 
         prisma.$disconnect();
-        return Response.json(json);
+        return Response.json({ line: nocLine, data: json });
     }
 }

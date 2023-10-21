@@ -90,11 +90,7 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
           label.style.marginLeft = "-4px";
           label.style.fontFamily = inter.style.fontFamily
           el.appendChild(label);
-          const popup = new maplibregl.Popup({ offset: 25 }).setText(
-              `${(va.MonitoredVehicleJourney as any)[0].PublishedLineName} - ${
-                (va.MonitoredVehicleJourney as any)[0].DestinationName
-              } - Last updated: ${new Date((va.RecordedAtTime as string[])[0]).toLocaleString()}`
-            ),
+          const popup = new maplibregl.Popup({ offset: 25 }).setText(`${(va.MonitoredVehicleJourney as any)[0].PublishedLineName} - ${(va.MonitoredVehicleJourney as any)[0].DestinationName.replaceAll("_", " ")} - Last updated: ${new Date((va.RecordedAtTime as string[])[0]).toLocaleString()}`),
             marker = new maplibregl.Marker({element: el})
               .setLngLat([
                 Number(

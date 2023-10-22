@@ -5,6 +5,11 @@ import { PrismaClient } from "@prisma/client";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  const auth = request.headers.get("Authorization");
+  if (auth != `Bearer ${process.env.CRON_TOKEN}`) {
+    return Response.json({ error: "Invalid token" }, { status: 401 });
+  }
+
   const prisma = new PrismaClient(),
     r = await fetch(
       "https://www.travelinedata.org.uk/noc/api/1.0/nocrecords.xml",

@@ -63,7 +63,8 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
   }, []);
   useEffect(() => {
     if (!data || isLoading) return;
-    if (data.error) return router.push("/");
+    if (data.error == "Invalid lineNo") return router.push("/");
+    if (data.error) return;
     markers.forEach((marker: maplibregl.Marker) => marker.remove());
     const newMarkers: maplibregl.Marker[] = [];
     if (
@@ -120,7 +121,7 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
           const popup = new maplibregl.Popup({ offset: 25 }).setText(
               `${(va.MonitoredVehicleJourney as any)[0].PublishedLineName} - ${(
                 va.MonitoredVehicleJourney as any
-              )[0].DestinationName.replaceAll(
+              )[0].DestinationName[0].replaceAll(
                 "_",
                 " ",
               )} - Last updated: ${new Date(
@@ -206,6 +207,13 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
             </AlertDescription>
           </Alert>
         )}
+      {data && data.error == "Too many requests" && (
+        <Alert className="right-2 bottom-2 fixed z-10 w-fit drop-shadow-2xl animate__animated animate__faster animate__fadeInUp">
+          <AlertTitle className="font-semibold">
+            You are being rate limited.
+          </AlertTitle>
+        </Alert>
+      )}
       <div>
         <div ref={mapContainer} className="map-container" />
       </div>

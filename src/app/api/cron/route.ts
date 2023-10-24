@@ -17,7 +17,10 @@ export async function GET(request: NextRequest) {
     xml = await r.text(),
     json = await parseStringPromise(xml),
     lines = json.travelinedata.NOCLines[0].NOCLinesRecord.filter(
-      (line: any) => line.DateCeased[0] == "" && line.Duplicate[0] != "Dup",
+      (line: any) =>
+        line.DateCeased[0] == "" &&
+        line.Duplicate[0] != "Dup" &&
+        line.Mode[0] == "Bus",
     );
 
   await prisma.nocLine.deleteMany({});

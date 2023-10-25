@@ -15,7 +15,7 @@ export async function GET(
   { params }: { params: { lineNo: string } },
 ) {
   const rl = await ratelimit.limit(
-    (request.headers.get("X-Forwarded-For") || "").split(",")[0] || "no-ip",
+    (request.headers.get("CF-Connecting-IP") || "").split(",")[0] || "no-ip",
   );
   if (rl.success) {
     const nocLine = await prisma.nocLine.findUnique({

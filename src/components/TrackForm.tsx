@@ -30,7 +30,9 @@ export default function TrackForm({ lines }: { lines: any[] }) {
       .map((l) => ({
         value: l.lineNo,
         label: `${l.publicName}${
-          l.referenceName != l.publicName ? ` - ${l.referenceName}` : ""
+          l.referenceName != l.publicName && l.referenceName
+            ? ` - ${l.referenceName}`
+            : ""
         }`,
       }));
 

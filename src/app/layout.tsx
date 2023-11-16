@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     description: "it's probably not coming",
   },
   manifest: "/manifest.json",
+  themeColor: "#09090b",
 };
 
 export default function RootLayout({

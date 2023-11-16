@@ -65,8 +65,38 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
     if (!data || isLoading) return;
     if (data.error == "Invalid lineNo") return router.push("/");
     if (data.error) return;
-    markers.forEach((marker: maplibregl.Marker) => marker.remove());
     const newMarkers: maplibregl.Marker[] = [];
+    markers.forEach((marker: maplibregl.Marker) => {
+      const va =
+        data.data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0].VehicleActivity.find(
+          (va: Record<string, unknown>) =>
+            (va.MonitoredVehicleJourney as any)[0].VehicleRef[0] ==
+            marker.getElement().dataset.vehicle,
+        );
+      if (!va) {
+        const el = marker.getElement();
+        if (
+          el.dataset.arrives != undefined &&
+          new Date(el.dataset.arrives as string) < new Date()
+        ) {
+          marker.remove();
+        } else {
+          if (!el.dataset.unavailable) {
+            el.dataset.unavailable = "1";
+            el.style.opacity = "0.75";
+            newMarkers.push(marker);
+          } else if (el.dataset.unavailable == "1") {
+            el.dataset.unavailable = "2";
+            el.style.opacity = "0.5";
+            newMarkers.push(marker);
+          } else {
+            marker.remove();
+          }
+        }
+      } else {
+        marker.remove();
+      }
+    });
     if (
       data.data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0]
         .VehicleActivity
@@ -103,6 +133,16 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
           el.style.backgroundImage = "url('/marker.svg')";
           el.style.width = "20px";
           el.style.height = "48px";
+          el.dataset.vehicle = (
+            va.MonitoredVehicleJourney as any
+          )[0].VehicleRef[0];
+          if (
+            (va.MonitoredVehicleJourney as any)[0].DestinationAimedArrivalTime
+          ) {
+            el.dataset.arrives = (
+              va.MonitoredVehicleJourney as any
+            )[0].DestinationAimedArrivalTime[0];
+          }
           const label = document.createElement("div");
           label.textContent = (
             va.MonitoredVehicleJourney as any

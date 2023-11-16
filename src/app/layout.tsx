@@ -14,6 +14,7 @@ export const metadata: Metadata = {
     title: "bus.rip",
     description: "it's probably not coming",
   },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

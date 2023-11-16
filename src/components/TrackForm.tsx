@@ -84,7 +84,11 @@ export default function TrackForm({ lines }: { lines: any[] }) {
         onClick={() => {
           if (line != null) {
             setLoading(true);
-            setCookie("line", line.value);
+            setCookie("line", line.value, {
+              expires: new Date(
+                new Date().setFullYear(new Date().getFullYear() + 1),
+              ),
+            });
             router.push(`/map/${line.value}`);
           }
         }}

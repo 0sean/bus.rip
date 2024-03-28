@@ -23,15 +23,18 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
     [lng, setLng] = useState<number | null>(null),
     [lat, setLat] = useState<number | null>(null),
     [markers, setMarkers] = useState<maplibregl.Marker[]>([]),
+    { totalSeconds, reset } = useStopwatch({ autoStart: true }),
     { data, error, isLoading } = useSWR(
       `/api/datafeed/${params.lineNo}`,
       fetcher,
       {
         refreshInterval: 10000,
+        onSuccess: () => {
+          reset();
+        },
       },
     ),
-    router = useRouter(),
-    { totalSeconds, reset } = useStopwatch({ autoStart: true });
+    router = useRouter();
   useEffect(() => {
     if (map.current) return; // initialize map only once
     map.current = new maplibregl.Map({
@@ -187,7 +190,6 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
     }
 
     setMarkers(newMarkers);
-    reset();
   }, [data]);
   useEffect(() => {
     if (navigator.geolocation) {

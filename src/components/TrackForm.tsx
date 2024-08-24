@@ -1,10 +1,11 @@
 "use client";
 
-import Select from "react-select";
+import Select, { OptionProps, components } from "react-select";
 import { Button } from "./ui/button";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCookie, setCookie } from "cookies-next";
+import { FaStar } from "react-icons/fa";
 
 export default function TrackForm({ lines }: { lines: any[] }) {
   const [line, setLine] = useState<{ value: string; label: string } | null>(
@@ -34,7 +35,42 @@ export default function TrackForm({ lines }: { lines: any[] }) {
             ? ` - ${l.referenceName}`
             : ""
         }`,
-      }));
+      })),
+    [favourites, setFavourites] = useState<any[]>([]),
+    Option = useCallback(
+      ({ children, ...props }: OptionProps) => {
+        const isFavourite = favourites.includes(props.data.value.toString()),
+          toggleFavourite = (e) => {
+            e.stopPropagation();
+            if (isFavourite) {
+              setFavourites(
+                favourites.filter((f) => f != props.data.value.toString()),
+              );
+            } else {
+              setFavourites([...favourites, props.data.value.toString()]);
+            }
+          };
+
+        return (
+          <components.Option {...props}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              {children}
+              <button onClick={toggleFavourite}>
+                <FaStar style={{ opacity: isFavourite ? 1 : 0.1 }} />
+              </button>
+            </div>
+          </components.Option>
+        );
+      },
+      [favourites],
+    ),
+    favouritesLoaded = useRef(false);
 
   useEffect(() => {
     const cookie = getCookie("line");
@@ -44,9 +80,24 @@ export default function TrackForm({ lines }: { lines: any[] }) {
     }
   }, []);
 
+  useEffect(() => {
+    if (!favouritesLoaded.current) {
+      const cookie = getCookie("favourites");
+      if (cookie) {
+        setFavourites(cookie.split(","));
+      }
+      favouritesLoaded.current = true;
+    } else {
+      setCookie("favourites", favourites.join(","), {
+        expires: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+      });
+    }
+  }, [favourites]);
+
   return (
     <>
       <Select
+        components={{ Option }}
         styles={{
           control: (base) => ({
             ...base,
@@ -79,6 +130,19 @@ export default function TrackForm({ lines }: { lines: any[] }) {
         isClearable
         options={options}
       />
+      {favourites.length > 0 && (
+        <div className="mt-4 flex gap-2">
+          {favourites.map((f) => (
+            <button
+              key={f}
+              onClick={() => setLine(options.find((o) => o.value == f)!)}
+              className="max-w-[150px] whitespace-nowrap text-ellipsis overflow-hidden border rounded-full px-3 py-1 border-zinc-800 text-zinc-300 text-xs"
+            >
+              {options.find((o) => o.value == f)?.label}
+            </button>
+          ))}
+        </div>
+      )}
       <Button
         className="mt-4 w-fit"
         onClick={() => {

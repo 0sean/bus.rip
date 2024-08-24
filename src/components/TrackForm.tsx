@@ -1,8 +1,14 @@
 "use client";
 
-import Select, { OptionProps, components } from "react-select";
+import Select, { OptionProps, SingleValue, components } from "react-select";
 import { Button } from "./ui/button";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+} from "react";
 import { useRouter } from "next/navigation";
 import { getCookie, setCookie } from "cookies-next";
 import { FaStar } from "react-icons/fa";
@@ -38,9 +44,12 @@ export default function TrackForm({ lines }: { lines: any[] }) {
       })),
     [favourites, setFavourites] = useState<any[]>([]),
     Option = useCallback(
-      ({ children, ...props }: OptionProps) => {
+      ({
+        children,
+        ...props
+      }: OptionProps<{ value: string; label: string }>) => {
         const isFavourite = favourites.includes(props.data.value.toString()),
-          toggleFavourite = (e) => {
+          toggleFavourite = (e: MouseEvent<HTMLButtonElement>) => {
             e.stopPropagation();
             if (isFavourite) {
               setFavourites(
@@ -125,7 +134,12 @@ export default function TrackForm({ lines }: { lines: any[] }) {
         placeholder="Select operator"
         value={line}
         onChange={(v) => {
-          setLine(v);
+          setLine(
+            v as SingleValue<{
+              value: string;
+              label: string;
+            }>,
+          );
         }}
         isClearable
         options={options}

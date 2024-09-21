@@ -24,6 +24,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cookies-next": "^4.0.0",
+    "date-fns": "^4.1.0",
     "lucide-react": "^0.288.0",
     "maplibre-gl": "^3.5.1",
     "next": "13.5.6",

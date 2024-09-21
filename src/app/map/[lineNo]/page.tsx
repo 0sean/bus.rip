@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { Progress } from "@/components/ui/progress";
 import { useStopwatch } from "react-timer-hook";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { formatDistanceToNow } from "date-fns";
 import "animate.css";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -186,16 +187,95 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
           arrowContainer.appendChild(arrow);
           el.appendChild(arrowContainer);
 
-          const popup = new maplibregl.Popup({ offset: 25 }).setText(
-              `${(va.MonitoredVehicleJourney as any)[0].PublishedLineName} - ${(
-                va.MonitoredVehicleJourney as any
-              )[0].DestinationName[0].replaceAll(
-                "_",
-                " ",
-              )} - Last updated: ${new Date(
-                (va.RecordedAtTime as string[])[0],
-              ).toLocaleString()}`,
-            ),
+          // .setText(
+          //   `${(va.MonitoredVehicleJourney as any)[0].PublishedLineName} - ${(
+          //     va.MonitoredVehicleJourney as any
+          //   )[0].DestinationName[0].replaceAll(
+          //     "_",
+          //     " ",
+          //   )} - Last updated: ${new Date(
+          //     (va.RecordedAtTime as string[])[0],
+          //   ).toLocaleString()}`,
+          // )
+
+          const popup = new maplibregl.Popup({ offset: 24, maxWidth: "350" })
+              .setHTML(`
+            <div style="display: flex; width: 100%; font-family: ${
+              inter.style.fontFamily
+            };">
+              <div style="width: 40%">
+                <p style="font-size: 24px; font-weight: 600; margin-bottom: 6px;">${
+                  (va.MonitoredVehicleJourney as any)[0]
+                    .OriginAimedDepartureTime != undefined
+                    ? new Date(
+                        (
+                          va.MonitoredVehicleJourney as any
+                        )[0].OriginAimedDepartureTime[0],
+                      )
+                        .getHours()
+                        .toString()
+                        .padStart(2, "0")
+                    : "-"
+                }:${
+                  (va.MonitoredVehicleJourney as any)[0]
+                    .OriginAimedDepartureTime != undefined
+                    ? new Date(
+                        (
+                          va.MonitoredVehicleJourney as any
+                        )[0].OriginAimedDepartureTime[0],
+                      )
+                        .getMinutes()
+                        .toString()
+                        .padStart(2, "0")
+                    : "-"
+                }</p>
+                <p style="line-height: 1.25;">${(
+                  va.MonitoredVehicleJourney as any
+                )[0].OriginName[0].replaceAll("_", " ")}</p>
+              </div>
+              <div style="width: 20%; display: flex; justify-content: center; align-items: center;">
+                <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M13.7062 8.70625L8.70624 13.7062C8.51249 13.9031 8.25624 14 7.99999 14C7.74374 14 7.48812 13.9023 7.29312 13.707C6.90249 13.3164 6.90249 12.6836 7.29312 12.293L10.5875 9H0.999999C0.447812 9 4.95911e-05 8.55312 4.95911e-05 8C4.95911e-05 7.44688 0.447812 7 0.999999 7H10.5875L7.29374 3.70625C6.90312 3.31563 6.90312 2.68282 7.29374 2.29219C7.68437 1.90157 8.31718 1.90157 8.70781 2.29219L13.7078 7.29219C14.0969 7.68438 14.0969 8.31563 13.7062 8.70625Z" fill="white"/>
+                </svg>
+              </div>
+              <div style="width: 40%; text-align: end;">
+                <p style="font-size: 24px; font-weight: 600; margin-bottom: 6px;">${
+                  (va.MonitoredVehicleJourney as any)[0]
+                    .DestinationAimedArrivalTime != undefined
+                    ? new Date(
+                        (
+                          va.MonitoredVehicleJourney as any
+                        )[0].DestinationAimedArrivalTime[0],
+                      )
+                        .getHours()
+                        .toString()
+                        .padStart(2, "0")
+                    : "-"
+                }:${
+                  (va.MonitoredVehicleJourney as any)[0]
+                    .DestinationAimedArrivalTime != undefined
+                    ? new Date(
+                        (
+                          va.MonitoredVehicleJourney as any
+                        )[0].DestinationAimedArrivalTime[0],
+                      )
+                        .getMinutes()
+                        .toString()
+                        .padStart(2, "0")
+                    : "-"
+                }</p>
+                <p style="line-height: 1.25;">${(
+                  va.MonitoredVehicleJourney as any
+                )[0].DestinationName[0].replaceAll("_", " ")}</p>
+              </div>
+            </div>
+            <p style="font-family: ${
+              inter.style.fontFamily
+            }; margin-top: 8px; opacity: 0.5; font-size: 11px;">Updated ${formatDistanceToNow(
+              (va.RecordedAtTime as string[])[0],
+              { addSuffix: true, includeSeconds: true },
+            )}</p>
+          `),
             marker = new maplibregl.Marker({
               element: el,
               rotation: (va.MonitoredVehicleJourney as any)[0].Bearing,

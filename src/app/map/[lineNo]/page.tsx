@@ -133,9 +133,8 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
             return; // if no longer valid or more than 15 minutes old
           const el = document.createElement("div");
           el.className = "marker";
-          el.style.backgroundImage = "url('/marker.svg')";
-          el.style.width = "20px";
-          el.style.height = "48px";
+          el.style.width = "28px";
+          el.style.height = "28px";
           el.dataset.vehicle = (
             va.MonitoredVehicleJourney as any
           )[0].VehicleRef[0];
@@ -149,18 +148,44 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
           const label = document.createElement("div");
           label.textContent = (
             va.MonitoredVehicleJourney as any
-          )[0].PublishedLineName;
+          )[0].PublishedLineName[0];
           label.style.width = "28px";
           label.style.height = "28px";
           label.style.textAlign = "center";
           label.style.fontWeight = "bold";
-          label.style.backgroundColor = "#4264fb";
+          if (
+            (va.MonitoredVehicleJourney as any)[0].PublishedLineName[0].length >
+            2
+          ) {
+            label.style.fontSize = "10px";
+          } else {
+            label.style.fontSize = "12px";
+          }
+          label.style.backgroundColor = "#161616";
           label.style.padding = "4px";
           label.style.borderRadius = "100%";
-          label.style.marginTop = "-12px";
-          label.style.marginLeft = "-4px";
           label.style.fontFamily = inter.style.fontFamily;
+          label.style.boxShadow = "0px 0px 30px 0px rgba(0, 0, 0, 0.5)";
+          label.style.rotate = `calc(var(--map-rotation) - ${
+            (va.MonitoredVehicleJourney as any)[0].Bearing
+          }deg)`;
           el.appendChild(label);
+          const arrowContainer = document.createElement("div");
+          arrowContainer.style.width = "28px";
+          arrowContainer.style.height = "42px";
+          arrowContainer.style.position = "absolute";
+          arrowContainer.style.top = "-14px";
+          arrowContainer.style.left = "0";
+          const arrow = document.createElement("div");
+          arrow.style.width = "12px";
+          arrow.style.height = "12px";
+          arrow.style.backgroundImage = "url('/arrow.svg')";
+          arrow.style.backgroundRepeat = "no-repeat";
+          arrow.style.backgroundPosition = "bottom center";
+          arrow.style.margin = "0 auto";
+          arrowContainer.appendChild(arrow);
+          el.appendChild(arrowContainer);
+
           const popup = new maplibregl.Popup({ offset: 25 }).setText(
               `${(va.MonitoredVehicleJourney as any)[0].PublishedLineName} - ${(
                 va.MonitoredVehicleJourney as any
@@ -171,7 +196,11 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
                 (va.RecordedAtTime as string[])[0],
               ).toLocaleString()}`,
             ),
-            marker = new maplibregl.Marker({ element: el })
+            marker = new maplibregl.Marker({
+              element: el,
+              rotation: (va.MonitoredVehicleJourney as any)[0].Bearing,
+              rotationAlignment: "map",
+            })
               .setLngLat([
                 Number(
                   (va.MonitoredVehicleJourney as any)[0].VehicleLocation[0]
@@ -191,6 +220,15 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
 
     setMarkers(newMarkers);
   }, [data]);
+  useEffect(() => {
+    if (!map) return;
+    map.current!.on("move", (e) => {
+      document.body.style.setProperty(
+        "--map-rotation",
+        `${map.current!.getBearing().toString()}deg`,
+      );
+    });
+  }, [map]);
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.permissions.query({ name: "geolocation" }).then((result) => {

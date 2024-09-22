@@ -171,21 +171,23 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
             (va.MonitoredVehicleJourney as any)[0].Bearing || "0"
           }deg)`;
           el.appendChild(label);
-          const arrowContainer = document.createElement("div");
-          arrowContainer.style.width = "28px";
-          arrowContainer.style.height = "42px";
-          arrowContainer.style.position = "absolute";
-          arrowContainer.style.top = "-14px";
-          arrowContainer.style.left = "0";
-          const arrow = document.createElement("div");
-          arrow.style.width = "12px";
-          arrow.style.height = "12px";
-          arrow.style.backgroundImage = "url('/arrow.svg')";
-          arrow.style.backgroundRepeat = "no-repeat";
-          arrow.style.backgroundPosition = "bottom center";
-          arrow.style.margin = "0 auto";
-          arrowContainer.appendChild(arrow);
-          el.appendChild(arrowContainer);
+          if ((va.MonitoredVehicleJourney as any)[0].Bearing != undefined) {
+            const arrowContainer = document.createElement("div");
+            arrowContainer.style.width = "28px";
+            arrowContainer.style.height = "42px";
+            arrowContainer.style.position = "absolute";
+            arrowContainer.style.top = "-14px";
+            arrowContainer.style.left = "0";
+            const arrow = document.createElement("div");
+            arrow.style.width = "12px";
+            arrow.style.height = "12px";
+            arrow.style.backgroundImage = "url('/arrow.svg')";
+            arrow.style.backgroundRepeat = "no-repeat";
+            arrow.style.backgroundPosition = "bottom center";
+            arrow.style.margin = "0 auto";
+            arrowContainer.appendChild(arrow);
+            el.appendChild(arrowContainer);
+          }
 
           // .setText(
           //   `${(va.MonitoredVehicleJourney as any)[0].PublishedLineName} - ${(

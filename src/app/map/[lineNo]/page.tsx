@@ -168,7 +168,7 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
           label.style.fontFamily = inter.style.fontFamily;
           label.style.boxShadow = "0px 0px 30px 0px rgba(0, 0, 0, 0.5)";
           label.style.rotate = `calc(var(--map-rotation) - ${
-            (va.MonitoredVehicleJourney as any)[0].Bearing
+            (va.MonitoredVehicleJourney as any)[0].Bearing || "0"
           }deg)`;
           el.appendChild(label);
           const arrowContainer = document.createElement("div");

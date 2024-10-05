@@ -277,6 +277,16 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
               (va.RecordedAtTime as string[])[0],
               { addSuffix: true, includeSeconds: true },
             )}</p>
+            <button onClick="if(!this.classList.contains('following')) { document.body.dataset.following = '${
+              (va.MonitoredVehicleJourney as any)[0].VehicleRef[0]
+            }'; this.classList.add('following') } else { document.body.dataset.following = ''; this.classList.remove('following') }" ${
+              document.body.dataset.following ==
+              (va.MonitoredVehicleJourney as any)[0].VehicleRef[0]
+                ? 'class="following"'
+                : ""
+            } style="font-family: ${
+              inter.style.fontFamily
+            }; width: 100%; padding: 6px; border-radius: 4px; margin-top: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">Follow</button>
           `),
             marker = new maplibregl.Marker({
               element: el,
@@ -295,6 +305,25 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
               ])
               .setPopup(popup)
               .addTo(map.current as maplibregl.Map);
+
+          if (
+            document.body.dataset.following ==
+            (va.MonitoredVehicleJourney as any)[0].VehicleRef[0]
+          ) {
+            (map.current as maplibregl.Map).flyTo({
+              center: [
+                Number(
+                  (va.MonitoredVehicleJourney as any)[0].VehicleLocation[0]
+                    .Longitude,
+                ),
+                Number(
+                  (va.MonitoredVehicleJourney as any)[0].VehicleLocation[0]
+                    .Latitude,
+                ),
+              ],
+            });
+          }
+
           newMarkers.push(marker);
         },
       );

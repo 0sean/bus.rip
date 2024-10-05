@@ -94,3 +94,7 @@
 .maplibregl-popup-tip {
   display: none !important;
 }
+
+.following:after {
+  content: "ing";
+}

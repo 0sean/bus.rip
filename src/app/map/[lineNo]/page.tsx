@@ -22,7 +22,13 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 const inter = Inter({ subsets: ["latin"] });
 
-export default function MapPage({ params }: { params: { lineNo: string } }) {
+export default function MapPage({
+  params,
+  searchParams,
+}: {
+  params: { lineNo: string };
+  searchParams: { vehicleId?: string };
+}) {
   const mapContainer = useRef(null),
     map = useRef<Map | null>(null),
     [lng, setLng] = useState<number | null>(null),
@@ -86,6 +92,13 @@ export default function MapPage({ params }: { params: { lineNo: string } }) {
     if (!map.current || lng == null || lat == null) return;
     map.current.setCenter([lng, lat]);
   }, [lng, lat]);
+  // Set following from URL
+  useEffect(() => {
+    if (typeof window == "undefined") return;
+    if (searchParams.vehicleId) {
+      document.body.dataset.following = searchParams.vehicleId;
+    }
+  }, []);
 
   const follow = useMemo(() => {
     if (typeof window == "undefined") return null;

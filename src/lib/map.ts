@@ -239,7 +239,8 @@ function renderPopupHTML(va: VehicleActivity, inter: NextFont) {
     destination = va.MonitoredVehicleJourney[0].DestinationName[0].replaceAll(
       "_",
       " ",
-    );
+    ),
+    vehicleId = va.MonitoredVehicleJourney[0].VehicleRef[0];
 
   return `<div style="display: flex; width: 100%; font-family: ${
     inter.style.fontFamily
@@ -264,16 +265,16 @@ function renderPopupHTML(va: VehicleActivity, inter: NextFont) {
     va.RecordedAtTime[0],
     { addSuffix: true, includeSeconds: true },
   )}</p>
-  <button onClick="if(!this.classList.contains('following')) { document.body.dataset.following = '${
-    va.MonitoredVehicleJourney[0].VehicleRef[0]
-  }'; this.classList.add('following'); document.querySelector('.maplibregl-popup-close-button').click(); } else { document.body.dataset.following = ''; this.classList.remove('following') }" ${
-    document.body.dataset.following ==
-    va.MonitoredVehicleJourney[0].VehicleRef[0]
-      ? 'class="following"'
-      : ""
-  } style="font-family: ${
-    inter.style.fontFamily
-  }; width: 100%; padding: 6px; border-radius: 4px; margin-top: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">Follow</button>
+  <div style="display: flex; gap: 0.5rem; width: 100%;">
+    <button onClick="if(!this.classList.contains('following')) { document.body.dataset.following = '${vehicleId}'; this.classList.add('following'); document.querySelector('.maplibregl-popup-close-button').click(); } else { document.body.dataset.following = ''; this.classList.remove('following') }" ${
+      document.body.dataset.following == vehicleId ? 'class="following"' : ""
+    } style="font-family: ${
+      inter.style.fontFamily
+    }; flex-grow: 1; padding: 6px; outline: none; border-radius: 4px; margin-top: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">Follow</button>
+    <button onClick="const url = window.location.href + '?vehicleId=${vehicleId}'; try { navigator.share({url}) } catch(e) { navigator.clipboard.writeText(url) }" style="flex-grow: 0; width: 32px; padding: 9px; border-radius: 4px; margin-top: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path fill="#ffffff" d="M246.6 9.4c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 109.3 192 320c0 17.7 14.3 32 32 32s32-14.3 32-32l0-210.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64c0 53 43 96 96 96l256 0c53 0 96-43 96-96l0-64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64c0 17.7-14.3 32-32 32L96 448c-17.7 0-32-14.3-32-32l0-64z"/></svg>
+    </button>
+  </div>
 `;
 }
 

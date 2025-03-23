@@ -89,7 +89,8 @@ export default function MapPage({
   }, []);
   // Set map center from user location
   useEffect(() => {
-    if (!map.current || lng == null || lat == null) return;
+    if (!map.current || lng == null || lat == null || searchParams.vehicleId)
+      return;
     map.current.setCenter([lng, lat]);
   }, [lng, lat]);
   // Set following from URL

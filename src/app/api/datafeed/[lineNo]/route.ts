@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { parseStringPromise } from "xml2js";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { getDatafeed } from "@/lib/bods";
 
 const prisma = new PrismaClient(),
   ratelimit = new Ratelimit({
@@ -27,16 +28,9 @@ export async function GET(
     if (!nocLine) {
       return Response.json({ error: "Invalid lineNo" }, { status: 404 });
     } else {
-      const r = await fetch(
-          `https://data.bus-data.dft.gov.uk/api/v1/datafeed/?operatorRef=${nocLine.nocCode}&api_key=${process.env.BODS_API_KEY}`,
-          {
-            next: { revalidate: 10 },
-          },
-        ),
-        xml = await r.text(),
-        json = await parseStringPromise(xml);
+      const data = await getDatafeed(nocLine.nocCode);
 
-      return Response.json({ line: nocLine, data: json });
+      return Response.json({ line: nocLine, data });
     }
   } else {
     return Response.json({ error: "Too many requests" }, { status: 429 });

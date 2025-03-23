@@ -59,7 +59,16 @@ export default function MapPage({
     if (data.error) return;
     const newMarkers: Marker[] = [
       ...refreshMarkers(data, markers),
-      ...renderMarkers(data, map, lng, lat, setLng, setLat, inter),
+      ...renderMarkers(
+        data,
+        map,
+        lng,
+        lat,
+        setLng,
+        setLat,
+        inter,
+        searchParams.vehicleId,
+      ),
     ];
 
     setMarkers(newMarkers);

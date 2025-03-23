@@ -85,6 +85,7 @@ export function renderMarkers(
   setLng: Dispatch<SetStateAction<number | null>>,
   setLat: Dispatch<SetStateAction<number | null>>,
   inter: NextFont,
+  vehicleId?: string,
 ) {
   const newMarkers: Marker[] = [];
 
@@ -131,14 +132,31 @@ export function renderMarkers(
           document.body.dataset.following ==
           va.MonitoredVehicleJourney[0].VehicleRef[0]
         ) {
-          map.current!.flyTo({
-            center: [
-              Number(
-                va.MonitoredVehicleJourney[0].VehicleLocation[0].Longitude,
-              ),
-              Number(va.MonitoredVehicleJourney[0].VehicleLocation[0].Latitude),
-            ],
-          });
+          if (vehicleId) {
+            // Don't animate if vehicleId to avoid jumping + buggy animation on load
+            map.current!.flyTo({
+              center: [
+                Number(
+                  va.MonitoredVehicleJourney[0].VehicleLocation[0].Longitude,
+                ),
+                Number(
+                  va.MonitoredVehicleJourney[0].VehicleLocation[0].Latitude,
+                ),
+              ],
+              animate: false,
+            });
+          } else {
+            map.current!.flyTo({
+              center: [
+                Number(
+                  va.MonitoredVehicleJourney[0].VehicleLocation[0].Longitude,
+                ),
+                Number(
+                  va.MonitoredVehicleJourney[0].VehicleLocation[0].Latitude,
+                ),
+              ],
+            });
+          }
         }
 
         newMarkers.push(marker);

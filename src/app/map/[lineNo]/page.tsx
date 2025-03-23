@@ -76,7 +76,7 @@ export default function MapPage({
   }, [map]);
   // Get user location
   useEffect(() => {
-    if (navigator.geolocation) {
+    if (navigator.geolocation && !searchParams.vehicleId) {
       navigator.permissions.query({ name: "geolocation" }).then((result) => {
         if (result.state == "granted" || result.state == "prompt") {
           navigator.geolocation.getCurrentPosition((pos) => {

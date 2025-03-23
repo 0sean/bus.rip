@@ -212,31 +212,41 @@ function renderPopup(va: VehicleActivity, inter: NextFont) {
   );
 }
 
+function renderHours(time?: string[]) {
+  return time != undefined
+    ? new Date(time[0]).getHours().toString().padStart(2, "0")
+    : "-";
+}
+
+function renderMinutes(time?: string[]) {
+  return time != undefined
+    ? new Date(time[0]).getMinutes().toString().padStart(2, "0")
+    : "-";
+}
+
+function renderTime(time?: string[]) {
+  return `${renderHours(time)}:${renderMinutes(time)}`;
+}
+
 function renderPopupHTML(va: VehicleActivity, inter: NextFont) {
-  return `
-  <div style="display: flex; width: 100%; font-family: ${
+  const departure = renderTime(
+      va.MonitoredVehicleJourney[0].OriginAimedDepartureTime,
+    ),
+    arrival = renderTime(
+      va.MonitoredVehicleJourney[0].DestinationAimedArrivalTime,
+    ),
+    origin = va.MonitoredVehicleJourney[0].OriginName[0].replaceAll("_", " "),
+    destination = va.MonitoredVehicleJourney[0].DestinationName[0].replaceAll(
+      "_",
+      " ",
+    );
+
+  return `<div style="display: flex; width: 100%; font-family: ${
     inter.style.fontFamily
   };">
     <div style="width: 40%">
-      <p style="font-size: 24px; font-weight: 600; margin-bottom: 6px;">${
-        va.MonitoredVehicleJourney[0].OriginAimedDepartureTime != undefined
-          ? new Date(va.MonitoredVehicleJourney[0].OriginAimedDepartureTime[0])
-              .getHours()
-              .toString()
-              .padStart(2, "0")
-          : "-"
-      }:${
-        va.MonitoredVehicleJourney[0].OriginAimedDepartureTime != undefined
-          ? new Date(va.MonitoredVehicleJourney[0].OriginAimedDepartureTime[0])
-              .getMinutes()
-              .toString()
-              .padStart(2, "0")
-          : "-"
-      }</p>
-      <p style="line-height: 1.25;">${va.MonitoredVehicleJourney[0].OriginName[0].replaceAll(
-        "_",
-        " ",
-      )}</p>
+      <p style="font-size: 24px; font-weight: 600; margin-bottom: 6px;">${departure}</p>
+      <p style="line-height: 1.25;">${origin}</p>
     </div>
     <div style="width: 20%; display: flex; justify-content: center; align-items: center;">
       <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -244,29 +254,8 @@ function renderPopupHTML(va: VehicleActivity, inter: NextFont) {
       </svg>
     </div>
     <div style="width: 40%; text-align: end;">
-      <p style="font-size: 24px; font-weight: 600; margin-bottom: 6px;">${
-        va.MonitoredVehicleJourney[0].DestinationAimedArrivalTime != undefined
-          ? new Date(
-              va.MonitoredVehicleJourney[0].DestinationAimedArrivalTime[0],
-            )
-              .getHours()
-              .toString()
-              .padStart(2, "0")
-          : "-"
-      }:${
-        va.MonitoredVehicleJourney[0].DestinationAimedArrivalTime != undefined
-          ? new Date(
-              va.MonitoredVehicleJourney[0].DestinationAimedArrivalTime[0],
-            )
-              .getMinutes()
-              .toString()
-              .padStart(2, "0")
-          : "-"
-      }</p>
-      <p style="line-height: 1.25;">${va.MonitoredVehicleJourney[0].DestinationName[0].replaceAll(
-        "_",
-        " ",
-      )}</p>
+      <p style="font-size: 24px; font-weight: 600; margin-bottom: 6px;">${arrival}</p>
+      <p style="line-height: 1.25;">${destination}</p>
     </div>
   </div>
   <p style="font-family: ${

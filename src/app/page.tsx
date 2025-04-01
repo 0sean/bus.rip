@@ -19,6 +19,13 @@ export default async function Home() {
         </a>
       </h3>
       <TrackForm lines={lines} />
+      <a
+        href="https://transit.fyi/"
+        className="absolute bottom-8 left-8 text-zinc-500 hover:text-zinc-100 transition-colors text-sm"
+        target="_blank"
+      >
+        A <span className="font-semibold">Transit.fyi</span> project
+      </a>
     </div>
   );
 }

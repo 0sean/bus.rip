@@ -1,36 +1,23 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+![image](https://github.com/user-attachments/assets/81b14bd4-3714-4420-b680-1da5aae508ed)
 
-## Getting Started
+### [bus.rip](https://bus.rip/) - bus tracking powered by [Bus Open Data Service](https://data.bus-data.dft.gov.uk/).
+- 🚌 Works for any UK bus operator
+- 📍 Displays location of every bus for each operator, updating every 10 seconds
+- 🧭 Track, follow and share buses
 
-First, run the development server:
+| ![image](https://github.com/user-attachments/assets/6bc8fbaf-f455-4eed-8617-918f92fbb020) | ![image](https://github.com/user-attachments/assets/23018253-236f-4846-869c-3a1bacf8f641) | ![image](https://github.com/user-attachments/assets/e25136f0-5180-4426-a1f2-f6084f444f1b) |
+| :-------------: |:-------------:| :-----:|
+| **See all buses for an operator on a map** | **View information and share link to follow** | **Follow a bus along its route** |
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Self-hosting/running locally
+The app itself is a Next.js app, with Postgres (via Prisma) for storing operator data and Upstash Redis (via @upstash/ratelimit) for ratelimiting.
+Configuration is done via environent variables - outside of Prisma (`DATABASE_URL`) and Upstash Ratelimit (`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`) environment variables, the only variables you will need to set is:
+- The `BODS_API_KEY` variable, which can be obtained [here](https://data.bus-data.dft.gov.uk/account/settings/)
+- The `CRON_TOKEN` variable, which should be supplied as a Bearer token to the cron job route
+- If not running behind Cloudflare, you will need to set the `IP_HEADER` variable to whichever header your host/proxy supplies for getting a user's IP (it defaults to Cloudflare's `CF-Connecting-IP` header) (this is fine to leave if just running locally)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+You will also need to run the job for fetching operator data from Traveline (which in production would be run once a month via a cron job).
+To run the job, send a GET request with the Authorization header set with the `CRON_TOKEN` variable you set earlier to `/api/cron`.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+In production, it is run on Vercel behind Cloudflare, however it should be able to run anywhere you can run a Next.js app.

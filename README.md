@@ -16,6 +16,7 @@ Configuration is done via environent variables - outside of Prisma (`DATABASE_UR
 - The `BODS_API_KEY` variable, which can be obtained [here](https://data.bus-data.dft.gov.uk/account/settings/)
 - The `CRON_TOKEN` variable, which should be supplied as a Bearer token to the cron job route
 - If not running behind Cloudflare, you will need to set the `IP_HEADER` variable to whichever header your host/proxy supplies for getting a user's IP (it defaults to Cloudflare's `CF-Connecting-IP` header) (this is fine to leave if just running locally)
+- Optionally, Sentry can be used by setting the following environment variables: `SENTRY_DSN` `SENTRY_ORG` `SENTRY_PROJECT`
 
 You will also need to run the job for fetching operator data from Traveline (which in production would be run once a month via a cron job).
 To run the job, send a GET request with the Authorization header set with the `CRON_TOKEN` variable you set earlier to `/api/cron`.

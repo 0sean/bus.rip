@@ -114,10 +114,8 @@ export default function MapPage({
     if (typeof window == "undefined") return null;
     return !document.body.dataset.following
       ? null
-      : data?.data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0].VehicleActivity.find(
-          (va) =>
-            va.MonitoredVehicleJourney[0].VehicleRef[0] ==
-            document.body.dataset.following,
+      : data?.vehicles?.find(
+          (vehicle) => vehicle.ref == document.body.dataset.following,
         );
   }, [data, totalSeconds]);
 
@@ -149,19 +147,16 @@ export default function MapPage({
           </MenubarMenu>
         </Menubar>
       </div>
-      {data &&
-        !data.error &&
-        !data.data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0]
-          .VehicleActivity && (
-          <Alert className="right-2 bottom-2 fixed z-10 w-fit drop-shadow-2xl animate__animated animate__faster animate__fadeInUp">
-            <AlertTitle className="font-semibold">
-              No location data available
-            </AlertTitle>
-            <AlertDescription>
-              It may be available under another provider.
-            </AlertDescription>
-          </Alert>
-        )}
+      {data && !data.error && !data.vehicles && (
+        <Alert className="right-2 bottom-2 fixed z-10 w-fit drop-shadow-2xl animate__animated animate__faster animate__fadeInUp">
+          <AlertTitle className="font-semibold">
+            No location data available
+          </AlertTitle>
+          <AlertDescription>
+            It may be available under another provider.
+          </AlertDescription>
+        </Alert>
+      )}
       {data && data.error == "Too many requests" && (
         <Alert className="right-2 bottom-2 fixed z-10 w-fit drop-shadow-2xl animate__animated animate__faster animate__fadeInUp">
           <AlertTitle className="font-semibold">
@@ -172,7 +167,7 @@ export default function MapPage({
       <div>
         <div ref={mapContainer} className="map-container" />
       </div>
-      {follow && <FollowCard follow={follow} />}
+      {follow && <FollowCard vehicle={follow} />}
     </>
   );
 }

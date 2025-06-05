@@ -3,7 +3,7 @@ import { formatDistanceToNow } from "date-fns";
 
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import type { Marker } from "maplibre-gl";
-import type { DatafeedRouteResponse, VehicleActivity } from "./bods";
+import type { DatafeedRouteResponse, Vehicle } from "./bods";
 import type { NextFont } from "next/dist/compiled/@next/font";
 
 export function initializeMap(
@@ -43,13 +43,10 @@ export function refreshMarkers(data: DatafeedRouteResponse, markers: Marker[]) {
   const newMarkers: Marker[] = [];
 
   markers.forEach((marker: Marker) => {
-    const va =
-      data.data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0].VehicleActivity.find(
-        (va) =>
-          va.MonitoredVehicleJourney[0].VehicleRef[0] ==
-          marker.getElement().dataset.vehicle,
-      );
-    if (!va) {
+    const vehicle = data.vehicles?.find(
+      (vehicle) => vehicle.ref == marker.getElement().dataset.vehicle,
+    );
+    if (!vehicle) {
       const el = marker.getElement();
       if (
         el.dataset.arrives != undefined &&
@@ -89,106 +86,71 @@ export function renderMarkers(
 ) {
   const newMarkers: Marker[] = [];
 
-  if (
-    data.data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0]
-      .VehicleActivity
-  ) {
+  if (data.vehicles) {
     if (!lng || !lat) {
-      setLng(
-        Number(
-          data.data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0]
-            .VehicleActivity[0].MonitoredVehicleJourney[0].VehicleLocation[0]
-            .Longitude,
-        ),
-      );
-      setLat(
-        Number(
-          data.data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0]
-            .VehicleActivity[0].MonitoredVehicleJourney[0].VehicleLocation[0]
-            .Latitude,
-        ),
-      );
+      setLng(Number(data.vehicles[0].longitude));
+      setLat(Number(data.vehicles[0].latitude));
     }
-    data.data.Siri.ServiceDelivery[0].VehicleMonitoringDelivery[0].VehicleActivity.forEach(
-      (va) => {
-        if (
-          new Date(va.ValidUntilTime[0] + "Z") < new Date() ||
-          Number(new Date()) - Number(new Date(va.RecordedAtTime[0])) >= 900000
-        )
-          return; // if no longer valid or more than 15 minutes old
-        const el = renderMarker(va),
-          label = renderLabel(va, inter);
+    data.vehicles.forEach((vehicle) => {
+      if (
+        new Date(vehicle.validUntil) < new Date() ||
+        Number(new Date()) - Number(new Date(vehicle.recordedAt)) >= 900000
+      )
+        return; // if no longer valid or more than 15 minutes old
+      const el = renderMarker(vehicle),
+        label = renderLabel(vehicle, inter);
 
-        el.appendChild(label);
-        if (va.MonitoredVehicleJourney[0].Bearing != undefined) {
-          const arrowContainer = renderArrow();
-          el.appendChild(arrowContainer);
+      el.appendChild(label);
+      if (vehicle.bearing != null) {
+        const arrowContainer = renderArrow();
+        el.appendChild(arrowContainer);
+      }
+
+      const popup = renderPopup(vehicle, inter),
+        marker = createMarker(el, vehicle, popup, map);
+
+      if (document.body.dataset.following == vehicle.ref) {
+        if (vehicleId) {
+          // Don't animate if vehicleId to avoid jumping + buggy animation on load
+          map.current!.flyTo({
+            center: [Number(vehicle.longitude), Number(vehicle.latitude)],
+            animate: false,
+          });
+        } else {
+          map.current!.flyTo({
+            center: [Number(vehicle.longitude), Number(vehicle.latitude)],
+          });
         }
+      }
 
-        const popup = renderPopup(va, inter),
-          marker = createMarker(el, va, popup, map);
-
-        if (
-          document.body.dataset.following ==
-          va.MonitoredVehicleJourney[0].VehicleRef[0]
-        ) {
-          if (vehicleId) {
-            // Don't animate if vehicleId to avoid jumping + buggy animation on load
-            map.current!.flyTo({
-              center: [
-                Number(
-                  va.MonitoredVehicleJourney[0].VehicleLocation[0].Longitude,
-                ),
-                Number(
-                  va.MonitoredVehicleJourney[0].VehicleLocation[0].Latitude,
-                ),
-              ],
-              animate: false,
-            });
-          } else {
-            map.current!.flyTo({
-              center: [
-                Number(
-                  va.MonitoredVehicleJourney[0].VehicleLocation[0].Longitude,
-                ),
-                Number(
-                  va.MonitoredVehicleJourney[0].VehicleLocation[0].Latitude,
-                ),
-              ],
-            });
-          }
-        }
-
-        newMarkers.push(marker);
-      },
-    );
+      newMarkers.push(marker);
+    });
   }
 
   return newMarkers;
 }
 
-function renderMarker(va: VehicleActivity) {
+function renderMarker(vehicle: Vehicle) {
   const el = document.createElement("div");
   el.className = "marker";
   el.style.width = "28px";
   el.style.height = "28px";
-  el.dataset.vehicle = va.MonitoredVehicleJourney[0].VehicleRef[0];
-  if (va.MonitoredVehicleJourney[0].DestinationAimedArrivalTime) {
-    el.dataset.arrives =
-      va.MonitoredVehicleJourney[0].DestinationAimedArrivalTime[0];
+  el.dataset.vehicle = vehicle.ref;
+  if (vehicle.arrivalTime) {
+    el.dataset.arrives = vehicle.arrivalTime;
   }
 
   return el;
 }
 
-function renderLabel(va: VehicleActivity, inter: NextFont) {
+function renderLabel(vehicle: Vehicle, inter: NextFont) {
   const label = document.createElement("div");
-  label.textContent = va.MonitoredVehicleJourney[0].PublishedLineName[0];
+  label.textContent = vehicle.lineName;
   label.style.width = "28px";
   label.style.height = "28px";
   label.style.textAlign = "center";
   label.style.fontWeight = "bold";
-  if (va.MonitoredVehicleJourney[0].PublishedLineName[0].length > 2) {
+  if (vehicle.lineName.length > 2) {
     label.style.fontSize = "10px";
   } else {
     label.style.fontSize = "12px";
@@ -199,7 +161,7 @@ function renderLabel(va: VehicleActivity, inter: NextFont) {
   label.style.fontFamily = inter.style.fontFamily;
   label.style.boxShadow = "0px 0px 30px 0px rgba(0, 0, 0, 0.5)";
   label.style.rotate = `calc(var(--map-rotation) - ${
-    va.MonitoredVehicleJourney[0].Bearing || "0"
+    vehicle.bearing || "0"
   }deg)`;
 
   return label;
@@ -224,48 +186,38 @@ function renderArrow() {
   return arrowContainer;
 }
 
-function renderPopup(va: VehicleActivity, inter: NextFont) {
+function renderPopup(vehicle: Vehicle, inter: NextFont) {
   return new maplibregl.Popup({ offset: 24, maxWidth: "350" }).setHTML(
-    renderPopupHTML(va, inter),
+    renderPopupHTML(vehicle, inter),
   );
 }
 
-function renderHours(time?: string[]) {
+function renderHours(time?: string) {
   return time != undefined
-    ? new Date(time[0]).getHours().toString().padStart(2, "0")
+    ? new Date(time).getHours().toString().padStart(2, "0")
     : "-";
 }
 
-function renderMinutes(time?: string[]) {
+function renderMinutes(time?: string) {
   return time != undefined
-    ? new Date(time[0]).getMinutes().toString().padStart(2, "0")
+    ? new Date(time).getMinutes().toString().padStart(2, "0")
     : "-";
 }
 
-function renderTime(time?: string[]) {
+function renderTime(time?: string) {
   return `${renderHours(time)}:${renderMinutes(time)}`;
 }
 
-function renderPopupHTML(va: VehicleActivity, inter: NextFont) {
-  const departure = renderTime(
-      va.MonitoredVehicleJourney[0].OriginAimedDepartureTime,
-    ),
-    arrival = renderTime(
-      va.MonitoredVehicleJourney[0].DestinationAimedArrivalTime,
-    ),
-    origin = va.MonitoredVehicleJourney[0].OriginName[0].replaceAll("_", " "),
-    destination = va.MonitoredVehicleJourney[0].DestinationName[0].replaceAll(
-      "_",
-      " ",
-    ),
-    vehicleId = va.MonitoredVehicleJourney[0].VehicleRef[0];
+function renderPopupHTML(vehicle: Vehicle, inter: NextFont) {
+  const departure = renderTime(vehicle.departureTime),
+    arrival = renderTime(vehicle.arrivalTime);
 
   return `<div style="display: flex; width: 100%; font-family: ${
     inter.style.fontFamily
   };">
     <div style="width: 40%">
       <p style="font-size: 24px; font-weight: 600; margin-bottom: 6px;">${departure}</p>
-      <p style="line-height: 1.25;">${origin}</p>
+      <p style="line-height: 1.25;">${vehicle.originName}</p>
     </div>
     <div style="width: 20%; display: flex; justify-content: center; align-items: center;">
       <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -274,22 +226,26 @@ function renderPopupHTML(va: VehicleActivity, inter: NextFont) {
     </div>
     <div style="width: 40%; text-align: end;">
       <p style="font-size: 24px; font-weight: 600; margin-bottom: 6px;">${arrival}</p>
-      <p style="line-height: 1.25;">${destination}</p>
+      <p style="line-height: 1.25;">${vehicle.destinationName}</p>
     </div>
   </div>
   <p style="font-family: ${
     inter.style.fontFamily
   }; margin-top: 8px; opacity: 0.5; font-size: 11px;">Updated ${formatDistanceToNow(
-    va.RecordedAtTime[0],
+    vehicle.recordedAt,
     { addSuffix: true, includeSeconds: true },
   )}</p>
   <div style="display: flex; gap: 0.5rem; width: 100%;">
-    <button onClick="if(!this.classList.contains('following')) { document.body.dataset.following = '${vehicleId}'; this.classList.add('following'); document.querySelector('.maplibregl-popup-close-button').click(); } else { document.body.dataset.following = ''; this.classList.remove('following') }" ${
-      document.body.dataset.following == vehicleId ? 'class="following"' : ""
+    <button onClick="if(!this.classList.contains('following')) { document.body.dataset.following = '${
+      vehicle.ref
+    }'; this.classList.add('following'); document.querySelector('.maplibregl-popup-close-button').click(); } else { document.body.dataset.following = ''; this.classList.remove('following') }" ${
+      document.body.dataset.following == vehicle.ref ? 'class="following"' : ""
     } style="font-family: ${
       inter.style.fontFamily
     }; flex-grow: 1; padding: 6px; outline: none; border-radius: 4px; margin-top: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">Follow</button>
-    <button onClick="const url = window.location.href + '?vehicleId=${vehicleId}'; try { navigator.share({url}) } catch(e) { navigator.clipboard.writeText(url) }" style="flex-grow: 0; width: 32px; padding: 9px; border-radius: 4px; margin-top: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+    <button onClick="const url = window.location.href + '?vehicleId=${
+      vehicle.ref
+    }'; try { navigator.share({url}) } catch(e) { navigator.clipboard.writeText(url) }" style="flex-grow: 0; width: 32px; padding: 9px; border-radius: 4px; margin-top: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.--><path fill="#ffffff" d="M246.6 9.4c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 109.3 192 320c0 17.7 14.3 32 32 32s32-14.3 32-32l0-210.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64c0 53 43 96 96 96l256 0c53 0 96-43 96-96l0-64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64c0 17.7-14.3 32-32 32L96 448c-17.7 0-32-14.3-32-32l0-64z"/></svg>
     </button>
   </div>
@@ -298,20 +254,17 @@ function renderPopupHTML(va: VehicleActivity, inter: NextFont) {
 
 function createMarker(
   el: HTMLElement,
-  va: VehicleActivity,
+  vehicle: Vehicle,
   popup: maplibregl.Popup,
   map: RefObject<maplibregl.Map | null>,
 ) {
-  const bearing = Number(va.MonitoredVehicleJourney[0].Bearing);
+  const bearing = Number(vehicle.bearing);
   return new maplibregl.Marker({
     element: el,
     rotation: Number.isNaN(bearing) ? undefined : bearing,
     rotationAlignment: "map",
   })
-    .setLngLat([
-      Number(va.MonitoredVehicleJourney[0].VehicleLocation[0].Longitude),
-      Number(va.MonitoredVehicleJourney[0].VehicleLocation[0].Latitude),
-    ])
+    .setLngLat([Number(vehicle.longitude), Number(vehicle.latitude)])
     .setPopup(popup)
     .addTo(map.current!);
 }

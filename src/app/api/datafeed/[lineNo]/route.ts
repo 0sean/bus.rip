@@ -30,9 +30,9 @@ export async function GET(
     if (!nocLine) {
       return Response.json({ error: "Invalid lineNo" }, { status: 404 });
     } else {
-      const data = await getDatafeed(nocLine.nocCode);
+      const vehicles = await getDatafeed(nocLine.nocCode);
 
-      return Response.json({ line: nocLine, data });
+      return Response.json({ line: nocLine, vehicles });
     }
   } else {
     return Response.json({ error: "Too many requests" }, { status: 429 });

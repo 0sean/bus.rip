@@ -1,40 +1,29 @@
-import { VehicleActivity } from "@/lib/bods";
+import { Vehicle } from "@/lib/bods";
 import { Alert } from "./ui/alert";
 import { formatDistanceToNow } from "date-fns";
 
-export default function FollowCard({ follow }: { follow: VehicleActivity }) {
+export default function FollowCard({ vehicle }: { vehicle: Vehicle }) {
   return (
     <div className="fixed bottom-4 w-full p-4">
       <Alert className="w-full">
         <div className="flex w-full">
           <div className="w-[40%]">
             <p className="text-2xl font-semibold mb-1.5">
-              {follow.MonitoredVehicleJourney[0].OriginAimedDepartureTime !=
-              undefined
-                ? new Date(
-                    follow.MonitoredVehicleJourney[0].OriginAimedDepartureTime[0],
-                  )
+              {vehicle.departureTime != undefined
+                ? new Date(vehicle.departureTime)
                     .getHours()
                     .toString()
                     .padStart(2, "0")
                 : "-"}
               :
-              {follow.MonitoredVehicleJourney[0].OriginAimedDepartureTime !=
-              undefined
-                ? new Date(
-                    follow.MonitoredVehicleJourney[0].OriginAimedDepartureTime[0],
-                  )
+              {vehicle.departureTime != undefined
+                ? new Date(vehicle.departureTime)
                     .getMinutes()
                     .toString()
                     .padStart(2, "0")
                 : "-"}
             </p>
-            <p className="leading-tight text-sm">
-              {follow.MonitoredVehicleJourney[0].OriginName[0].replaceAll(
-                "_",
-                " ",
-              )}
-            </p>
+            <p className="leading-tight text-sm">{vehicle.originName}</p>
           </div>
           <div className="w-[20%] flex justify-center items-center">
             <svg
@@ -52,37 +41,26 @@ export default function FollowCard({ follow }: { follow: VehicleActivity }) {
           </div>
           <div className="w-[40%] text-end">
             <p className="text-2xl font-semibold mb-1.5">
-              {follow.MonitoredVehicleJourney[0].DestinationAimedArrivalTime !=
-              undefined
-                ? new Date(
-                    follow.MonitoredVehicleJourney[0].DestinationAimedArrivalTime[0],
-                  )
+              {vehicle.arrivalTime != undefined
+                ? new Date(vehicle.arrivalTime)
                     .getHours()
                     .toString()
                     .padStart(2, "0")
                 : "-"}
               :
-              {follow.MonitoredVehicleJourney[0].DestinationAimedArrivalTime !=
-              undefined
-                ? new Date(
-                    follow.MonitoredVehicleJourney[0].DestinationAimedArrivalTime[0],
-                  )
+              {vehicle.arrivalTime != undefined
+                ? new Date(vehicle.arrivalTime)
                     .getMinutes()
                     .toString()
                     .padStart(2, "0")
                 : "-"}
             </p>
-            <p className="leading-tight text-sm">
-              {follow.MonitoredVehicleJourney[0].DestinationName[0].replaceAll(
-                "_",
-                " ",
-              )}
-            </p>
+            <p className="leading-tight text-sm">{vehicle.destinationName}</p>
           </div>
         </div>
         <p className="mt-2 opacity-50 text-[11px]">
           Updated{" "}
-          {formatDistanceToNow(follow.RecordedAtTime[0], {
+          {formatDistanceToNow(vehicle.recordedAt, {
             addSuffix: true,
             includeSeconds: true,
           })}

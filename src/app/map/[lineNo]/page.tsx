@@ -47,7 +47,7 @@ export default function MapPage(props: {
         },
       },
     ),
-    [data, setData] = useState<DatefeedRouteResponse | null>(null),
+    [data, setData] = useState<DatafeedRouteResponse | null>(null),
     [following, setFollowing] = useState<string | null>(null),
     router = useRouter();
 

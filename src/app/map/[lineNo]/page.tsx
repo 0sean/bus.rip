@@ -13,9 +13,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Map } from "@vis.gl/react-maplibre"
 import "animate.css";
 
-import { initializeMap, refreshMarkers, renderMarkers, mapStyle } from "@/lib/map";
+import { mapStyle } from "@/lib/map";
 
-// import type { Map, Marker } from "maplibre-gl";
 import { DatafeedRouteResponse, Validity } from "@/lib/bods";
 import FollowCard from "@/components/FollowCard";
 import VehicleMarker from "@/components/map/VehicleMarker";

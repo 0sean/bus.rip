@@ -115,11 +115,7 @@
   } */
 }
 
-.map-container {
-  height: 100vh;
-}
-
-.maplibregl-popup-content {
+/* .maplibregl-popup-content {
   color: white;
   padding: 16px !important;
   border-radius: 8px !important;
@@ -137,7 +133,7 @@
 
 .following:after {
   content: "ing";
-}
+} */
 
 @theme inline {
 

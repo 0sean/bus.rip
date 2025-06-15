@@ -6,72 +6,26 @@ import type { Marker } from "maplibre-gl";
 import type { DatafeedRouteResponse, Vehicle } from "./bods";
 import type { NextFont } from "next/dist/compiled/@next/font";
 
-export function initializeMap(
-  mapContainer: RefObject<HTMLDivElement | null>,
-  lng: number | null,
-  lat: number | null,
-) {
-  return new maplibregl.Map({
-    container: mapContainer.current as unknown as HTMLElement,
-    style: {
-      version: 8,
-      sources: {
-        "raster-tiles": {
-          type: "raster",
-          tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-          tileSize: 256,
-          attribution:
-            '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
-        },
-      },
-      layers: [
-        {
-          id: "tiles",
-          type: "raster",
-          source: "raster-tiles",
-          minzoom: 0,
-          maxzoom: 22,
-        },
-      ],
+export const mapStyle = {
+  version: 8,
+  sources: {
+    "raster-tiles": {
+      type: "raster",
+      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      attribution:
+        '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
     },
-    center: lng != null && lat != null ? [lng, lat] : undefined,
-    zoom: 15,
-  });
-}
-
-export function refreshMarkers(data: DatafeedRouteResponse, markers: Marker[]) {
-  const newMarkers: Marker[] = [];
-
-  markers.forEach((marker: Marker) => {
-    const vehicle = data.vehicles?.find(
-      (vehicle) => vehicle.ref == marker.getElement().dataset.vehicle,
-    );
-    if (!vehicle) {
-      const el = marker.getElement();
-      if (
-        el.dataset.arrives != undefined &&
-        new Date(el.dataset.arrives as string) < new Date()
-      ) {
-        marker.remove();
-      } else {
-        if (!el.dataset.unavailable) {
-          el.dataset.unavailable = "1";
-          el.style.opacity = "0.75";
-          newMarkers.push(marker);
-        } else if (el.dataset.unavailable == "1") {
-          el.dataset.unavailable = "2";
-          el.style.opacity = "0.5";
-          newMarkers.push(marker);
-        } else {
-          marker.remove();
-        }
-      }
-    } else {
-      marker.remove();
-    }
-  });
-
-  return newMarkers;
+  },
+  layers: [
+    {
+      id: "tiles",
+      type: "raster",
+      source: "raster-tiles",
+      minzoom: 0,
+      maxzoom: 22,
+    },
+  ],
 }
 
 export function renderMarkers(
@@ -141,49 +95,6 @@ function renderMarker(vehicle: Vehicle) {
   }
 
   return el;
-}
-
-function renderLabel(vehicle: Vehicle, inter: NextFont) {
-  const label = document.createElement("div");
-  label.textContent = vehicle.lineName;
-  label.style.width = "28px";
-  label.style.height = "28px";
-  label.style.textAlign = "center";
-  label.style.fontWeight = "bold";
-  if (vehicle.lineName.length > 2) {
-    label.style.fontSize = "10px";
-  } else {
-    label.style.fontSize = "12px";
-  }
-  label.style.backgroundColor = "#161616";
-  label.style.padding = "4px";
-  label.style.borderRadius = "100%";
-  label.style.fontFamily = inter.style.fontFamily;
-  label.style.boxShadow = "0px 0px 30px 0px rgba(0, 0, 0, 0.5)";
-  label.style.rotate = `calc(var(--map-rotation) - ${
-    vehicle.bearing || "0"
-  }deg)`;
-
-  return label;
-}
-
-function renderArrow() {
-  const arrowContainer = document.createElement("div");
-  arrowContainer.style.width = "28px";
-  arrowContainer.style.height = "42px";
-  arrowContainer.style.position = "absolute";
-  arrowContainer.style.top = "-14px";
-  arrowContainer.style.left = "0";
-  const arrow = document.createElement("div");
-  arrow.style.width = "12px";
-  arrow.style.height = "12px";
-  arrow.style.backgroundImage = "url('/arrow.svg')";
-  arrow.style.backgroundRepeat = "no-repeat";
-  arrow.style.backgroundPosition = "bottom center";
-  arrow.style.margin = "0 auto";
-  arrowContainer.appendChild(arrow);
-
-  return arrowContainer;
 }
 
 function renderPopup(vehicle: Vehicle, inter: NextFont) {

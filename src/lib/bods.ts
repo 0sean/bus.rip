@@ -47,6 +47,7 @@ function formatDatafeedResponse(data: DatafeedResponse): Vehicle[] | null {
           ),
         validUntil: activity.ValidUntilTime[0] + "Z",
         recordedAt: activity.RecordedAtTime[0],
+        validity: Validity.Valid
       }))
     : null;
 }
@@ -73,7 +74,16 @@ export type Vehicle = {
 
   validUntil: string;
   recordedAt: string;
+
+  validity: Validity; // Server will always return Valid, turns invalid on client
 };
+
+export enum Validity {
+  Valid,
+  Expiring1,
+  Expiring2,
+  Invalid
+}
 
 /* TransXChange datafeed response types */
 

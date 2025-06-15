@@ -10,13 +10,15 @@ import { useRouter } from "next/navigation";
 import { Progress } from "@/components/ui/progress";
 import { useStopwatch } from "react-timer-hook";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Map } from "@vis.gl/react-maplibre"
 import "animate.css";
 
-import { initializeMap, refreshMarkers, renderMarkers } from "@/lib/map";
+import { initializeMap, refreshMarkers, renderMarkers, mapStyle } from "@/lib/map";
 
-import type { Map, Marker } from "maplibre-gl";
-import { DatafeedRouteResponse } from "@/lib/bods";
+// import type { Map, Marker } from "maplibre-gl";
+import { DatafeedRouteResponse, Validity } from "@/lib/bods";
 import FollowCard from "@/components/FollowCard";
+import VehicleMarker from "@/components/map/VehicleMarker";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -28,13 +30,15 @@ export default function MapPage(props: {
 }) {
   const searchParams = use(props.searchParams);
   const params = use(props.params);
-  const mapContainer = useRef(null),
-    map = useRef<Map | null>(null),
-    [lng, setLng] = useState<number | null>(null),
-    [lat, setLat] = useState<number | null>(null),
-    [markers, setMarkers] = useState<Marker[]>([]),
+
+  const [viewState, setViewState] = useState({
+      longitude: null,
+      latitude: null,
+      zoom: 15
+    }),
+    [initialLocationSet, setInitialLocationSet] = useState(false),
     { totalSeconds, reset } = useStopwatch({ autoStart: true }),
-    { data, error, isLoading } = useSWR<DatafeedRouteResponse>(
+    { data: datafeed, error, isLoading } = useSWR<DatafeedRouteResponse>(
       `/api/datafeed/${params.lineNo}`,
       fetcher,
       {
@@ -44,78 +48,69 @@ export default function MapPage(props: {
         },
       },
     ),
+    [data, setData] = useState<DatefeedRouteResponse | null>(null),
+    [following, setFollowing] = useState<string | null>(null),
     router = useRouter();
 
-  // Load map
+  // Transform datafeed response to check data validity
   useEffect(() => {
-    if (map.current) return; // initialize map only once
-    map.current = initializeMap(mapContainer, lng, lat);
-  }, []);
-  // Render markers, labels, popups, arrows
+    if(!datafeed) return;
+    if(data === null || !data.vehicles) return setData(datafeed);
+
+    const existingRefs = datafeed.vehicles.map(vehicle => vehicle.ref),
+      expiringVehicles = data.vehicles.filter(vehicle => !existingRefs.includes(vehicle.ref))
+        .map(vehicle => ({ ...vehicle, validity: vehicle.validity + 1 }))
+        .filter(vehicle => vehicle.validity != Validity.Invalid);
+
+    setData({
+      ...datafeed,
+      vehicles: [
+        ...datafeed.vehicles,
+        ...expiringVehicles
+      ]
+    })
+  }, [datafeed, setData]);
+  // Redirect if lineNo doesn't exist
   useEffect(() => {
     if (!data || isLoading) return;
     if (data.error == "Invalid lineNo") return router.push("/");
-    if (data.error) return;
-    const newMarkers: Marker[] = [
-      ...refreshMarkers(data, markers),
-      ...renderMarkers(
-        data,
-        map,
-        lng,
-        lat,
-        setLng,
-        setLat,
-        inter,
-        searchParams.vehicleId,
-      ),
-    ];
-
-    setMarkers(newMarkers);
+    if (!initialLocationSet && data.vehicles && data.vehicles.length > 0) {
+      setViewState({
+        ...viewState,
+        longitude: data.vehicles[0].longitude,
+        latitude: data.vehicles[0].latitude
+      });
+      setInitialLocationSet(true);
+    }
   }, [data]);
-  // Set map rotation
-  useEffect(() => {
-    if (!map) return;
-    map.current!.on("move", (e) => {
-      document.body.style.setProperty(
-        "--map-rotation",
-        `${map.current!.getBearing().toString()}deg`,
-      );
-    });
-  }, [map]);
   // Get user location
   useEffect(() => {
     if (navigator.geolocation && !searchParams.vehicleId) {
       navigator.permissions.query({ name: "geolocation" }).then((result) => {
         if (result.state == "granted" || result.state == "prompt") {
           navigator.geolocation.getCurrentPosition((pos) => {
-            setLng(pos.coords.longitude);
-            setLat(pos.coords.latitude);
+            setViewState({
+              ...viewState,
+              longitude: pos.coords.longitude,
+              latitude: pos.coords.latitude
+            });
+            setUserLocationSet(true);
           });
         }
       });
     }
   }, []);
-  // Set map center from user location
-  useEffect(() => {
-    if (!map.current || lng == null || lat == null || searchParams.vehicleId)
-      return;
-    map.current.setCenter([lng, lat]);
-  }, [lng, lat]);
   // Set following from URL
   useEffect(() => {
     if (typeof window == "undefined") return;
     if (searchParams.vehicleId) {
-      document.body.dataset.following = searchParams.vehicleId;
+      setFollowing(searchParams.vehicleId);
     }
-  }, []);
-
-  const follow = useMemo(() => {
+  }, [searchParams.vehicleId, setFollowing]);
+  
+  const followedVehicle = useMemo(() => {
     if (typeof window == "undefined") return null;
-    return !document.body.dataset.following
-      ? null
-      : data?.vehicles?.find(
-          (vehicle) => vehicle.ref == document.body.dataset.following,
-        );
+    return !following ? null : data?.vehicles?.find((vehicle) => vehicle.ref === following);
   }, [data, totalSeconds]);
 
   return (
@@ -163,10 +158,19 @@ export default function MapPage(props: {
           </AlertTitle>
         </Alert>
       )}
-      <div>
-        <div ref={mapContainer} className="map-container" />
+      {/* TODO: Check these classes */}
+      <div className="h-screen w-screen">
+        {/* TODO: Check SSR example */}
+        <Map
+          {...viewState}
+          onMove={evt => setViewState(evt.viewState)}
+          mapStyle={mapStyle}
+        >
+          {(data?.vehicles.filter(vehicle => new Date(vehicle.validUntil) >= new Date() || Number(new Date()) - Number(new Date(vehicle.recordedAt)) < 900000) || [])
+            .map(vehicle => <VehicleMarker key={vehicle.ref} vehicle={vehicle} mapBearing={viewState.bearing || 0} />)}
+        </Map>
       </div>
-      {follow && <FollowCard vehicle={follow} />}
+      {followedVehicle && <FollowCard vehicle={followedVehicle} />}
     </>
   );
 }

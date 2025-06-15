@@ -21,6 +21,7 @@
     "@upstash/ratelimit": "^2.0.5",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
+    "@vis.gl/react-maplibre": "^8.0.4",
     "animate.css": "^4.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

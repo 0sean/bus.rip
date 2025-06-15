@@ -7,7 +7,7 @@ import type { DatafeedRouteResponse, Vehicle } from "./bods";
 import type { NextFont } from "next/dist/compiled/@next/font";
 
 export function initializeMap(
-  mapContainer: RefObject<HTMLDivElement>,
+  mapContainer: RefObject<HTMLDivElement | null>,
   lng: number | null,
   lat: number | null,
 ) {

@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   :root {
@@ -67,12 +65,13 @@
 }
 
 @layer base {
-  * {
+  /* TODO: Fix these stylings (maybe redo shadcn components)
+  /* * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
-  }
+  } */
 }
 
 .map-container {

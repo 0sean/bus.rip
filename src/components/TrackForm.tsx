@@ -1,6 +1,6 @@
 "use client";
 
-import Select, { OptionProps, SingleValue, components } from "react-select";
+import { OptionProps, SingleValue, components } from "react-select";
 import { Button } from "./ui/button";
 import {
   useCallback,
@@ -12,6 +12,9 @@ import {
 import { useRouter } from "next/navigation";
 import { getCookie, setCookie } from "cookies-next";
 import { FaStar } from "react-icons/fa";
+import dynamic from "next/dynamic";
+
+const Select = dynamic(() => import("react-select"), { ssr: false });
 
 export default function TrackForm({ lines }: { lines: any[] }) {
   const [line, setLine] = useState<{ value: string; label: string } | null>(
@@ -106,6 +109,7 @@ export default function TrackForm({ lines }: { lines: any[] }) {
   return (
     <>
       <Select
+        instanceId="track-form"
         components={{ Option }}
         styles={{
           control: (base) => ({
@@ -124,8 +128,8 @@ export default function TrackForm({ lines }: { lines: any[] }) {
             backgroundColor: state.isSelected
               ? "#27272a"
               : state.isFocused
-              ? "#3f3f46"
-              : "#18181b",
+                ? "#3f3f46"
+                : "#18181b",
           }),
           singleValue: (base) => ({ ...base, color: "#f4f4f5" }),
           placeholder: (base) => ({ ...base, color: "#71717a" }),

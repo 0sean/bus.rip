@@ -9,14 +9,15 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "bus.rip",
   description: "it's probably not coming",
+
   openGraph: {
     type: "website",
     url: "https://bus.rip",
     title: "bus.rip",
     description: "it's probably not coming",
   },
+
   manifest: "/manifest.json",
-  themeColor: "#09090b",
 };
 
 export default function RootLayout({
@@ -34,3 +35,7 @@ export default function RootLayout({
     </html>
   );
 }
+
+export const viewport = {
+  themeColor: "#09090b",
+};

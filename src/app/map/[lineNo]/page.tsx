@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, use } from "react";
 import useSWR from "swr";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Inter } from "next/font/google";
@@ -22,13 +22,12 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 const inter = Inter({ subsets: ["latin"] });
 
-export default function MapPage({
-  params,
-  searchParams,
-}: {
-  params: { lineNo: string };
-  searchParams: { vehicleId?: string };
+export default function MapPage(props: {
+  params: Promise<{ lineNo: string }>;
+  searchParams: Promise<{ vehicleId?: string }>;
 }) {
+  const searchParams = use(props.searchParams);
+  const params = use(props.params);
   const mapContainer = useRef(null),
     map = useRef<Map | null>(null),
     [lng, setLng] = useState<number | null>(null),
@@ -132,7 +131,7 @@ export default function MapPage({
             >
               <FaArrowLeft />
             </MenubarTrigger>
-            <h1 className="text-sm flex-grow text-center font-semibold md:px-32">
+            <h1 className="text-sm grow text-center font-semibold md:px-32">
               {data != undefined &&
                 data.line != undefined &&
                 !isLoading &&

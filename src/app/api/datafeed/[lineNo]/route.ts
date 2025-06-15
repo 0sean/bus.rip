@@ -13,8 +13,9 @@ const prisma = new PrismaClient(),
 
 export async function GET(
   request: Request,
-  { params }: { params: { lineNo: string } },
+  props: { params: Promise<{ lineNo: string }> },
 ) {
+  const params = await props.params;
   const rl = await ratelimit.limit(
     (
       request.headers.get(process.env.IP_HEADER || "CF-Connecting-IP") || ""

@@ -32,9 +32,9 @@ function formatDatafeedResponse(data: DatafeedResponse): Vehicle[] | null {
           ? Number(activity.MonitoredVehicleJourney[0].Bearing[0])
           : null,
         arrivalTime:
-          activity.MonitoredVehicleJourney[0].OriginAimedDepartureTime[0],
+          activity.MonitoredVehicleJourney[0].OriginAimedDepartureTime ? activity.MonitoredVehicleJourney[0].OriginAimedDepartureTime[0] : null,
         departureTime:
-          activity.MonitoredVehicleJourney[0].DestinationAimedArrivalTime[0],
+          activity.MonitoredVehicleJourney[0].DestinationAimedArrivalTime ? activity.MonitoredVehicleJourney[0].DestinationAimedArrivalTime[0] : null,
         originName:
           activity.MonitoredVehicleJourney[0].OriginName[0].replaceAll(
             "_",

@@ -108,7 +108,7 @@ export default function TrackForm({ lines }: { lines: any[] }) {
       const option = options.find((o) => o.value == cookie);
       if (option) setLine(option);
     }
-  }, [getCookie, options]);
+  }, [getCookie]);
 
   useEffect(() => {
     if (!favouritesLoaded.current) {

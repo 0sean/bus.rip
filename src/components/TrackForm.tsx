@@ -10,7 +10,7 @@ import {
   type MouseEvent,
 } from "react";
 import { useRouter } from "next/navigation";
-import { getCookie, setCookie } from "cookies-next";
+import { useGetCookie, setCookie } from "cookies-next";
 import { FaStar } from "react-icons/fa";
 import dynamic from "next/dynamic";
 
@@ -46,25 +46,43 @@ export default function TrackForm({ lines }: { lines: any[] }) {
         }`,
       })),
     [favourites, setFavourites] = useState<any[]>([]),
+    getCookie = useGetCookie(),
+    RSOption = useCallback(
+      (props: any) => components.Option(props) as React.ReactNode,
+      [],
+    ),
     Option = useCallback(
       ({
         children,
         ...props
-      }: OptionProps<{ value: string; label: string }>) => {
-        const isFavourite = favourites.includes(props.data.value.toString()),
+      }: OptionProps<{ value: string; label: string } | unknown>) => {
+        const isFavourite = favourites.includes(
+            (props.data as { value: string; label: string }).value.toString(),
+          ),
           toggleFavourite = (e: MouseEvent<HTMLButtonElement>) => {
             e.stopPropagation();
             if (isFavourite) {
               setFavourites(
-                favourites.filter((f) => f != props.data.value.toString()),
+                favourites.filter(
+                  (f) =>
+                    f !=
+                    (
+                      props.data as { value: string; label: string }
+                    ).value.toString(),
+                ),
               );
             } else {
-              setFavourites([...favourites, props.data.value.toString()]);
+              setFavourites([
+                ...favourites,
+                (
+                  props.data as { value: string; label: string }
+                ).value.toString(),
+              ]);
             }
           };
 
         return (
-          <components.Option {...props}>
+          <RSOption {...props}>
             <div
               style={{
                 display: "flex",
@@ -77,10 +95,10 @@ export default function TrackForm({ lines }: { lines: any[] }) {
                 <FaStar style={{ opacity: isFavourite ? 1 : 0.1 }} />
               </button>
             </div>
-          </components.Option>
+          </RSOption>
         );
       },
-      [favourites],
+      [favourites, RSOption],
     ),
     favouritesLoaded = useRef(false);
 
@@ -90,7 +108,7 @@ export default function TrackForm({ lines }: { lines: any[] }) {
       const option = options.find((o) => o.value == cookie);
       if (option) setLine(option);
     }
-  }, []);
+  }, [getCookie, options]);
 
   useEffect(() => {
     if (!favouritesLoaded.current) {
@@ -104,7 +122,7 @@ export default function TrackForm({ lines }: { lines: any[] }) {
         expires: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
       });
     }
-  }, [favourites]);
+  }, [favourites, getCookie]);
 
   return (
     <>

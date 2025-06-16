@@ -4,8 +4,20 @@ import type { CSSProperties } from "react";
 
 import { Vehicle, Validity } from "@/lib/bods";
 
-export default function VehicleMarker({ vehicle, mapBearing }: { vehicle: Vehicle, mapBearing: number }) {
-    const bearing = useMemo(() => Number(vehicle.bearing), [vehicle.bearing]);
+export default function VehicleMarker({
+vehicle,
+mapBearing,
+}: {
+vehicle: Vehicle;
+mapBearing: number;
+}) {
+    const bearing = useMemo(() => Number(vehicle.bearing), [vehicle.bearing]),
+    [showPopup, setShowPopup] = useState(false),
+    togglePopup = useCallback(
+      () => setShowPopup(!showPopup),
+      [setShowPopup, showPopup],
+    ),
+    popupRef = useRef<MLPopup | null>(null);
 
     return <>
         <Marker 

@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { Progress } from "@/components/ui/progress";
 import { useStopwatch } from "react-timer-hook";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Map } from "@vis.gl/react-maplibre"
+import { Map, ViewState } from "@vis.gl/react-maplibre";
 import "animate.css";
 
 import { mapStyle } from "@/lib/map";
@@ -30,14 +30,18 @@ export default function MapPage(props: {
   const searchParams = use(props.searchParams);
   const params = use(props.params);
 
-  const [viewState, setViewState] = useState({
-      longitude: null,
-      latitude: null,
-      zoom: 15
+  const [viewState, setViewState] = useState<Partial<ViewState>>({
+      longitude: 0,
+      latitude: 0,
+      zoom: 15,
     }),
     [initialLocationSet, setInitialLocationSet] = useState(false),
     { totalSeconds, reset } = useStopwatch({ autoStart: true }),
-    { data: datafeed, error, isLoading } = useSWR<DatafeedRouteResponse>(
+    {
+      data: datafeed,
+      error,
+      isLoading,
+    } = useSWR<DatafeedRouteResponse>(
       `/api/datafeed/${params.lineNo}`,
       fetcher,
       {
@@ -53,21 +57,20 @@ export default function MapPage(props: {
 
   // Transform datafeed response to check data validity
   useEffect(() => {
-    if(!datafeed) return;
-    if(data === null || !data.vehicles) return setData(datafeed);
+    if (!datafeed) return;
+    if (data === null || !data.vehicles || !datafeed.vehicles)
+      return setData(datafeed);
 
-    const existingRefs = datafeed.vehicles.map(vehicle => vehicle.ref),
-      expiringVehicles = data.vehicles.filter(vehicle => !existingRefs.includes(vehicle.ref))
-        .map(vehicle => ({ ...vehicle, validity: vehicle.validity + 1 }))
-        .filter(vehicle => vehicle.validity != Validity.Invalid);
+    const existingRefs = datafeed.vehicles.map((vehicle) => vehicle.ref),
+      expiringVehicles = data.vehicles
+        .filter((vehicle) => !existingRefs.includes(vehicle.ref))
+        .map((vehicle) => ({ ...vehicle, validity: vehicle.validity + 1 }))
+        .filter((vehicle) => vehicle.validity != Validity.Invalid);
 
     setData({
       ...datafeed,
-      vehicles: [
-        ...datafeed.vehicles,
-        ...expiringVehicles
-      ]
-    })
+      vehicles: [...datafeed.vehicles, ...expiringVehicles],
+    });
   }, [datafeed, setData]);
   // Redirect if lineNo doesn't exist
   useEffect(() => {
@@ -77,11 +80,11 @@ export default function MapPage(props: {
       setViewState({
         ...viewState,
         longitude: data.vehicles[0].longitude,
-        latitude: data.vehicles[0].latitude
+        latitude: data.vehicles[0].latitude,
       });
       setInitialLocationSet(true);
     }
-  }, [data]);
+  }, [data, isLoading]);
   // Get user location
   useEffect(() => {
     if (navigator.geolocation && !searchParams.vehicleId) {
@@ -91,14 +94,14 @@ export default function MapPage(props: {
             setViewState({
               ...viewState,
               longitude: pos.coords.longitude,
-              latitude: pos.coords.latitude
+              latitude: pos.coords.latitude,
             });
-            setUserLocationSet(true);
+            setInitialLocationSet(true);
           });
         }
       });
     }
-  }, []);
+  }, [searchParams.vehicleId]);
   // Set following from URL
   useEffect(() => {
     if (typeof window == "undefined") return;
@@ -106,11 +109,13 @@ export default function MapPage(props: {
       setFollowing(searchParams.vehicleId);
     }
   }, [searchParams.vehicleId, setFollowing]);
-  
+
   const followedVehicle = useMemo(() => {
     if (typeof window == "undefined") return null;
-    return !following ? null : data?.vehicles?.find((vehicle) => vehicle.ref === following);
-  }, [data, totalSeconds]);
+    return !following
+      ? null
+      : data?.vehicles?.find((vehicle) => vehicle.ref === following);
+  }, [following]);
 
   return (
     <>
@@ -162,11 +167,23 @@ export default function MapPage(props: {
         {/* TODO: Check SSR example */}
         <Map
           {...viewState}
-          onMove={evt => setViewState(evt.viewState)}
+          onMove={(evt) => setViewState(evt.viewState)}
           mapStyle={mapStyle}
         >
-          {(data?.vehicles.filter(vehicle => new Date(vehicle.validUntil) >= new Date() || Number(new Date()) - Number(new Date(vehicle.recordedAt)) < 900000) || [])
-            .map(vehicle => <VehicleMarker key={vehicle.ref} vehicle={vehicle} mapBearing={viewState.bearing || 0} />)}
+          {(data?.vehicles || [])
+            .filter(
+              (vehicle) =>
+                new Date(vehicle.validUntil) >= new Date() ||
+                Number(new Date()) - Number(new Date(vehicle.recordedAt)) <
+                  900000,
+            )
+            .map((vehicle) => (
+              <VehicleMarker
+                key={vehicle.ref}
+                vehicle={vehicle}
+                mapBearing={viewState.bearing || 0}
+              />
+            ))}
         </Map>
       </div>
       {followedVehicle && <FollowCard vehicle={followedVehicle} />}

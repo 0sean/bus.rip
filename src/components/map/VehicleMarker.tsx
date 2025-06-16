@@ -5,50 +5,68 @@ import type { CSSProperties } from "react";
 import { Vehicle, Validity } from "@/lib/bods";
 
 export default function VehicleMarker({
-vehicle,
-mapBearing,
+  vehicle,
+  mapBearing,
 }: {
-vehicle: Vehicle;
-mapBearing: number;
+  vehicle: Vehicle;
+  mapBearing: number;
 }) {
-    const bearing = useMemo(() => Number(vehicle.bearing), [vehicle.bearing]),
-    [showPopup, setShowPopup] = useState(false),
-    togglePopup = useCallback(
-      () => setShowPopup(!showPopup),
-      [setShowPopup, showPopup],
-    ),
-    popupRef = useRef<MLPopup | null>(null);
+  const bearing = useMemo(() => Number(vehicle.bearing), [vehicle.bearing]);
 
-    return <>
-        <Marker 
-            rotation={Number.isNaN(bearing) ? undefined : bearing}
-            rotationAlignment="map"
-            longitude={Number(vehicle.longitude)}
-            latitude={Number(vehicle.latitude)}
-            anchor="top"
-        >
-            <VehicleMarkerDot vehicle={vehicle} mapBearing={mapBearing} />
-        </Marker>
-    </>;
+  return (
+    <>
+      <Marker
+        rotation={Number.isNaN(bearing) ? undefined : bearing}
+        rotationAlignment="map"
+        longitude={Number(vehicle.longitude)}
+        latitude={Number(vehicle.latitude)}
+        anchor="top"
+      >
+        <VehicleMarkerDot vehicle={vehicle} mapBearing={mapBearing} />
+      </Marker>
+    </>
+  );
 }
 
 // TODO: Improve box shadow
-function VehicleMarkerDot({ vehicle, mapBearing }: { vehicle: Vehicle, mapBearing: number }) {
-    const style = { "--rotation": `${mapBearing - (vehicle.bearing || 0)}deg` } as CSSProperties,
-        validityClass = useMemo(() => {
-            if(vehicle.validity === Validity.Expiring1) return " opacity-75";
-            if(vehicle.validity === Validity.Expiring2) return " opacity-50";
-            return "";
-        }, [vehicle.validity]);
-    
-    return <div className={`size-[28px] bg-background rounded-full border shadow-xl flex justify-center items-center${validityClass}`}>
-        <span className={`font-bold ${vehicle.lineName.length > 2 ? "text-[10px]" : "text-xs"} rotate-(--rotation)`} style={style}>{vehicle.lineName}</span>
-        {vehicle.bearing && <VehicleMarkerArrow />}
+function VehicleMarkerDot({
+  vehicle,
+  mapBearing,
+}: {
+  vehicle: Vehicle;
+  mapBearing: number;
+}) {
+  const style = {
+      "--rotation": `${mapBearing - (vehicle.bearing || 0)}deg`,
+    } as CSSProperties,
+    validityClass = useMemo(() => {
+      if (vehicle.validity === Validity.Expiring1) return " opacity-75";
+      if (vehicle.validity === Validity.Expiring2) return " opacity-50";
+      return "";
+    }, [vehicle.validity]);
+
+  return (
+    <div
+      className={`size-[28px] bg-background rounded-full border shadow-xl flex justify-center items-center${validityClass}`}
+    >
+      <span
+        className={`font-bold ${vehicle.lineName.length > 2 ? "text-[10px]" : "text-xs"} rotate-(--rotation)`}
+        style={style}
+      >
+        {vehicle.lineName}
+      </span>
+      {vehicle.bearing && <VehicleMarkerArrow />}
     </div>
+  );
 }
 
 function VehicleMarkerArrow() {
-    return <div className="w-[28px] h-[42px] absolute top-[-14px] left-0">
-        <div className="size-[12px] bg-no-repeat bg-bottom mx-auto" style={{ backgroundImage: "url('/arrow.svg')" }}></div>
-    </div>;
+  return (
+    <div className="w-[28px] h-[42px] absolute top-[-14px] left-0">
+      <div
+        className="size-[12px] bg-no-repeat bg-bottom mx-auto"
+        style={{ backgroundImage: "url('/arrow.svg')" }}
+      ></div>
+    </div>
+  );
 }

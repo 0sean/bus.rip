@@ -104,17 +104,7 @@
   --sidebar-ring: oklch(0.552 0.016 285.938);
 }
 
-@layer base {
-  /* TODO: Fix these stylings (maybe redo shadcn components)
-  /* * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  } */
-}
-
-/* .maplibregl-popup-content {
+.maplibregl-popup-content {
   color: white;
   padding: 16px !important;
   border-radius: 8px !important;
@@ -129,10 +119,6 @@
 .maplibregl-popup-tip {
   display: none !important;
 }
-
-.following:after {
-  content: "ing";
-} */
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);

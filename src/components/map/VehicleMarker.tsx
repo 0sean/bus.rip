@@ -1,31 +1,26 @@
 import { Marker, useMap } from "@vis.gl/react-maplibre";
-import { useMemo } from "react";
-import type { CSSProperties } from "react";
+import { useMemo, useState } from "react";
+import type { CSSProperties, Dispatch, SetStateAction } from "react";
 
 import { Vehicle, Validity } from "@/lib/bods";
+import VehiclePopup from "./VehiclePopup";
 
-export default function VehicleMarker({
-  vehicle,
-  mapBearing,
-}: {
-  vehicle: Vehicle;
-  mapBearing: number;
-}) {
-  const bearing = useMemo(() => Number(vehicle.bearing), [vehicle.bearing]);
+export default function VehicleMarker({ vehicle, mapBearing, popupOpen, togglePopup, setFollowing, following }: { vehicle: Vehicle, mapBearing: number, popupOpen: boolean, togglePopup: () => void, setFollowing: Dispatch<SetStateAction<string | null>>, following: boolean }) {
+    const bearing = useMemo(() => Number(vehicle.bearing), [vehicle.bearing]);
 
-  return (
-    <>
-      <Marker
-        rotation={Number.isNaN(bearing) ? undefined : bearing}
-        rotationAlignment="map"
-        longitude={Number(vehicle.longitude)}
-        latitude={Number(vehicle.latitude)}
-        anchor="top"
-      >
-        <VehicleMarkerDot vehicle={vehicle} mapBearing={mapBearing} />
-      </Marker>
-    </>
-  );
+    return <>
+        <Marker 
+            rotation={Number.isNaN(bearing) ? undefined : bearing}
+            rotationAlignment="map"
+            longitude={Number(vehicle.longitude)}
+            latitude={Number(vehicle.latitude)}
+            anchor="top"
+            onClick={togglePopup}
+        >
+            <VehicleMarkerDot vehicle={vehicle} mapBearing={mapBearing} />
+        </Marker>
+        {popupOpen && <VehiclePopup vehicle={vehicle} togglePopup={togglePopup} setFollowing={setFollowing} following={following} />}
+    </>;
 }
 
 // TODO: Improve box shadow

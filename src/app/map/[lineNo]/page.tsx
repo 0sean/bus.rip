@@ -53,6 +53,7 @@ export default function MapPage(props: {
     ),
     [data, setData] = useState<DatafeedRouteResponse | null>(null),
     [following, setFollowing] = useState<string | null>(null),
+    [openVehicle, setOpenVehicle] = useState<string | null>(null),
     router = useRouter();
 
   // Transform datafeed response to check data validity
@@ -115,7 +116,18 @@ export default function MapPage(props: {
     return !following
       ? null
       : data?.vehicles?.find((vehicle) => vehicle.ref === following);
-  }, [following]);
+  }, [following, data]);
+
+  // Follow vehicle
+  useEffect(() => {
+    if (!followedVehicle) return;
+    // TODO: use flyto?
+    setViewState(vs => ({
+      ...vs,
+      longitude: followedVehicle.longitude,
+      latitude: followedVehicle.latitude
+    }));
+  }, [followedVehicle, setViewState]);
 
   return (
     <>
@@ -182,6 +194,10 @@ export default function MapPage(props: {
                 key={vehicle.ref}
                 vehicle={vehicle}
                 mapBearing={viewState.bearing || 0}
+                popupOpen={openVehicle === vehicle.ref}
+                togglePopup={() => (openVehicle === vehicle.ref ? setOpenVehicle(null) : setOpenVehicle(vehicle.ref))}
+                setFollowing={setFollowing}
+                following={vehicle.ref === following}
               />
             ))}
         </Map>

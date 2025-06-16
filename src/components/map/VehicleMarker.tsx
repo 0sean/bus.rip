@@ -1,4 +1,4 @@
-import { Marker, useMap } from "@vis.gl/react-maplibre";
+import { Marker, useMap } from "react-map-gl/maplibre";
 import { useMemo, useState } from "react";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 

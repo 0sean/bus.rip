@@ -3135,7 +3135,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vis.gl/react-maplibre@npm:^8.0.4":
+"@vis.gl/react-mapbox@npm:8.0.4":
+  version: 8.0.4
+  resolution: "@vis.gl/react-mapbox@npm:8.0.4"
+  peerDependencies:
+    mapbox-gl: ">=3.5.0"
+    react: ">=16.3.0"
+    react-dom: ">=16.3.0"
+  peerDependenciesMeta:
+    mapbox-gl:
+      optional: true
+  checksum: 10c0/2e3690d6a131075f749eb33a9aa40b6fb00b988d199a0b0c891090e84db52ee05255d9b751a7088f12afb101bcd63d156835a31e03d8d6b9750083b64c4ee821
+  languageName: node
+  linkType: hard
+
+"@vis.gl/react-maplibre@npm:8.0.4":
   version: 8.0.4
   resolution: "@vis.gl/react-maplibre@npm:8.0.4"
   dependencies:
@@ -3631,7 +3645,6 @@ __metadata:
     "@upstash/ratelimit": "npm:^2.0.5"
     "@vercel/analytics": "npm:^1.5.0"
     "@vercel/speed-insights": "npm:^1.2.0"
-    "@vis.gl/react-maplibre": "npm:^8.0.4"
     animate.css: "npm:^4.1.1"
     autoprefixer: "npm:^10.4.21"
     class-variance-authority: "npm:^0.7.1"
@@ -3653,6 +3666,7 @@ __metadata:
     react: "npm:19.1.0"
     react-dom: "npm:19.1.0"
     react-icons: "npm:^5.5.0"
+    react-map-gl: "npm:^8.0.4"
     react-select: "npm:^5.10.1"
     react-timer-hook: "npm:^4.0.5"
     swr: "npm:^2.3.3"
@@ -7474,6 +7488,26 @@ __metadata:
   version: 16.13.1
   resolution: "react-is@npm:16.13.1"
   checksum: 10c0/33977da7a5f1a287936a0c85639fec6ca74f4f15ef1e59a6bc20338fc73dc69555381e211f7a3529b8150a1f71e4225525b41b60b52965bda53ce7d47377ada1
+  languageName: node
+  linkType: hard
+
+"react-map-gl@npm:^8.0.4":
+  version: 8.0.4
+  resolution: "react-map-gl@npm:8.0.4"
+  dependencies:
+    "@vis.gl/react-mapbox": "npm:8.0.4"
+    "@vis.gl/react-maplibre": "npm:8.0.4"
+  peerDependencies:
+    mapbox-gl: ">=1.13.0"
+    maplibre-gl: ">=1.13.0"
+    react: ">=16.3.0"
+    react-dom: ">=16.3.0"
+  peerDependenciesMeta:
+    mapbox-gl:
+      optional: true
+    maplibre-gl:
+      optional: true
+  checksum: 10c0/350e8ed18b49bcf6092bd2ce38e5b9945840baea79a1f96577bcfcea228fc8c29556d170b588353c52355ab61f2c5301b3ae069308c8ce0846b9cb04e9da5155
   languageName: node
   linkType: hard
 

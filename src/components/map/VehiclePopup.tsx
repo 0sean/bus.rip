@@ -1,4 +1,4 @@
-import { Popup } from "@vis.gl/react-maplibre";
+import { Popup } from "react-map-gl/maplibre";
 import { FaArrowRight, FaArrowUpFromBracket } from "react-icons/fa6";
 import { formatDistanceToNow } from "date-fns";
 import { useMemo } from "react";

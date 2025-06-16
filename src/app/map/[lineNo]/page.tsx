@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { Progress } from "@/components/ui/progress";
 import { useStopwatch } from "react-timer-hook";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Map, ViewState } from "@vis.gl/react-maplibre";
+import { Map, ViewState } from "react-map-gl/maplibre";
 import "animate.css";
 
 import { mapStyle } from "@/lib/map";

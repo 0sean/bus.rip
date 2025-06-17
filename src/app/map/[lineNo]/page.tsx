@@ -1,14 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, use } from "react";
+import { useEffect, useMemo, useRef, useState, use, useCallback, CSSProperties } from "react";
 import useSWR from "swr";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Inter } from "next/font/google";
-import { Menubar, MenubarMenu, MenubarTrigger } from "@/components/ui/menubar";
-import { FaArrowLeft } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import { Progress } from "@/components/ui/progress";
-import { useStopwatch } from "react-timer-hook";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Map, ViewState } from "react-map-gl/maplibre";
 import "animate.css";
@@ -18,6 +14,7 @@ import { mapStyle } from "@/lib/map";
 import { DatafeedRouteResponse, Validity } from "@/lib/bods";
 import FollowCard from "@/components/FollowCard";
 import VehicleMarker from "@/components/map/VehicleMarker";
+import MapNavbar from "@/components/map/MapNavbar";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -36,7 +33,6 @@ export default function MapPage(props: {
       zoom: 15,
     }),
     [initialLocationSet, setInitialLocationSet] = useState(false),
-    { totalSeconds, reset } = useStopwatch({ autoStart: true }),
     {
       data: datafeed,
       error,
@@ -47,7 +43,8 @@ export default function MapPage(props: {
       {
         refreshInterval: 10000,
         onSuccess: () => {
-          reset();
+          const event = new CustomEvent("map:reset-timer");
+          document.dispatchEvent(event);
         },
       },
     ),
@@ -129,34 +126,14 @@ export default function MapPage(props: {
     }));
   }, [followedVehicle, setViewState]);
 
+  const togglePopup = useCallback((vehicleRef: string) => (openVehicle === vehicleRef ? setOpenVehicle(null) : setOpenVehicle(vehicleRef)), [openVehicle, setOpenVehicle]),
+    rotationStyle = useMemo<CSSProperties>(() => ({
+      "--map-rotation": `${viewState.bearing || 0}deg`,
+    }), [viewState.bearing]);
+
   return (
     <>
-      <div className="fixed top-0 left-0 p-2 w-screen flex justify-center z-10">
-        <Menubar className="w-full md:w-fit drop-shadow-2xl">
-          <MenubarMenu>
-            <MenubarTrigger
-              className="hover:bg-zinc-800 transition-colors"
-              onClick={() => {
-                router.push("/");
-              }}
-            >
-              <FaArrowLeft />
-            </MenubarTrigger>
-            <h1 className="text-sm grow text-center font-semibold md:px-32">
-              {data != undefined &&
-                data.line != undefined &&
-                !isLoading &&
-                data.line.publicName}
-            </h1>
-            <div className="px-3 py-1.5">
-              <Progress
-                value={totalSeconds * 10}
-                style={{ width: 14, height: 14 }}
-              />
-            </div>
-          </MenubarMenu>
-        </Menubar>
-      </div>
+      <MapNavbar data={data} isLoading={isLoading} />
       {data && !data.error && !data.vehicles && (
         <Alert className="right-2 bottom-2 fixed z-10 w-fit drop-shadow-2xl animate__animated animate__faster animate__fadeInUp">
           <AlertTitle className="font-semibold">
@@ -175,7 +152,7 @@ export default function MapPage(props: {
         </Alert>
       )}
       {/* TODO: Check these classes */}
-      <div className="h-screen w-screen">
+      <div className="h-screen w-screen" style={rotationStyle}>
         {/* TODO: Check SSR example */}
         <Map
           {...viewState}
@@ -193,9 +170,8 @@ export default function MapPage(props: {
               <VehicleMarker
                 key={vehicle.ref}
                 vehicle={vehicle}
-                mapBearing={viewState.bearing || 0}
                 popupOpen={openVehicle === vehicle.ref}
-                togglePopup={() => (openVehicle === vehicle.ref ? setOpenVehicle(null) : setOpenVehicle(vehicle.ref))}
+                togglePopup={togglePopup}
                 setFollowing={setFollowing}
                 following={vehicle.ref === following}
               />

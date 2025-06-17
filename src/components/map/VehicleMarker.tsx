@@ -1,11 +1,11 @@
 import { Marker, useMap } from "react-map-gl/maplibre";
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo } from "react";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 
 import { Vehicle, Validity } from "@/lib/bods";
 import VehiclePopup from "./VehiclePopup";
 
-export default function VehicleMarker({ vehicle, mapBearing, popupOpen, togglePopup, setFollowing, following }: { vehicle: Vehicle, mapBearing: number, popupOpen: boolean, togglePopup: () => void, setFollowing: Dispatch<SetStateAction<string | null>>, following: boolean }) {
+function VehicleMarker({ vehicle, popupOpen, togglePopup, setFollowing, following }: { vehicle: Vehicle, popupOpen: boolean, togglePopup: () => void, setFollowing: Dispatch<SetStateAction<string | null>>, following: boolean }) {
     const bearing = useMemo(() => Number(vehicle.bearing), [vehicle.bearing]);
 
     return <>
@@ -17,22 +17,22 @@ export default function VehicleMarker({ vehicle, mapBearing, popupOpen, togglePo
             anchor="top"
             onClick={togglePopup}
         >
-            <VehicleMarkerDot vehicle={vehicle} mapBearing={mapBearing} />
+            <VehicleMarkerDot vehicle={vehicle} />
         </Marker>
         {popupOpen && <VehiclePopup vehicle={vehicle} togglePopup={togglePopup} setFollowing={setFollowing} following={following} />}
     </>;
 }
 
+export default memo(VehicleMarker);
+
 // TODO: Improve box shadow
 function VehicleMarkerDot({
-  vehicle,
-  mapBearing,
+  vehicle
 }: {
   vehicle: Vehicle;
-  mapBearing: number;
 }) {
   const style = {
-      "--rotation": `${mapBearing - (vehicle.bearing || 0)}deg`,
+      "--rotation": `calc(var(--map-rotation) - ${(vehicle.bearing || 0)}deg)`,
     } as CSSProperties,
     validityClass = useMemo(() => {
       if (vehicle.validity === Validity.Expiring1) return " opacity-75";
@@ -50,7 +50,7 @@ function VehicleMarkerDot({
       >
         {vehicle.lineName}
       </span>
-      {vehicle.bearing && <VehicleMarkerArrow />}
+      {vehicle.bearing != null && <MemoizedVehicleMarkerArrow />}
     </div>
   );
 }
@@ -65,3 +65,5 @@ function VehicleMarkerArrow() {
     </div>
   );
 }
+
+const MemoizedVehicleMarkerArrow = memo(VehicleMarkerArrow);

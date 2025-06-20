@@ -85,8 +85,8 @@ export default function MapPage(props: {
     if (!initialLocationSet && data.vehicles && data.vehicles.length > 0) {
       setViewState((v) => ({
         ...v,
-        longitude: data.vehicles[0].longitude,
-        latitude: data.vehicles[0].latitude,
+        longitude: data.vehicles![0].longitude,
+        latitude: data.vehicles![0].latitude,
       }));
       setInitialLocationSet(true);
     }

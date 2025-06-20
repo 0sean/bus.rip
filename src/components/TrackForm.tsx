@@ -1,22 +1,15 @@
 "use client";
 
-import { OptionProps, SingleValue, components } from "react-select";
 import { Button } from "./ui/button";
 import {
-  useCallback,
   useEffect,
   useRef,
   useState,
   useMemo,
-  type MouseEvent,
 } from "react";
 import { useRouter } from "next/navigation";
 import { useGetCookie, setCookie } from "cookies-next";
-import { FaStar } from "react-icons/fa";
-import dynamic from "next/dynamic";
 import Combobox from "./ui/combobox";
-
-const Select = dynamic(() => import("react-select"), { ssr: false });
 
 export default function TrackForm({ lines }: { lines: any[] }) {
   const [line, setLine] = useState<string | null>(null),

@@ -3,7 +3,6 @@
 import {
   useEffect,
   useMemo,
-  useRef,
   useState,
   use,
   useCallback,
@@ -11,7 +10,6 @@ import {
 } from "react";
 import useSWR from "swr";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Inter } from "next/font/google";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Map, ViewState } from "react-map-gl/maplibre";
@@ -25,8 +23,6 @@ import VehicleMarker from "@/components/map/VehicleMarker";
 import MapNavbar from "@/components/map/MapNavbar";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
-const inter = Inter({ subsets: ["latin"] });
 
 export default function MapPage(props: {
   params: Promise<{ lineNo: string }>;
@@ -43,7 +39,6 @@ export default function MapPage(props: {
     [initialLocationSet, setInitialLocationSet] = useState(false),
     {
       data: datafeed,
-      error,
       isLoading,
     } = useSWR<DatafeedRouteResponse>(
       `/api/datafeed/${params.lineNo}`,

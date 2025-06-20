@@ -129,7 +129,7 @@ export default function MapPage(props: {
   const togglePopup = useCallback((vehicleRef: string) => (openVehicle === vehicleRef ? setOpenVehicle(null) : setOpenVehicle(vehicleRef)), [openVehicle, setOpenVehicle]),
     rotationStyle = useMemo<CSSProperties>(() => ({
       "--map-rotation": `${viewState.bearing || 0}deg`,
-    }), [viewState.bearing]);
+    } as CSSProperties), [viewState.bearing]);
 
   return (
     <>

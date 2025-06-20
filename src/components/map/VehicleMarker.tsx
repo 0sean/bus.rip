@@ -1,12 +1,13 @@
 import { Marker, useMap } from "react-map-gl/maplibre";
-import { useMemo, useState, memo } from "react";
+import { useMemo, useState, memo, useCallback } from "react";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 
 import { Vehicle, Validity } from "@/lib/bods";
 import VehiclePopup from "./VehiclePopup";
 
-function VehicleMarker({ vehicle, popupOpen, togglePopup, setFollowing, following }: { vehicle: Vehicle, popupOpen: boolean, togglePopup: () => void, setFollowing: Dispatch<SetStateAction<string | null>>, following: boolean }) {
-    const bearing = useMemo(() => Number(vehicle.bearing), [vehicle.bearing]);
+function VehicleMarker({ vehicle, popupOpen, togglePopup, setFollowing, following }: { vehicle: Vehicle, popupOpen: boolean, togglePopup: (vehicleref: string) => void, setFollowing: Dispatch<SetStateAction<string | null>>, following: boolean }) {
+    const bearing = useMemo(() => Number(vehicle.bearing), [vehicle.bearing]),
+      toggle = useCallback(() => togglePopup(vehicle.ref), [vehicle.ref, togglePopup]);
 
     return <>
         <Marker 
@@ -15,11 +16,11 @@ function VehicleMarker({ vehicle, popupOpen, togglePopup, setFollowing, followin
             longitude={Number(vehicle.longitude)}
             latitude={Number(vehicle.latitude)}
             anchor="top"
-            onClick={togglePopup}
+            onClick={toggle}
         >
             <VehicleMarkerDot vehicle={vehicle} />
         </Marker>
-        {popupOpen && <VehiclePopup vehicle={vehicle} togglePopup={togglePopup} setFollowing={setFollowing} following={following} />}
+        {popupOpen && <VehiclePopup vehicle={vehicle} togglePopup={toggle} setFollowing={setFollowing} following={following} />}
     </>;
 }
 

@@ -14,13 +14,12 @@ import { useRouter } from "next/navigation";
 import { useGetCookie, setCookie } from "cookies-next";
 import { FaStar } from "react-icons/fa";
 import dynamic from "next/dynamic";
+import Combobox from "./ui/combobox";
 
 const Select = dynamic(() => import("react-select"), { ssr: false });
 
 export default function TrackForm({ lines }: { lines: any[] }) {
-  const [line, setLine] = useState<{ value: string; label: string } | null>(
-      null,
-    ),
+  const [line, setLine] = useState<string | null>(null),
     [loading, setLoading] = useState(false),
     router = useRouter(),
     options = useMemo(
@@ -40,78 +39,29 @@ export default function TrackForm({ lines }: { lines: any[] }) {
               ? 1
               : -1,
           )
-          .map((l) => ({
-            value: l.lineNo,
-            label: `${l.publicName}${
+          .map((l) => {
+            const label = `${l.publicName}${
               l.referenceName != l.publicName && l.referenceName
                 ? ` - ${l.referenceName}`
                 : ""
-            }`,
-          })),
+            }`;
+
+            return {
+              value: JSON.stringify([l.lineNo, label]),
+              label,
+            };
+          }),
       [lines],
     ),
     [favourites, setFavourites] = useState<any[]>([]),
     getCookie = useGetCookie(),
-    RSOption = useCallback(
-      (props: any) => components.Option(props) as React.ReactNode,
-      [],
-    ),
-    Option = useCallback(
-      ({
-        children,
-        ...props
-      }: OptionProps<{ value: string; label: string } | unknown>) => {
-        const isFavourite = favourites.includes(
-            (props.data as { value: string; label: string }).value.toString(),
-          ),
-          toggleFavourite = (e: MouseEvent<HTMLButtonElement>) => {
-            e.stopPropagation();
-            if (isFavourite) {
-              setFavourites(
-                favourites.filter(
-                  (f) =>
-                    f !=
-                    (
-                      props.data as { value: string; label: string }
-                    ).value.toString(),
-                ),
-              );
-            } else {
-              setFavourites([
-                ...favourites,
-                (
-                  props.data as { value: string; label: string }
-                ).value.toString(),
-              ]);
-            }
-          };
-
-        return (
-          <RSOption {...props}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              {children}
-              <button onClick={toggleFavourite}>
-                <FaStar style={{ opacity: isFavourite ? 1 : 0.1 }} />
-              </button>
-            </div>
-          </RSOption>
-        );
-      },
-      [favourites, RSOption],
-    ),
     favouritesLoaded = useRef(false);
 
   useEffect(() => {
     const cookie = getCookie("line");
     if (cookie) {
       const option = options.find((o) => o.value == cookie);
-      if (option) setLine(option);
+      if (option) setLine(option.value);
     }
   }, [getCookie, options]);
 
@@ -131,52 +81,19 @@ export default function TrackForm({ lines }: { lines: any[] }) {
 
   return (
     <>
-      <Select
-        instanceId="track-form"
-        components={{ Option }}
-        styles={{
-          control: (base) => ({
-            ...base,
-            backgroundColor: "#18181b",
-            borderColor: "#27272a",
-            maxWidth: "300px",
-          }),
-          menu: (base) => ({
-            ...base,
-            backgroundColor: "#18181b",
-            maxWidth: "300px",
-          }),
-          option: (base, state) => ({
-            ...base,
-            backgroundColor: state.isSelected
-              ? "#27272a"
-              : state.isFocused
-                ? "#3f3f46"
-                : "#18181b",
-          }),
-          singleValue: (base) => ({ ...base, color: "#f4f4f5" }),
-          placeholder: (base) => ({ ...base, color: "#71717a" }),
-          input: (base) => ({ ...base, color: "#f4f4f5" }),
-        }}
-        placeholder="Select operator"
-        value={line}
-        onChange={(v) => {
-          setLine(
-            v as SingleValue<{
-              value: string;
-              label: string;
-            }>,
-          );
-        }}
-        isClearable
+      <Combobox
         options={options}
+        setValue={setLine}
+        value={line}
+        favourites={favourites}
+        setFavourites={setFavourites}
       />
       {favourites.length > 0 && (
         <div className="mt-4 flex gap-2">
           {favourites.map((f) => (
             <button
               key={f}
-              onClick={() => setLine(options.find((o) => o.value == f)!)}
+              onClick={() => setLine(options.find((o) => o.value == f)!.value)}
               className="max-w-[150px] whitespace-nowrap text-ellipsis overflow-hidden border rounded-full px-3 py-1 border-zinc-800 text-zinc-300 text-xs"
             >
               {options.find((o) => o.value == f)?.label}
@@ -189,12 +106,14 @@ export default function TrackForm({ lines }: { lines: any[] }) {
         onClick={() => {
           if (line != null) {
             setLoading(true);
-            setCookie("line", line.value, {
+            setCookie("line", line, {
               expires: new Date(
                 new Date().setFullYear(new Date().getFullYear() + 1),
               ),
             });
-            router.push(`/map/${line.value}`);
+
+            const lineId = JSON.parse(line)[0];
+            router.push(`/map/${lineId}`);
           }
         }}
       >

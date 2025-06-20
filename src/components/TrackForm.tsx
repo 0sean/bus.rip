@@ -7,6 +7,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useMemo,
   type MouseEvent,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -22,29 +23,33 @@ export default function TrackForm({ lines }: { lines: any[] }) {
     ),
     [loading, setLoading] = useState(false),
     router = useRouter(),
-    options = lines
-      .sort((a, b) =>
-        b.publicName.includes("Arriva") ||
-        b.publicName.includes("Stagecoach") ||
-        b.publicName.includes("Brighton & Hove Bus and Coach Company") ||
-        b.publicName.includes("East Yorkshire") ||
-        b.publicName.includes("Go-Ahead") ||
-        b.publicName.includes("Go Ahead") ||
-        b.publicName.includes("Go North East") ||
-        b.publicName.includes("Go North West") ||
-        b.publicName.includes("Oxford Bus Company") ||
-        b.publicName.includes("Metrobus")
-          ? 1
-          : -1,
-      )
-      .map((l) => ({
-        value: l.lineNo,
-        label: `${l.publicName}${
-          l.referenceName != l.publicName && l.referenceName
-            ? ` - ${l.referenceName}`
-            : ""
-        }`,
-      })),
+    options = useMemo(
+      () =>
+        lines
+          .sort((a, b) =>
+            b.publicName.includes("Arriva") ||
+            b.publicName.includes("Stagecoach") ||
+            b.publicName.includes("Brighton & Hove Bus and Coach Company") ||
+            b.publicName.includes("East Yorkshire") ||
+            b.publicName.includes("Go-Ahead") ||
+            b.publicName.includes("Go Ahead") ||
+            b.publicName.includes("Go North East") ||
+            b.publicName.includes("Go North West") ||
+            b.publicName.includes("Oxford Bus Company") ||
+            b.publicName.includes("Metrobus")
+              ? 1
+              : -1,
+          )
+          .map((l) => ({
+            value: l.lineNo,
+            label: `${l.publicName}${
+              l.referenceName != l.publicName && l.referenceName
+                ? ` - ${l.referenceName}`
+                : ""
+            }`,
+          })),
+      [lines],
+    ),
     [favourites, setFavourites] = useState<any[]>([]),
     getCookie = useGetCookie(),
     RSOption = useCallback(
@@ -108,7 +113,7 @@ export default function TrackForm({ lines }: { lines: any[] }) {
       const option = options.find((o) => o.value == cookie);
       if (option) setLine(option);
     }
-  }, [getCookie]);
+  }, [getCookie, options]);
 
   useEffect(() => {
     if (!favouritesLoaded.current) {

@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, use, useCallback, CSSProperties } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  use,
+  useCallback,
+  CSSProperties,
+} from "react";
 import useSWR from "swr";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Inter } from "next/font/google";
@@ -75,25 +83,25 @@ export default function MapPage(props: {
     if (!data || isLoading) return;
     if (data.error == "Invalid lineNo") return router.push("/");
     if (!initialLocationSet && data.vehicles && data.vehicles.length > 0) {
-      setViewState({
-        ...viewState,
+      setViewState((v) => ({
+        ...v,
         longitude: data.vehicles[0].longitude,
         latitude: data.vehicles[0].latitude,
-      });
+      }));
       setInitialLocationSet(true);
     }
-  }, [data, isLoading]);
+  }, [data, isLoading, initialLocationSet, router]);
   // Get user location
   useEffect(() => {
     if (navigator.geolocation && !searchParams.vehicleId) {
       navigator.permissions.query({ name: "geolocation" }).then((result) => {
         if (result.state == "granted" || result.state == "prompt") {
           navigator.geolocation.getCurrentPosition((pos) => {
-            setViewState({
-              ...viewState,
+            setViewState((v) => ({
+              ...v,
               longitude: pos.coords.longitude,
               latitude: pos.coords.latitude,
-            });
+            }));
             setInitialLocationSet(true);
           });
         }
@@ -119,17 +127,27 @@ export default function MapPage(props: {
   useEffect(() => {
     if (!followedVehicle) return;
     // TODO: use flyto?
-    setViewState(vs => ({
+    setViewState((vs) => ({
       ...vs,
       longitude: followedVehicle.longitude,
-      latitude: followedVehicle.latitude
+      latitude: followedVehicle.latitude,
     }));
   }, [followedVehicle, setViewState]);
 
-  const togglePopup = useCallback((vehicleRef: string) => (openVehicle === vehicleRef ? setOpenVehicle(null) : setOpenVehicle(vehicleRef)), [openVehicle, setOpenVehicle]),
-    rotationStyle = useMemo<CSSProperties>(() => ({
-      "--map-rotation": `${viewState.bearing || 0}deg`,
-    } as CSSProperties), [viewState.bearing]);
+  const togglePopup = useCallback(
+      (vehicleRef: string) =>
+        openVehicle === vehicleRef
+          ? setOpenVehicle(null)
+          : setOpenVehicle(vehicleRef),
+      [openVehicle, setOpenVehicle],
+    ),
+    rotationStyle = useMemo<CSSProperties>(
+      () =>
+        ({
+          "--map-rotation": `${viewState.bearing || 0}deg`,
+        }) as CSSProperties,
+      [viewState.bearing],
+    );
 
   return (
     <>

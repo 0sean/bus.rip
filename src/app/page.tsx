@@ -5,9 +5,9 @@ export default async function Home() {
   const lines = await getNocLines();
 
   return (
-    <div className="flex flex-col justify-center h-full p-12">
+    <div className="flex flex-col justify-center h-full p-8 md:p-12">
       <HomeForm lines={lines} />
-      <div className="absolute bottom-12 left-12 flex flex-col gap-1">
+      <div className="absolute bottom-8 left-8 md:bottom-12 md:left-12 flex flex-col gap-1">
         <a
           href="https://transit.fyi/"
           className="text-zinc-500 hover:text-zinc-100 transition-colors text-sm"

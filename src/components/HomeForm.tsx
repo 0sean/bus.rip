@@ -16,7 +16,9 @@ export default function HomeForm({
   return (
     <>
       <div className="mb-4">
-        <h1 className="text-zinc-50 text-6xl font-bold mb-2">bus.rip</h1>
+        <h1 className="text-zinc-50 text-5xl md:text-6xl font-bold mb-2">
+          bus.rip
+        </h1>
         <AnimatedFeatures feature={feature} setFeature={setFeature} />
       </div>
       <TrackForm lines={lines} />

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import "./map.css";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const inter = Inter({ subsets: ["latin"] });
+const instrumentSans = Instrument_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "bus.rip",
@@ -28,7 +28,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
-      <body className={`${inter.className} bg-zinc-950 dark h-full`}>
+      <body
+        className={`${instrumentSans.className} bg-linear-to-tr from-zinc-950 to-zinc-900 dark h-full`}
+      >
         {children}
         <Analytics />
         <SpeedInsights />

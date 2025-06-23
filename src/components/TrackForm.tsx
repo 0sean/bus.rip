@@ -1,15 +1,10 @@
 "use client";
 
 import { Button } from "./ui/button";
-import {
-  useEffect,
-  useRef,
-  useState,
-  useMemo,
-} from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useGetCookie, setCookie } from "cookies-next";
-import Combobox from "./ui/combobox";
+import { OperatorCombobox } from "./ui/combobox";
 
 export default function TrackForm({ lines }: { lines: any[] }) {
   const [line, setLine] = useState<string | null>(null),
@@ -74,7 +69,7 @@ export default function TrackForm({ lines }: { lines: any[] }) {
 
   return (
     <>
-      <Combobox
+      <OperatorCombobox
         options={options}
         setValue={setLine}
         value={line}

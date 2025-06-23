@@ -2,13 +2,10 @@ import { Popup } from "react-map-gl/maplibre";
 import { FaArrowRight, FaArrowUpFromBracket } from "react-icons/fa6";
 import { formatDistanceToNow } from "date-fns";
 import { useMemo } from "react";
-import { Inter } from "next/font/google";
 
 import type { Vehicle } from "@/lib/bods";
 import { renderTime } from "@/lib/map";
 import type { Dispatch, SetStateAction } from "react";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export default function VehiclePopup({
   vehicle,

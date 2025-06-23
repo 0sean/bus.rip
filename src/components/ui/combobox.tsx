@@ -13,7 +13,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Dispatch, SetStateAction, useState } from "react";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { useMediaQuery } from "@/lib/use-media-query";
+import { ComponentProps, Dispatch, SetStateAction, useState } from "react";
 import { LuCheck, LuChevronsUpDown, LuStar, LuStarOff } from "react-icons/lu";
 import { FeatureBadgeIcon } from "../FeatureBadge";
 import { ScrollArea } from "./scroll-area";
@@ -31,84 +33,152 @@ export function OperatorCombobox({
   favourites: string[];
   setFavourites: Dispatch<SetStateAction<string[]>>;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false),
+    isDesktop = useMediaQuery("(min-width: 768px)");
+
+  if (isDesktop) {
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <OperatorComboboxTrigger
+            value={value}
+            options={options}
+            open={open}
+          />
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-[350px] max-w-full p-0 combobox-content"
+          align="start"
+        >
+          <OperatorComboboxContent
+            options={options}
+            setValue={setValue}
+            value={value}
+            favourites={favourites}
+            setFavourites={setFavourites}
+            setOpen={setOpen}
+          />
+        </PopoverContent>
+      </Popover>
+    );
+  }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="min-w-[250px] w-fit max-w-full lg:max-w-[350px] justify-between flex"
-        >
-          <span
-            className={`grow-0 shrink-1 overflow-hidden text-ellipsis${!value ? " text-zinc-500" : ""}`}
-          >
-            {value
-              ? options.find((option) => option.value === value)?.label
-              : "Select operator..."}
-          </span>
-          <LuChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-[350px] max-w-full p-0 combobox-content"
-        align="start"
-      >
-        <Command>
-          <CommandInput placeholder="Search operators..." />
-          <ScrollArea>
-            <CommandList className="overflow-visible">
-              <CommandEmpty>No operators found.</CommandEmpty>
-              <CommandGroup>
-                {options.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    value={option.value}
-                    onSelect={(currentValue) => {
-                      setValue(currentValue === value ? "" : currentValue);
-                      setOpen(false);
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
+        <OperatorComboboxTrigger value={value} options={options} open={open} />
+      </DrawerTrigger>
+      <DrawerContent>
+        <div className="mt-4">
+          <OperatorComboboxContent
+            options={options}
+            setValue={setValue}
+            value={value}
+            favourites={favourites}
+            setFavourites={setFavourites}
+            setOpen={setOpen}
+          />
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+function OperatorComboboxContent({
+  options,
+  setValue,
+  value,
+  favourites,
+  setFavourites,
+  setOpen,
+}: {
+  options: { value: string; label: string }[];
+  setValue: Dispatch<SetStateAction<string | null>>;
+  value: string | null;
+  favourites: string[];
+  setFavourites: Dispatch<SetStateAction<string[]>>;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+}) {
+  return (
+    <Command>
+      <CommandInput placeholder="Search operators..." />
+      <ScrollArea>
+        <CommandList className="overflow-visible">
+          <CommandEmpty>No operators found.</CommandEmpty>
+          <CommandGroup>
+            {options.map((option) => (
+              <CommandItem
+                key={option.value}
+                value={option.value}
+                onSelect={(currentValue) => {
+                  setValue(currentValue === value ? "" : currentValue);
+                  setOpen(false);
+                }}
+              >
+                <LuCheck
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    value === option.value ? "opacity-100" : "opacity-0",
+                  )}
+                />
+                {option.label}
+                {favourites.includes(option.value) ? (
+                  <div
+                    className="ml-auto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFavourites((f) => f.filter((o) => o != option.value));
                     }}
                   >
-                    <LuCheck
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === option.value ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                    {option.label}
-                    {favourites.includes(option.value) ? (
-                      <div
-                        className="ml-auto"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setFavourites((f) =>
-                            f.filter((o) => o != option.value),
-                          );
-                        }}
-                      >
-                        <LuStarOff className="mr-2 h-4 w-4" />
-                      </div>
-                    ) : (
-                      <div
-                        className="ml-auto"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setFavourites((f) => [...f, option.value]);
-                        }}
-                      >
-                        <LuStar className="mr-2 h-4 w-4" />
-                      </div>
-                    )}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </ScrollArea>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                    <LuStarOff className="mr-2 h-4 w-4" />
+                  </div>
+                ) : (
+                  <div
+                    className="ml-auto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFavourites((f) => [...f, option.value]);
+                    }}
+                  >
+                    <LuStar className="mr-2 h-4 w-4" />
+                  </div>
+                )}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </ScrollArea>
+    </Command>
+  );
+}
+
+function OperatorComboboxTrigger({
+  value,
+  options,
+  open,
+  ...props
+}: {
+  value: string | null;
+  options: { value: string; label: string }[];
+  open: boolean;
+}) {
+  return (
+    <Button
+      variant="outline"
+      role="combobox"
+      aria-expanded={open}
+      className="min-w-[250px] w-fit max-w-full lg:max-w-[350px] justify-between flex"
+      {...props}
+    >
+      <span
+        className={`grow-0 shrink-1 overflow-hidden text-ellipsis${!value ? " text-zinc-500" : ""}`}
+      >
+        {value
+          ? options.find((option) => option.value === value)?.label
+          : "Select operator..."}
+      </span>
+      <LuChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+    </Button>
   );
 }
 

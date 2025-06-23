@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body
-        className={`${instrumentSans.className} bg-linear-to-tr from-zinc-950 to-zinc-900 dark h-full`}
+        className={`${instrumentSans.className} bg-linear-to-tr from-zinc-950 to-zinc-900 dark !h-svh`}
       >
         {children}
         <Analytics />

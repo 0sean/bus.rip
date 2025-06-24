@@ -36,7 +36,8 @@ export default function TrackForm({ lines }: { lines: any[] }) {
 
             return {
               value: JSON.stringify([l.lineNo, label]),
-              label,
+              label: l.publicName,
+              subtitle: l.referenceName != l.publicName ? l.referenceName : "",
             };
           }),
       [lines],

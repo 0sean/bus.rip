@@ -28,7 +28,7 @@ function MapNavbar({
           >
             <FaArrowLeft />
           </MenubarTrigger>
-          <h1 className="text-sm grow text-center font-semibold md:px-32">
+          <h1 className="text-sm grow text-center font-semibold md:px-36">
             {data != undefined &&
               data.line != undefined &&
               !isLoading &&

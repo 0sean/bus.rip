@@ -13,7 +13,7 @@ const prisma = new PrismaClient(),
 
 export async function GET(
   request: Request,
-  props: { params: Promise<{ lineNo: string }> },
+  props: { params: Promise<{ nocCode: string }> },
 ) {
   const params = await props.params;
   const rl = await ratelimit.limit(
@@ -22,14 +22,14 @@ export async function GET(
     ).split(",")[0] || "no-ip",
   );
   if (rl.success) {
-    const nocLine = await prisma.nocLine.findUnique({
+    const nocLine = await prisma.nocLine.findFirst({
       where: {
-        lineNo: Number(params.lineNo),
+        nocCode: params.nocCode.toUpperCase(),
       },
     });
 
     if (!nocLine) {
-      return Response.json({ error: "Invalid lineNo" }, { status: 404 });
+      return Response.json({ error: "Invalid nocCode" }, { status: 404 });
     } else {
       const vehicles = await getDatafeed(nocLine.nocCode);
 

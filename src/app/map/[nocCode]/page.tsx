@@ -26,7 +26,7 @@ import MapNavbar from "@/components/map/MapNavbar";
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function MapPage(props: {
-  params: Promise<{ lineNo: string }>;
+  params: Promise<{ nocCode: string }>;
   searchParams: Promise<{ vehicleId?: string }>;
 }) {
   const searchParams = use(props.searchParams);
@@ -46,7 +46,7 @@ export default function MapPage(props: {
     [bearing, setBearing] = useState(0),
     [initialLocationSet, setInitialLocationSet] = useState(false),
     { data: datafeed, isLoading } = useSWR<DatafeedRouteResponse>(
-      `/api/datafeed/${params.lineNo}`,
+      `/api/datafeed/${params.nocCode}`,
       fetcher,
       {
         refreshInterval: 10000,
@@ -81,7 +81,7 @@ export default function MapPage(props: {
   // Redirect if lineNo doesn't exist
   useEffect(() => {
     if (!data || isLoading) return;
-    if (data.error == "Invalid lineNo") return router.push("/");
+    if (data.error == "Invalid nocCode") return router.push("/");
     if (!initialLocationSet && data.vehicles && data.vehicles.length > 0) {
       setLocation(data.vehicles[0].longitude, data.vehicles[0].latitude);
       setInitialLocationSet(true);

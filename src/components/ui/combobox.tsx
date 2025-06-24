@@ -104,8 +104,12 @@ function OperatorComboboxContent({
     filteredOptions = useMemo(
       () =>
         debouncedSearch
-          ? options.filter((o) =>
-              o.label.toLowerCase().includes(debouncedSearch.toLowerCase()),
+          ? options.filter(
+              (o) =>
+                o.label.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+                o.subtitle
+                  .toLowerCase()
+                  .includes(debouncedSearch.toLowerCase()),
             )
           : options,
       [debouncedSearch, options],

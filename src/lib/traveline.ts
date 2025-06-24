@@ -15,12 +15,18 @@ export async function fetchNocLines(): Promise<FormattedNocLine[]> {
         line.Mode[0] == "Bus",
     );
 
-  return lines.map((line) => ({
-    lineNo: Number(line.NOCLineNo[0]),
-    nocCode: line.NOCCODE[0],
-    publicName: line.PubNm[0],
-    referenceName: line.RefNm[0],
-  }));
+  return lines
+    .map((line) => ({
+      lineNo: Number(line.NOCLineNo[0]),
+      nocCode: line.NOCCODE[0],
+      publicName: line.PubNm[0],
+      referenceName: line.RefNm[0],
+    }))
+    .reduce(
+      (prev, curr) =>
+        prev.find((n) => n.nocCode == curr.nocCode) ? prev : [...prev, curr],
+      [] as FormattedNocLine[],
+    );
 }
 
 type TravelineResponse = {

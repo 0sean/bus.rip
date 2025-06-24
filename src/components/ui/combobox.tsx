@@ -20,7 +20,6 @@ import { LuCheck, LuChevronsUpDown, LuStar, LuStarOff } from "react-icons/lu";
 import { FeatureBadgeIcon } from "../FeatureBadge";
 import { VList } from "virtua";
 import { useDebounce } from "use-debounce";
-
 export function OperatorCombobox({
   options,
   setValue,
@@ -110,8 +109,7 @@ function OperatorComboboxContent({
             )
           : options,
       [debouncedSearch, options],
-    ),
-    scrollContainerRef = useRef<HTMLDivElement>(null);
+    );
 
   return (
     <Command shouldFilter={false}>
@@ -121,55 +119,130 @@ function OperatorComboboxContent({
         onValueChange={setSearch}
       />
       <CommandList className="overflow-visible">
-        <CommandEmpty>No operators found.</CommandEmpty>
-        <CommandGroup>
-          <VList
-            style={{ height: 350 }}
-            className="scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-zinc-900"
-          >
-            {filteredOptions.map((option) => (
-              <CommandItem
-                key={option.value}
-                value={option.value}
-                onSelect={(currentValue) => {
-                  setValue(currentValue === value ? "" : currentValue);
-                  setOpen(false);
-                }}
-              >
-                <LuCheck
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    value === option.value ? "opacity-100" : "opacity-0",
-                  )}
-                />
-                {option.label}
-                {favourites.includes(option.value) ? (
-                  <div
-                    className="ml-auto"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFavourites((f) => f.filter((o) => o != option.value));
-                    }}
-                  >
-                    <LuStarOff className="mr-2 h-4 w-4" />
-                  </div>
-                ) : (
-                  <div
-                    className="ml-auto"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFavourites((f) => [...f, option.value]);
-                    }}
-                  >
-                    <LuStar className="mr-2 h-4 w-4" />
-                  </div>
-                )}
-              </CommandItem>
-            ))}
-          </VList>
-        </CommandGroup>
+        {!search && <OperatorComboboxShortcuts setSearch={setSearch} />}
+        <OperatorComboboxOptions
+          options={filteredOptions}
+          setValue={setValue}
+          value={value}
+          favourites={favourites}
+          setFavourites={setFavourites}
+          setOpen={setOpen}
+        />
       </CommandList>
     </Command>
+  );
+}
+
+function OperatorComboboxOptions({
+  options,
+  setValue,
+  value,
+  favourites,
+  setFavourites,
+  setOpen,
+}: {
+  options: { value: string; label: string }[];
+  setValue: Dispatch<SetStateAction<string | null>>;
+  value: string | null;
+  favourites: string[];
+  setFavourites: Dispatch<SetStateAction<string[]>>;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+}) {
+  return (
+    <>
+      <CommandEmpty>No operators found.</CommandEmpty>
+      <CommandGroup>
+        <VList
+          style={{ height: 350 }}
+          className="scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-zinc-900"
+        >
+          {options.map((option) => (
+            <CommandItem
+              key={option.value}
+              value={option.value}
+              onSelect={(currentValue) => {
+                setValue(currentValue === value ? "" : currentValue);
+                setOpen(false);
+              }}
+            >
+              <LuCheck
+                className={cn(
+                  "mr-2 h-4 w-4",
+                  value === option.value ? "opacity-100" : "opacity-0",
+                )}
+              />
+              {option.label}
+              {favourites.includes(option.value) ? (
+                <div
+                  className="ml-auto"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFavourites((f) => f.filter((o) => o != option.value));
+                  }}
+                >
+                  <LuStarOff className="mr-2 h-4 w-4" />
+                </div>
+              ) : (
+                <div
+                  className="ml-auto"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFavourites((f) => [...f, option.value]);
+                  }}
+                >
+                  <LuStar className="mr-2 h-4 w-4" />
+                </div>
+              )}
+            </CommandItem>
+          ))}
+        </VList>
+      </CommandGroup>
+    </>
+  );
+}
+
+function OperatorComboboxShortcuts({
+  setSearch,
+}: {
+  setSearch: Dispatch<SetStateAction<string>>;
+}) {
+  return (
+    <CommandGroup>
+      <div className="flex gap-2 w-full overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-zinc-900">
+        <OperatorComboboxShortcut name="Arriva" setSearch={setSearch} />
+        <OperatorComboboxShortcut name="Stagecoach" setSearch={setSearch} />
+        <OperatorComboboxShortcut
+          name="TfL"
+          search="Transport for London"
+          setSearch={setSearch}
+        />
+        <OperatorComboboxShortcut
+          name="Go Ahead"
+          search="Go "
+          setSearch={setSearch}
+        />
+        <OperatorComboboxShortcut name="First" setSearch={setSearch} />
+      </div>
+    </CommandGroup>
+  );
+}
+
+function OperatorComboboxShortcut({
+  name,
+  search,
+  setSearch,
+}: {
+  name: string;
+  search?: string;
+  setSearch: Dispatch<SetStateAction<string>>;
+}) {
+  return (
+    <div
+      className="bg-zinc-800/50 hover:bg-zinc-800 transition-colors duration-150 rounded-sm px-2 py-1 flex items-center gap-2 cursor-pointer"
+      onClick={() => setSearch(search || name)}
+    >
+      <p className="text-xs font-medium text-zinc-400">{name}</p>
+    </div>
   );
 }
 

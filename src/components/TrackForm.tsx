@@ -101,8 +101,8 @@ export default function TrackForm({ lines }: { lines: any[] }) {
               ),
             });
 
-            const lineId = JSON.parse(line)[0];
-            router.push(`/map/${lineId}`);
+            const nocCode = JSON.parse(line)[0];
+            router.push(`/${nocCode}`);
           }
         }}
       >

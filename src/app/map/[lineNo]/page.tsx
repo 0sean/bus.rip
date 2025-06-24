@@ -7,12 +7,13 @@ import {
   use,
   useCallback,
   CSSProperties,
+  useRef,
 } from "react";
 import useSWR from "swr";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Map, ViewState } from "react-map-gl/maplibre";
+import { Map, ViewState, MapRef } from "react-map-gl/maplibre";
 import "animate.css";
 
 import { mapStyle } from "@/lib/map";
@@ -31,16 +32,20 @@ export default function MapPage(props: {
   const searchParams = use(props.searchParams);
   const params = use(props.params);
 
-  const [viewState, setViewState] = useState<Partial<ViewState>>({
-      longitude: 0,
-      latitude: 0,
-      zoom: 15,
-    }),
+  const mapRef = useRef<MapRef>(null),
+    setLocation = useCallback(
+      (lng: number, lat: number, animate: boolean = false) => {
+        if (!mapRef.current) return;
+        mapRef.current.flyTo({
+          center: [lng, lat],
+          animate,
+        });
+      },
+      [],
+    ),
+    [bearing, setBearing] = useState(0),
     [initialLocationSet, setInitialLocationSet] = useState(false),
-    {
-      data: datafeed,
-      isLoading,
-    } = useSWR<DatafeedRouteResponse>(
+    { data: datafeed, isLoading } = useSWR<DatafeedRouteResponse>(
       `/api/datafeed/${params.lineNo}`,
       fetcher,
       {
@@ -78,11 +83,7 @@ export default function MapPage(props: {
     if (!data || isLoading) return;
     if (data.error == "Invalid lineNo") return router.push("/");
     if (!initialLocationSet && data.vehicles && data.vehicles.length > 0) {
-      setViewState((v) => ({
-        ...v,
-        longitude: data.vehicles![0].longitude,
-        latitude: data.vehicles![0].latitude,
-      }));
+      setLocation(data.vehicles[0].longitude, data.vehicles[0].latitude);
       setInitialLocationSet(true);
     }
   }, [data, isLoading, initialLocationSet, router]);
@@ -92,11 +93,7 @@ export default function MapPage(props: {
       navigator.permissions.query({ name: "geolocation" }).then((result) => {
         if (result.state == "granted" || result.state == "prompt") {
           navigator.geolocation.getCurrentPosition((pos) => {
-            setViewState((v) => ({
-              ...v,
-              longitude: pos.coords.longitude,
-              latitude: pos.coords.latitude,
-            }));
+            setLocation(pos.coords.longitude, pos.coords.latitude);
             setInitialLocationSet(true);
           });
         }
@@ -121,13 +118,8 @@ export default function MapPage(props: {
   // Follow vehicle
   useEffect(() => {
     if (!followedVehicle) return;
-    // TODO: use flyto?
-    setViewState((vs) => ({
-      ...vs,
-      longitude: followedVehicle.longitude,
-      latitude: followedVehicle.latitude,
-    }));
-  }, [followedVehicle, setViewState]);
+    setLocation(followedVehicle.longitude, followedVehicle.latitude, true);
+  }, [followedVehicle, setLocation]);
 
   const togglePopup = useCallback(
       (vehicleRef: string) =>
@@ -139,9 +131,9 @@ export default function MapPage(props: {
     rotationStyle = useMemo<CSSProperties>(
       () =>
         ({
-          "--map-rotation": `${viewState.bearing || 0}deg`,
+          "--map-rotation": `${bearing || 0}deg`,
         }) as CSSProperties,
-      [viewState.bearing],
+      [bearing],
     );
 
   return (
@@ -168,9 +160,14 @@ export default function MapPage(props: {
       <div className="h-screen w-screen" style={rotationStyle}>
         {/* TODO: Check SSR example */}
         <Map
-          {...viewState}
-          onMove={(evt) => setViewState(evt.viewState)}
           mapStyle={mapStyle}
+          ref={mapRef}
+          onRotate={(e) => setBearing(e.viewState.bearing || 0)}
+          initialViewState={{
+            longitude: 0,
+            latitude: 0,
+            zoom: 15,
+          }}
         >
           {(data?.vehicles || [])
             .filter(

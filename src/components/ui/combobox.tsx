@@ -119,7 +119,9 @@ function OperatorComboboxContent({
         onValueChange={setSearch}
       />
       <CommandList className="overflow-visible">
-        {!search && <OperatorComboboxShortcuts setSearch={setSearch} />}
+        {!debouncedSearch && (
+          <OperatorComboboxShortcuts setSearch={setSearch} />
+        )}
         <OperatorComboboxOptions
           options={filteredOptions}
           setValue={setValue}

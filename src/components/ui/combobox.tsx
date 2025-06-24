@@ -27,7 +27,7 @@ export function OperatorCombobox({
   favourites,
   setFavourites,
 }: {
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; subtitle: string }[];
   setValue: Dispatch<SetStateAction<string | null>>;
   value: string | null;
   favourites: string[];
@@ -92,7 +92,7 @@ function OperatorComboboxContent({
   setFavourites,
   setOpen,
 }: {
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; subtitle: string }[];
   setValue: Dispatch<SetStateAction<string | null>>;
   value: string | null;
   favourites: string[];
@@ -141,7 +141,7 @@ function OperatorComboboxOptions({
   setFavourites,
   setOpen,
 }: {
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; subtitle: string }[];
   setValue: Dispatch<SetStateAction<string | null>>;
   value: string | null;
   favourites: string[];
@@ -171,7 +171,10 @@ function OperatorComboboxOptions({
                   value === option.value ? "opacity-100" : "opacity-0",
                 )}
               />
-              {option.label}
+              <div className="inline-flex flex-col">
+                <span>{option.label}</span>
+                <span className="text-xs text-zinc-500">{option.subtitle}</span>
+              </div>
               {favourites.includes(option.value) ? (
                 <div
                   className="ml-auto"
@@ -253,7 +256,7 @@ function OperatorComboboxTrigger({
   ...props
 }: {
   value: string | null;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; subtitle: string }[];
   open: boolean;
 }) {
   return (

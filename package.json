@@ -17,7 +17,6 @@
     "@radix-ui/react-menubar": "^1.1.15",
     "@radix-ui/react-popover": "^1.1.14",
     "@radix-ui/react-progress": "^1.1.7",
-    "@radix-ui/react-scroll-area": "^1.2.9",
     "@radix-ui/react-slot": "^1.2.3",
     "@sentry/nextjs": "^9.29.0",
     "@tailwindcss/postcss": "^4.1.10",
@@ -39,10 +38,14 @@
     "react-icons": "^5.5.0",
     "react-map-gl": "^8.0.4",
     "react-timer-hook": "^4.0.5",
+    "simplebar-react": "^3.3.1",
     "swr": "^2.3.3",
     "tailwind-merge": "^3.3.1",
+    "tailwind-scrollbar": "^4.0.2",
     "tailwindcss-animate": "^1.0.7",
+    "use-debounce": "^10.0.5",
     "vaul": "^1.1.2",
+    "virtua": "^0.41.5",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {

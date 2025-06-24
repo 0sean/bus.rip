@@ -15,10 +15,11 @@ import {
 } from "@/components/ui/popover";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { useMediaQuery } from "@/lib/use-media-query";
-import { ComponentProps, Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, SetStateAction, useMemo, useRef, useState } from "react";
 import { LuCheck, LuChevronsUpDown, LuStar, LuStarOff } from "react-icons/lu";
 import { FeatureBadgeIcon } from "../FeatureBadge";
-import { ScrollArea } from "./scroll-area";
+import { VList } from "virtua";
+import { useDebounce } from "use-debounce";
 
 export function OperatorCombobox({
   options,
@@ -99,14 +100,34 @@ function OperatorComboboxContent({
   setFavourites: Dispatch<SetStateAction<string[]>>;
   setOpen: Dispatch<SetStateAction<boolean>>;
 }) {
+  const [search, setSearch] = useState(""),
+    [debouncedSearch] = useDebounce(search, 500),
+    filteredOptions = useMemo(
+      () =>
+        debouncedSearch
+          ? options.filter((o) =>
+              o.label.toLowerCase().includes(debouncedSearch.toLowerCase()),
+            )
+          : options,
+      [debouncedSearch, options],
+    ),
+    scrollContainerRef = useRef<HTMLDivElement>(null);
+
   return (
-    <Command>
-      <CommandInput placeholder="Search operators..." />
-      <ScrollArea>
-        <CommandList className="overflow-visible">
-          <CommandEmpty>No operators found.</CommandEmpty>
-          <CommandGroup>
-            {options.map((option) => (
+    <Command shouldFilter={false}>
+      <CommandInput
+        placeholder="Search operators..."
+        value={search}
+        onValueChange={setSearch}
+      />
+      <CommandList className="overflow-visible">
+        <CommandEmpty>No operators found.</CommandEmpty>
+        <CommandGroup>
+          <VList
+            style={{ height: 350 }}
+            className="scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-zinc-900"
+          >
+            {filteredOptions.map((option) => (
               <CommandItem
                 key={option.value}
                 value={option.value}
@@ -145,9 +166,9 @@ function OperatorComboboxContent({
                 )}
               </CommandItem>
             ))}
-          </CommandGroup>
-        </CommandList>
-      </ScrollArea>
+          </VList>
+        </CommandGroup>
+      </CommandList>
     </Command>
   );
 }

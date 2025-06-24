@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-svh">
       <body
         className={`${instrumentSans.className} bg-linear-to-tr from-zinc-950 to-zinc-900 dark !h-svh`}
       >

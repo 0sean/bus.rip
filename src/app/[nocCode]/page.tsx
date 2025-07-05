@@ -22,6 +22,7 @@ import { DatafeedRouteResponse, Validity } from "@/lib/bods";
 import FollowCard from "@/components/FollowCard";
 import VehicleMarker from "@/components/map/VehicleMarker";
 import MapNavbar from "@/components/map/MapNavbar";
+import LocationMarker from "@/components/map/LocationMarker";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -45,6 +46,7 @@ export default function MapPage(props: {
     ),
     [bearing, setBearing] = useState(0),
     [initialLocationSet, setInitialLocationSet] = useState(false),
+    [userLocation, setUserLocation] = useState<[number, number] | null>(null),
     { data: datafeed, isLoading } = useSWR<DatafeedRouteResponse>(
       `/api/datafeed/${params.nocCode}`,
       fetcher,
@@ -61,14 +63,13 @@ export default function MapPage(props: {
     [openVehicle, setOpenVehicle] = useState<string | null>(null),
     router = useRouter(),
     loadQueue = useRef<(() => void)[]>([]),
-    enqueueLoadAction = useCallback(
-      (action: () => void) => {
-        if (mapRef.current) {
-          action();
-        } else {
-          loadQueue.current.push(action);
-        }
-      }, []);
+    enqueueLoadAction = useCallback((action: () => void) => {
+      if (mapRef.current) {
+        action();
+      } else {
+        loadQueue.current.push(action);
+      }
+    }, []);
 
   // Transform datafeed response to check data validity
   useEffect(() => {
@@ -91,12 +92,12 @@ export default function MapPage(props: {
   useEffect(() => {
     if (!data || isLoading) return;
     if (data.error == "Invalid nocCode") return router.push("/");
-    
+
     function moveToVehicle() {
       if (!initialLocationSet && data!.vehicles && data!.vehicles.length > 0) {
         setLocation(data!.vehicles[0].longitude, data!.vehicles[0].latitude);
-      setInitialLocationSet(true);
-    }
+        setInitialLocationSet(true);
+      }
     }
 
     enqueueLoadAction(moveToVehicle);
@@ -104,16 +105,17 @@ export default function MapPage(props: {
   // Get user location
   useEffect(() => {
     function moveToUser() {
-    if (navigator.geolocation && !searchParams.vehicleId) {
-      navigator.permissions.query({ name: "geolocation" }).then((result) => {
-        if (result.state == "granted" || result.state == "prompt") {
-          navigator.geolocation.getCurrentPosition((pos) => {
-            setLocation(pos.coords.longitude, pos.coords.latitude);
-            setInitialLocationSet(true);
-          });
-        }
-      });
-    }
+      if (navigator.geolocation && !searchParams.vehicleId) {
+        navigator.permissions.query({ name: "geolocation" }).then((result) => {
+          if (result.state == "granted" || result.state == "prompt") {
+            navigator.geolocation.getCurrentPosition((pos) => {
+              setLocation(pos.coords.longitude, pos.coords.latitude);
+              setInitialLocationSet(true);
+              setUserLocation([pos.coords.longitude, pos.coords.latitude]);
+            });
+          }
+        });
+      }
     }
 
     enqueueLoadAction(moveToUser);
@@ -214,6 +216,7 @@ export default function MapPage(props: {
                 following={vehicle.ref === following}
               />
             ))}
+          {userLocation && <LocationMarker location={userLocation} />}
         </Map>
       </div>
       {followedVehicle && <FollowCard vehicle={followedVehicle} />}

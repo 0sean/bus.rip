@@ -122,8 +122,8 @@ export default function MapPage(props: {
   }, [followedVehicle, setLocation]);
 
   const togglePopup = useCallback(
-      (vehicleRef: string) =>
-        openVehicle === vehicleRef
+      (vehicleRef: string | null) =>
+        openVehicle === vehicleRef || vehicleRef === null
           ? setOpenVehicle(null)
           : setOpenVehicle(vehicleRef),
       [openVehicle, setOpenVehicle],
@@ -163,6 +163,15 @@ export default function MapPage(props: {
           mapStyle={mapStyle}
           ref={mapRef}
           onRotate={(e) => setBearing(e.viewState.bearing || 0)}
+          onClick={(e) => {
+            if (
+              (e.originalEvent.target as HTMLElement).closest(
+                ".maplibregl-marker",
+              )
+            )
+              return;
+            togglePopup(null);
+          }}
           initialViewState={{
             longitude: 0,
             latitude: 0,

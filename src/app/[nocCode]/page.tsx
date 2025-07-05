@@ -59,7 +59,16 @@ export default function MapPage(props: {
     [data, setData] = useState<DatafeedRouteResponse | null>(null),
     [following, setFollowing] = useState<string | null>(null),
     [openVehicle, setOpenVehicle] = useState<string | null>(null),
-    router = useRouter();
+    router = useRouter(),
+    loadQueue = useRef<(() => void)[]>([]),
+    enqueueLoadAction = useCallback(
+      (action: () => void) => {
+        if (mapRef.current) {
+          action();
+        } else {
+          loadQueue.current.push(action);
+        }
+      }, []);
 
   // Transform datafeed response to check data validity
   useEffect(() => {
@@ -82,13 +91,19 @@ export default function MapPage(props: {
   useEffect(() => {
     if (!data || isLoading) return;
     if (data.error == "Invalid nocCode") return router.push("/");
-    if (!initialLocationSet && data.vehicles && data.vehicles.length > 0) {
-      setLocation(data.vehicles[0].longitude, data.vehicles[0].latitude);
+    
+    function moveToVehicle() {
+      if (!initialLocationSet && data!.vehicles && data!.vehicles.length > 0) {
+        setLocation(data!.vehicles[0].longitude, data!.vehicles[0].latitude);
       setInitialLocationSet(true);
     }
+    }
+
+    enqueueLoadAction(moveToVehicle);
   }, [data, isLoading, initialLocationSet, router]);
   // Get user location
   useEffect(() => {
+    function moveToUser() {
     if (navigator.geolocation && !searchParams.vehicleId) {
       navigator.permissions.query({ name: "geolocation" }).then((result) => {
         if (result.state == "granted" || result.state == "prompt") {
@@ -99,6 +114,9 @@ export default function MapPage(props: {
         }
       });
     }
+    }
+
+    enqueueLoadAction(moveToUser);
   }, [searchParams.vehicleId]);
   // Set following from URL
   useEffect(() => {
@@ -172,6 +190,7 @@ export default function MapPage(props: {
               return;
             togglePopup(null);
           }}
+          onLoad={() => loadQueue.current.forEach((action) => action())}
           initialViewState={{
             longitude: 0,
             latitude: 0,

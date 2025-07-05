@@ -109,8 +109,6 @@
 .maplibregl-popup-content {
   color: white;
   padding: 16px !important;
-  border-radius: 8px !important;
-  background-color: #161616 !important;
 }
 
 .maplibregl-popup-close-button {
@@ -200,5 +198,8 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .maplibregl-popup-content {
+    @apply !bg-zinc-900 border-3 border-zinc-600/50 drop-shadow-2xl !rounded-md;
   }
 }

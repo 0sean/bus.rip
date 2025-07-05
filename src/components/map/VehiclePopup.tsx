@@ -2,10 +2,13 @@ import { Popup } from "react-map-gl/maplibre";
 import { FaArrowRight, FaArrowUpFromBracket } from "react-icons/fa6";
 import { formatDistanceToNow } from "date-fns";
 import { useMemo } from "react";
+import { Instrument_Sans } from "next/font/google";
 
 import type { Vehicle } from "@/lib/bods";
 import { renderTime } from "@/lib/map";
 import type { Dispatch, SetStateAction } from "react";
+
+const instrumentSans = Instrument_Sans({ subsets: ["latin"] });
 
 export default function VehiclePopup({
   vehicle,
@@ -33,7 +36,7 @@ export default function VehiclePopup({
       latitude={Number(vehicle.latitude)}
       closeOnClick={false} // This must be false or the popup doesn't show for some reason..
       onClose={togglePopup}
-      className="pb-2"
+      className={`pb-2 ${instrumentSans.className}`}
     >
       <div className="flex w-full">
         <div className="w-2/5">
@@ -60,7 +63,7 @@ export default function VehiclePopup({
           onClick={() =>
             following ? setFollowing(null) : setFollowing(vehicle.ref)
           }
-          className="grow p-1.5 outline-0 rounded-sm mt-2 border"
+          className="grow p-1.5 outline-0 rounded-sm mt-2 border bg-zinc-800/25 hover:bg-zinc-800/50 transition-colors border-zinc-600/50"
         >
           {following ? "Following" : "Follow"}
         </button>
@@ -73,7 +76,7 @@ export default function VehiclePopup({
               navigator.clipboard.writeText(url);
             }
           }}
-          className="grow-0 w-[32px] p-2 rounded-sm mt-2 border"
+          className="grow-0 w-[32px] p-2 rounded-sm mt-2 border bg-zinc-800/25 hover:bg-zinc-800/50 transition-colors border-zinc-600/50 flex items-center justify-center"
         >
           <FaArrowUpFromBracket />
         </button>

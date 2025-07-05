@@ -10,10 +10,11 @@ import {
   useRef,
 } from "react";
 import useSWR from "swr";
+import useSWRImmutable from "swr/immutable";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Map, MapRef } from "react-map-gl/maplibre";
+import { LngLatBounds, Map, MapRef } from "react-map-gl/maplibre";
 import "animate.css";
 
 import { mapStyle } from "@/lib/map";
@@ -23,6 +24,8 @@ import FollowCard from "@/components/FollowCard";
 import VehicleMarker from "@/components/map/VehicleMarker";
 import MapNavbar from "@/components/map/MapNavbar";
 import LocationMarker from "@/components/map/LocationMarker";
+import type { ApiError, Stop } from "@/lib/buslane";
+import StopMarker from "@/components/map/StopMarker";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -48,7 +51,7 @@ export default function MapPage(props: {
     [initialLocationSet, setInitialLocationSet] = useState(false),
     [userLocation, setUserLocation] = useState<[number, number] | null>(null),
     { data: datafeed, isLoading } = useSWR<DatafeedRouteResponse>(
-      `/api/datafeed/${params.nocCode}`,
+      `/api/${params.nocCode}/location`,
       fetcher,
       {
         refreshInterval: 10000,
@@ -58,9 +61,13 @@ export default function MapPage(props: {
         },
       },
     ),
+    { data: stops } = useSWRImmutable<Stop[] | ApiError>(
+      `/api/${params.nocCode}/stops`,
+      fetcher,
+    ),
     [data, setData] = useState<DatafeedRouteResponse | null>(null),
     [following, setFollowing] = useState<string | null>(null),
-    [openVehicle, setOpenVehicle] = useState<string | null>(null),
+    [openPopup, setOpenPopup] = useState<string | null>(null),
     router = useRouter(),
     loadQueue = useRef<(() => void)[]>([]),
     enqueueLoadAction = useCallback((action: () => void) => {
@@ -142,11 +149,11 @@ export default function MapPage(props: {
   }, [followedVehicle, setLocation]);
 
   const togglePopup = useCallback(
-      (vehicleRef: string | null) =>
-        openVehicle === vehicleRef || vehicleRef === null
-          ? setOpenVehicle(null)
-          : setOpenVehicle(vehicleRef),
-      [openVehicle, setOpenVehicle],
+      (ref: string | null) =>
+        openPopup === ref || ref === null
+          ? setOpenPopup(null)
+          : setOpenPopup(ref),
+      [openPopup, setOpenPopup],
     ),
     rotationStyle = useMemo<CSSProperties>(
       () =>
@@ -154,6 +161,17 @@ export default function MapPage(props: {
           "--map-rotation": `${bearing || 0}deg`,
         }) as CSSProperties,
       [bearing],
+    ),
+    [bounds, setBounds] = useState<[number, number][] | null>(null),
+    [zoom, setZoom] = useState<number>(15),
+    withinBounds = useCallback(
+      (lng: number, lat: number) => {
+        if (!bounds) return false;
+        if (zoom < 15) return false;
+        const [sw, ne] = bounds;
+        return lng >= sw[0] && lng <= ne[0] && lat >= sw[1] && lat <= ne[1];
+      },
+      [bounds, zoom],
     );
 
   return (
@@ -193,6 +211,8 @@ export default function MapPage(props: {
             togglePopup(null);
           }}
           onLoad={() => loadQueue.current.forEach((action) => action())}
+          onMove={(e) => setBounds(e.target.getBounds().toArray())}
+          onZoom={(e) => setZoom(e.target.getZoom())}
           initialViewState={{
             longitude: 0,
             latitude: 0,
@@ -210,13 +230,28 @@ export default function MapPage(props: {
               <VehicleMarker
                 key={vehicle.ref}
                 vehicle={vehicle}
-                popupOpen={openVehicle === vehicle.ref}
-                togglePopup={togglePopup}
+                popupOpen={openPopup === `vehicle:${vehicle.ref}`}
+                togglePopup={() => togglePopup(`vehicle:${vehicle.ref}`)}
                 setFollowing={setFollowing}
                 following={vehicle.ref === following}
               />
             ))}
           {userLocation && <LocationMarker location={userLocation} />}
+          {stops &&
+            Array.isArray(stops) &&
+            stops
+              .filter((stop) =>
+                withinBounds(Number(stop.lon), Number(stop.lat)),
+              )
+              .map((stop) => (
+                <StopMarker
+                  key={stop.id}
+                  stop={stop}
+                  noc={params.nocCode}
+                  popupOpen={openPopup === `stop:${stop.id}`}
+                  togglePopup={() => togglePopup(`stop:${stop.id}`)}
+                />
+              ))}
         </Map>
       </div>
       {followedVehicle && <FollowCard vehicle={followedVehicle} />}

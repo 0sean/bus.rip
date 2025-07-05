@@ -1,10 +1,7 @@
+import { memo } from "react";
 import { Marker } from "react-map-gl/maplibre";
 
-export default function LocationMarker({
-  location,
-}: {
-  location: [number, number];
-}) {
+function LocationMarker({ location }: { location: [number, number] }) {
   return (
     <Marker longitude={location[0]} latitude={location[1]} anchor="center">
       <div className="size-4 bg-zinc-900 border-zinc-600/50 border-2 rounded-full flex justify-center items-center">
@@ -13,3 +10,5 @@ export default function LocationMarker({
     </Marker>
   );
 }
+
+export default memo(LocationMarker);

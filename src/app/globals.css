@@ -203,3 +203,10 @@
     @apply !bg-zinc-900 border-3 border-zinc-600/50 drop-shadow-2xl !rounded-md;
   }
 }
+
+@layer theme {
+  :root,
+  :host {
+    --animate-spin: spin 2s linear infinite;
+  }
+}

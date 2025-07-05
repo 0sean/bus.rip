@@ -14,15 +14,11 @@ function VehicleMarker({
 }: {
   vehicle: Vehicle;
   popupOpen: boolean;
-  togglePopup: (vehicleref: string) => void;
+  togglePopup: () => void;
   setFollowing: Dispatch<SetStateAction<string | null>>;
   following: boolean;
 }) {
-  const bearing = useMemo(() => Number(vehicle.bearing), [vehicle.bearing]),
-    toggle = useCallback(
-      () => togglePopup(vehicle.ref),
-      [vehicle.ref, togglePopup],
-    );
+  const bearing = useMemo(() => Number(vehicle.bearing), [vehicle.bearing]);
 
   return (
     <>
@@ -32,14 +28,14 @@ function VehicleMarker({
         longitude={Number(vehicle.longitude)}
         latitude={Number(vehicle.latitude)}
         anchor="top"
-        onClick={toggle}
+        onClick={togglePopup}
       >
         <VehicleMarkerDot vehicle={vehicle} />
       </Marker>
       {popupOpen && (
         <VehiclePopup
           vehicle={vehicle}
-          togglePopup={toggle}
+          togglePopup={togglePopup}
           setFollowing={setFollowing}
           following={following}
         />
@@ -63,7 +59,7 @@ function VehicleMarkerDot({ vehicle }: { vehicle: Vehicle }) {
 
   return (
     <div
-      className={`size-[28px] bg-zinc-800 border-2 border-zinc-600/50 rounded-full border shadow-xl flex justify-center items-center${validityClass}`}
+      className={`size-[28px] bg-zinc-800 border-2 border-zinc-600/50 rounded-full shadow-xl flex justify-center items-center${validityClass}`}
     >
       <span
         className={`font-bold ${vehicle.lineName.length > 2 ? "text-[10px]" : "text-xs"} rotate-(--rotation)`}

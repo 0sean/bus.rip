@@ -13,7 +13,7 @@ import useSWR from "swr";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Map, ViewState, MapRef } from "react-map-gl/maplibre";
+import { Map, MapRef } from "react-map-gl/maplibre";
 import "animate.css";
 
 import { mapStyle } from "@/lib/map";

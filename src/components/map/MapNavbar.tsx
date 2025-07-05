@@ -1,9 +1,10 @@
 import { Menubar, MenubarMenu, MenubarTrigger } from "@/components/ui/menubar";
 import { FaArrowLeft } from "react-icons/fa";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useStopwatch } from "react-timer-hook";
 import { Progress } from "@/components/ui/progress";
 import {
+  ComponentProps,
   Dispatch,
   memo,
   SetStateAction,
@@ -14,6 +15,7 @@ import {
 import { AnimatePresence } from "motion/react";
 import * as motion from "motion/react-client";
 import { LuEllipsis } from "react-icons/lu";
+import Link from "next/link";
 
 import type { DatafeedRouteResponse } from "@/lib/bods";
 import { cn } from "@/lib/utils";
@@ -28,8 +30,8 @@ function MapNavbar({
   const router = useRouter();
 
   return (
-    <div className="fixed top-0 left-0 p-2 w-screen flex flex-col items-center gap-2 z-10">
-      <Menubar className="w-full md:w-fit drop-shadow-2xl">
+    <div className="fixed top-0 left-0 p-2 w-screen flex flex-col items-center gap-2 z-60">
+      <Menubar className="w-full md:w-128 drop-shadow-2xl">
         <MenubarMenu>
           <MenubarTrigger
             className="hover:bg-zinc-800 transition-colors"
@@ -39,7 +41,7 @@ function MapNavbar({
           >
             <FaArrowLeft />
           </MenubarTrigger>
-          <h1 className="text-sm grow text-center font-semibold md:px-36">
+          <h1 className="text-sm grow text-center font-semibold">
             {data != undefined &&
               data.line != undefined &&
               !isLoading &&
@@ -48,16 +50,21 @@ function MapNavbar({
           <MapNavbarProgress />
         </MenubarMenu>
       </Menubar>
-      <MapNavbarTabs />
+      <MapNavbarTabs noc={data?.line.nocCode} />
     </div>
   );
 }
 
 export default memo(MapNavbar);
 
-function MapNavbarTabs() {
-  const [tab, setTab] = useState("tracking"),
-    [shown, setShown] = useState(true);
+function MapNavbarTabs({ noc }: { noc?: string }) {
+  const [shown, setShown] = useState(true),
+    pathname = usePathname(),
+    tab = useMemo(
+      () => pathname.split("/").slice(2, 3)[0] || "tracking",
+      [pathname],
+    ),
+    isShown = useMemo(() => shown || tab != "tracking", [shown, tab]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -69,9 +76,9 @@ function MapNavbarTabs() {
     <motion.div
       layout
       animate={{
-        width: shown ? 384 : 38,
-        height: shown ? 45 : 22,
-        padding: shown ? 4 : 0,
+        width: isShown ? 384 : 38,
+        height: isShown ? 45 : 22,
+        padding: isShown ? 4 : 0,
       }}
       initial={{ width: 384, height: 45, padding: 4 }}
       className="max-w-full flex bg-zinc-900 rounded-full border-3 border-zinc-600/50 drop-shadow-2xl shadow-lg justify-center"
@@ -79,16 +86,16 @@ function MapNavbarTabs() {
       onMouseLeave={() => setTimeout(() => setShown(false), 5000)}
     >
       <AnimatePresence mode="wait" initial={false}>
-        {shown ? (
+        {isShown ? (
           <motion.div
             key="tabs"
             initial={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             className="flex gap-2 w-96"
           >
-            <MapNavbarTab name="Tracking" tab={tab} setTab={setTab} />
-            <MapNavbarTab name="Timetables" tab={tab} setTab={setTab} />
-            <MapNavbarTab name="Fares" tab={tab} setTab={setTab} />
+            <MapNavbarTab name="Tracking" tab={tab} noc={noc} />
+            <MapNavbarTab name="Timetables" tab={tab} noc={noc} />
+            <MapNavbarTab name="Fares" tab={tab} noc={noc} />
           </motion.div>
         ) : (
           <MapNavbarTabsHint key="hint" />
@@ -101,11 +108,11 @@ function MapNavbarTabs() {
 function MapNavbarTab({
   name,
   tab,
-  setTab,
+  noc,
 }: {
   name: string;
   tab: string;
-  setTab: Dispatch<SetStateAction<string>>;
+  noc?: string;
 }) {
   const selected = useMemo(() => tab === name.toLowerCase(), [tab, name]),
     classes = useMemo(
@@ -115,14 +122,15 @@ function MapNavbarTab({
     );
 
   return (
-    <div
+    <Link
+      href={name === "Tracking" ? `/${noc}` : `/${noc}/${name.toLowerCase()}`}
       className={cn(
-        "grow w-full flex justify-center items-center font-medium rounded-full p-2 text-xs transition-colors hover:bg-zinc-800 hover:text-zinc-100 cursor-pointer",
+        "grow w-full flex justify-center items-center font-medium rounded-full p-2 text-xs transition-colors hover:bg-zinc-800 hover:text-zinc-100",
         classes,
       )}
     >
       <span>{name}</span>
-    </div>
+    </Link>
   );
 }
 

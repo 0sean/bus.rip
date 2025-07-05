@@ -23,15 +23,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
+  modal,
 }: {
   children: React.ReactNode;
+  modal: React.ReactNode;
 }) {
   return (
     <html lang="en" className="h-svh">
       <body
-        className={`${instrumentSans.className} bg-linear-to-tr from-zinc-950 to-zinc-900 dark !h-svh`}
+        className={`${instrumentSans.className} bg-linear-to-tr from-zinc-950 to-zinc-900 dark !h-svh !pointer-events-auto`}
       >
         {children}
+        {modal}
         <Analytics />
         <SpeedInsights />
       </body>

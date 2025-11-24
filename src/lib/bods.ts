@@ -31,10 +31,14 @@ function formatDatafeedResponse(data: DatafeedResponse): Vehicle[] | null {
         bearing: activity.MonitoredVehicleJourney[0].Bearing
           ? Number(activity.MonitoredVehicleJourney[0].Bearing[0])
           : null,
-        arrivalTime:
-          activity.MonitoredVehicleJourney[0].OriginAimedDepartureTime[0],
-        departureTime:
-          activity.MonitoredVehicleJourney[0].DestinationAimedArrivalTime[0],
+        arrivalTime: activity.MonitoredVehicleJourney[0]
+          .DestinationAimedArrivalTime
+          ? activity.MonitoredVehicleJourney[0].DestinationAimedArrivalTime[0]
+          : undefined,
+        departureTime: activity.MonitoredVehicleJourney[0]
+          .OriginAimedDepartureTime
+          ? activity.MonitoredVehicleJourney[0].OriginAimedDepartureTime[0]
+          : undefined,
         originName:
           activity.MonitoredVehicleJourney[0].OriginName[0].replaceAll(
             "_",
@@ -47,6 +51,7 @@ function formatDatafeedResponse(data: DatafeedResponse): Vehicle[] | null {
           ),
         validUntil: activity.ValidUntilTime[0] + "Z",
         recordedAt: activity.RecordedAtTime[0],
+        validity: Validity.Valid,
       }))
     : null;
 }
@@ -73,7 +78,16 @@ export type Vehicle = {
 
   validUntil: string;
   recordedAt: string;
+
+  validity: Validity; // Server will always return Valid, turns invalid on client
 };
+
+export enum Validity {
+  Valid,
+  Expiring1,
+  Expiring2,
+  Invalid,
+}
 
 /* TransXChange datafeed response types */
 

@@ -1,31 +1,29 @@
-import TrackForm from "@/components/TrackForm";
+import HomeForm from "@/components/HomeForm";
 import { getNocLines } from "@/utils/getNocLines";
 
 export default async function Home() {
   const lines = await getNocLines();
+
   return (
-    <div className="flex flex-col justify-center h-full p-8">
-      <h1 className="text-zinc-100 text-3xl font-bold">bus.rip</h1>
-      <h2 className="text-zinc-400 text-md font-semibold">
-        Tracking that actually works
-      </h2>
-      <h3 className="text-zinc-500 text-xs font-semibold mb-4">
-        Powered by the{" "}
+    <div className="flex flex-col justify-center h-svh p-8 md:p-12">
+      <HomeForm lines={lines} />
+      <div className="absolute bottom-8 left-8 md:bottom-12 md:left-12 flex flex-col gap-1">
         <a
-          className="hover:underline hover:text-zinc-400 transition-all"
-          href="https://www.bus-data.dft.gov.uk/"
+          href="https://transit.fyi/"
+          className="text-zinc-500 hover:text-zinc-100 transition-colors text-sm"
+          target="_blank"
         >
-          Bus Open Data Service
+          A <span className="font-semibold">Transit.fyi</span> project
         </a>
-      </h3>
-      <TrackForm lines={lines} />
-      <a
-        href="https://transit.fyi/"
-        className="absolute bottom-8 left-8 text-zinc-500 hover:text-zinc-100 transition-colors text-sm"
-        target="_blank"
-      >
-        A <span className="font-semibold">Transit.fyi</span> project
-      </a>
+        <a
+          href="https://www.bus-data.dft.gov.uk/"
+          className="text-zinc-500 hover:text-zinc-100 transition-colors text-xs"
+          target="_blank"
+        >
+          Powered by{" "}
+          <span className="font-semibold">Bus Open Data Service</span>
+        </a>
+      </div>
     </div>
   );
 }

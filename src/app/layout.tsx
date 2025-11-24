@@ -1,36 +1,50 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Instrument_Sans } from "next/font/google";
 import "./globals.css";
+import "./map.css";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { BackWatcher } from "@/components/Back";
 
-const inter = Inter({ subsets: ["latin"] });
+const instrumentSans = Instrument_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "bus.rip",
   description: "it's probably not coming",
+
   openGraph: {
     type: "website",
     url: "https://bus.rip",
     title: "bus.rip",
     description: "it's probably not coming",
   },
+
   manifest: "/manifest.json",
-  themeColor: "#09090b",
 };
 
 export default function RootLayout({
   children,
+  modal,
 }: {
   children: React.ReactNode;
+  modal: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
-      <body className={`${inter.className} bg-zinc-950 dark h-full`}>
-        {children}
+    <html lang="en" className="min-h-svh">
+      <body
+        className={`${instrumentSans.className} bg-linear-to-tr from-zinc-950 to-zinc-900 dark !min-h-svh !pointer-events-auto`}
+      >
+        <BackWatcher>
+          {children}
+          {modal}
+        </BackWatcher>
         <Analytics />
         <SpeedInsights />
       </body>
     </html>
   );
 }
+
+export const viewport = {
+  themeColor: "#09090b",
+};

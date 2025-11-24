@@ -12,7 +12,7 @@ export default async function TimetablesPage({
   return (
     <>
       <h1 className="text-3xl font-semibold">Timetables</h1>
-      <Timetables routes={Array.isArray(routes) ? routes : []} />
+      <Timetables routes={Array.isArray(routes) ? routes : []} noc={nocCode} />
     </>
   );
 }

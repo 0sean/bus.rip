@@ -19,6 +19,7 @@ import Link from "next/link";
 
 import type { DatafeedRouteResponse } from "@/lib/bods";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 function MapNavbar({
   data,
@@ -95,7 +96,7 @@ function MapNavbarTabs({ noc }: { noc?: string }) {
           >
             <MapNavbarTab name="Tracking" tab={tab} noc={noc} />
             <MapNavbarTab name="Timetables" tab={tab} noc={noc} />
-            <MapNavbarTab name="Fares" tab={tab} noc={noc} />
+            <MapDisabledNavbarTab name="Fares" tab={tab} />
           </motion.div>
         ) : (
           <MapNavbarTabsHint key="hint" />
@@ -131,6 +132,34 @@ function MapNavbarTab({
     >
       <span>{name}</span>
     </Link>
+  );
+}
+
+function MapDisabledNavbarTab({ name, tab }: { name: string; tab: string }) {
+  const selected = useMemo(() => tab === name.toLowerCase(), [tab, name]),
+    classes = useMemo(
+      () =>
+        selected ? "bg-zinc-800 text-zinc-100" : "bg-zinc-800/50 text-zinc-400",
+      [selected],
+    );
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          aria-disabled={true}
+          className={cn(
+            "grow w-full flex justify-center items-center font-medium rounded-full p-2 text-xs transition-colors hover:bg-zinc-800 hover:text-zinc-100 cursor-not-allowed",
+            classes,
+          )}
+        >
+          <span>{name}</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent className="!z-100 shadow-md" side="bottom">
+        <p>Coming soon</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

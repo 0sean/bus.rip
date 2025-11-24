@@ -319,12 +319,18 @@ export function FeatureCombobox({
                       setFeature(currentValue as Feature);
                       setOpen(false);
                     }}
+                    disabled={f === "fares"}
                   >
                     <FeatureBadgeIcon
                       feature={f as Feature}
                       className="text-zinc-50"
                     />
                     {f.charAt(0).toUpperCase() + f.slice(1)}
+                    {f === "fares" && (
+                      <span className="text-zinc-500 text-[10px] -mb-0.5">
+                        Coming soon
+                      </span>
+                    )}
                   </CommandItem>
                 ))}
             </CommandGroup>

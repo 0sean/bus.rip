@@ -1,8 +1,26 @@
 import { Vehicle } from "@/lib/bods";
-import { Alert } from "./ui/alert";
+import { Alert } from "../ui/alert";
 import { formatDistanceToNow } from "date-fns";
+import { useEffect, useState } from "react";
 
 export default function FollowCard({ vehicle }: { vehicle: Vehicle }) {
+  const [distanceToNow, setDistanceToNow] = useState("");
+
+  useEffect(() => {
+    function updateDistance() {
+      setDistanceToNow(
+        formatDistanceToNow(vehicle.recordedAt, {
+          addSuffix: true,
+          includeSeconds: true,
+        }),
+      );
+    }
+
+    updateDistance();
+    const interval = setInterval(updateDistance, 1000);
+    return () => clearInterval(interval);
+  }, [vehicle.recordedAt]);
+
   return (
     <div className="fixed bottom-4 w-screen p-4 flex justify-center">
       <Alert className="w-full md:w-128 bg-zinc-900 border-3 border-zinc-600/50 drop-shadow-2xl">
@@ -58,13 +76,7 @@ export default function FollowCard({ vehicle }: { vehicle: Vehicle }) {
             <p className="leading-tight text-sm">{vehicle.destinationName}</p>
           </div>
         </div>
-        <p className="mt-2 opacity-50 text-[11px]">
-          Updated{" "}
-          {formatDistanceToNow(vehicle.recordedAt, {
-            addSuffix: true,
-            includeSeconds: true,
-          })}
-        </p>
+        <p className="mt-2 opacity-50 text-[11px]">Updated {distanceToNow}</p>
       </Alert>
     </div>
   );

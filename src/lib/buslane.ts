@@ -38,7 +38,7 @@ export type Stop = {
 };
 
 export async function getStops(noc: string): Promise<Stop[] | ApiError> {
-  return await get<Stop[]>(`/timetables/agencies/noc:${noc}/stops`, true);
+  return await get<Stop[]>(`/agencies/noc:${noc}/stops`);
 }
 
 export type StopTime = {
@@ -55,26 +55,69 @@ export type StopTime = {
   timepoint: boolean | null;
   created_at: string;
   updated_at: string;
-  trip: Trip;
 };
 
-type Trip = {
+export type StopTimeWithAssociations = StopTime & {
+  trip: StopTimeTripWithAssociations;
+};
+
+export type StopTimeWithStop = StopTime & {
+  stop: Stop;
+};
+
+export type Trip = {
   id: string;
   route_id: number;
   service_id: number;
   headsign: string | null;
-  direction_id: number;
+  direction_id: "inbound" | "outbound";
   block_id: string;
   wheelchair_accessible: boolean;
   vehicle_journey_code: string;
   created_at: string;
   updated_at: string;
   shape_id: string | null;
-  route: Route;
+};
+
+export type StopTimeTripWithAssociations = Trip & {
+  route: Route & { agency: Agency };
   service: Service;
 };
 
-type Route = {
+export type TripWithAssociations = Trip & {
+  service: Service;
+  frequencies: Frequency[];
+  stop_times: StopTimeWithStop[];
+  shape: Shape | null;
+  route: Route;
+};
+
+export type TripWithStops = Trip & {
+  stop_times: StopTimeWithStop[];
+};
+
+type Shape = {
+  id: string;
+  pt_lat: string;
+  pt_lon: string;
+  pt_sequence: number;
+  dist_traveled: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type Frequency = {
+  id: number;
+  trip_id: string;
+  start_time: string;
+  end_time: string;
+  headway_secs: number;
+  exact_times: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Route = {
   id: number;
   agency_id: string;
   short_name: string;
@@ -82,7 +125,14 @@ type Route = {
   route_type: number;
   created_at: string;
   updated_at: string;
-  agency: Agency;
+};
+
+export type RouteWithTrips = Route & {
+  trips: Trip[];
+};
+
+export type RouteWithStops = Route & {
+  trips: TripWithStops[];
 };
 
 type Agency = {
@@ -116,7 +166,7 @@ export async function getStopTimes(
   noc: string,
   stopId: string,
 ): Promise<StopTime[] | ApiError> {
-  const data = await get<StopTime[]>(
+  const data = await get<StopTimeWithAssociations[]>(
     `/timetables/stops/${stopId}/stop_times`,
     true,
   );
@@ -128,4 +178,71 @@ export async function getStopTimes(
   } else {
     return { error: "Failed to fetch stop times" };
   }
+}
+
+export async function getRoutes(
+  noc: string,
+): Promise<RouteWithTrips[] | ApiError> {
+  const data = await get<RouteWithTrips[]>(`/agencies/noc:${noc}/routes`);
+  if (Array.isArray(data)) {
+    return data;
+  } else {
+    return { error: "Failed to fetch routes" };
+  }
+}
+
+export async function getTrip(
+  tripId: string,
+): Promise<TripWithAssociations | ApiError> {
+  const data = await get<TripWithAssociations>(`/timetables/trips/${tripId}`);
+  if ("error" in data) {
+    return { error: "Failed to fetch trip" };
+  }
+  return data;
+}
+
+export async function getRoute(
+  routeId: string,
+): Promise<RouteWithStops | ApiError> {
+  const data = await get<RouteWithStops>(`/timetables/routes/${routeId}`);
+  if ("error" in data) {
+    return { error: "Failed to fetch route" };
+  }
+  return data;
+}
+
+export type RouteRow = {
+  id: number;
+  route: string;
+  mainRoute: string;
+  additionalRoutes: string[];
+};
+
+export function getRouteRow(route: RouteWithTrips): RouteRow {
+  const outboundTrips = route.trips?.filter(
+      (t) => t.direction_id == "outbound",
+    ),
+    inboundTrips = route.trips?.filter((t) => t.direction_id == "inbound"),
+    allRouteVariations = outboundTrips.map((trip, i) => {
+      const oppositeTrip = inboundTrips[i];
+      if (!oppositeTrip || !oppositeTrip.headsign)
+        return (trip.headsign || "-").replaceAll(" - ", " ");
+      if (!trip.headsign) return oppositeTrip.headsign.replaceAll(" - ", " ");
+      return `${trip.headsign.replaceAll(" - ", " ")} - ${oppositeTrip.headsign.replaceAll(" - ", " ")}`;
+    }),
+    routeVariations = allRouteVariations
+      .filter((v, i) => allRouteVariations.indexOf(v) === i)
+      .sort((a, b) => {
+        // if(!b.includes(" - ")) return allRouteVariations.length;
+        const freq: Record<string, number> = {};
+        for (const x of allRouteVariations) freq[x] = (freq[x] || 0) + 1;
+        return freq[b] - freq[a];
+      });
+
+  return {
+    id: route.id,
+    route: route.short_name,
+    mainRoute: routeVariations[0],
+    additionalRoutes: routeVariations.slice(1),
+  };
 }

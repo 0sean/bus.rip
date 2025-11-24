@@ -5,5 +5,5 @@ export default function DrawerLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <PageDrawer title="Drawer">{children}</PageDrawer>;
+  return <PageDrawer>{children}</PageDrawer>;
 }

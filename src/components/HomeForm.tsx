@@ -21,7 +21,7 @@ export default function HomeForm({
         </h1>
         <AnimatedFeatures feature={feature} setFeature={setFeature} />
       </div>
-      <TrackForm lines={lines} />
+      <TrackForm lines={lines} feature={feature} />
     </>
   );
 }

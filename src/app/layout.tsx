@@ -4,6 +4,7 @@ import "./globals.css";
 import "./map.css";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { BackWatcher } from "@/components/Back";
 
 const instrumentSans = Instrument_Sans({ subsets: ["latin"] });
 
@@ -29,12 +30,14 @@ export default function RootLayout({
   modal: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-svh">
+    <html lang="en" className="min-h-svh">
       <body
-        className={`${instrumentSans.className} bg-linear-to-tr from-zinc-950 to-zinc-900 dark !h-svh !pointer-events-auto`}
+        className={`${instrumentSans.className} bg-linear-to-tr from-zinc-950 to-zinc-900 dark !min-h-svh !pointer-events-auto`}
       >
-        {children}
-        {modal}
+        <BackWatcher>
+          {children}
+          {modal}
+        </BackWatcher>
         <Analytics />
         <SpeedInsights />
       </body>

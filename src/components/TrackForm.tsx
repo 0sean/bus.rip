@@ -2,14 +2,20 @@
 
 import { Button } from "./ui/button";
 import { useEffect, useRef, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { useGetCookie, setCookie } from "cookies-next";
 import { OperatorCombobox } from "./ui/combobox";
+import type { Feature } from "@/lib/utils";
+import { hardNavigate } from "@/lib/hardNavigate";
 
-export default function TrackForm({ lines }: { lines: any[] }) {
+export default function TrackForm({
+  lines,
+  feature,
+}: {
+  lines: any[];
+  feature: Feature;
+}) {
   const [line, setLine] = useState<string | null>(null),
     [loading, setLoading] = useState(false),
-    router = useRouter(),
     options = useMemo(
       () =>
         lines
@@ -102,7 +108,13 @@ export default function TrackForm({ lines }: { lines: any[] }) {
             });
 
             const nocCode = JSON.parse(line)[0];
-            router.push(`/${nocCode}`);
+            if (feature === "tracking") {
+              hardNavigate(`/${nocCode}`);
+            } else if (feature === "timetables") {
+              hardNavigate(`/${nocCode}/timetables`);
+            } else if (feature === "fares") {
+              hardNavigate(`/${nocCode}/fares`);
+            }
           }
         }}
       >

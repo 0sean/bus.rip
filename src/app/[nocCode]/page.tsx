@@ -20,7 +20,7 @@ import "animate.css";
 import { mapStyle } from "@/lib/map";
 
 import { DatafeedRouteResponse, Validity } from "@/lib/bods";
-import FollowCard from "@/components/FollowCard";
+import FollowCard from "@/components/map/FollowCard";
 import VehicleMarker from "@/components/map/VehicleMarker";
 import MapNavbar from "@/components/map/MapNavbar";
 import LocationMarker from "@/components/map/LocationMarker";

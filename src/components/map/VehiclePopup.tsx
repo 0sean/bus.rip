@@ -1,7 +1,7 @@
 import { Popup } from "react-map-gl/maplibre";
 import { FaArrowRight, FaArrowUpFromBracket } from "react-icons/fa6";
 import { formatDistanceToNow } from "date-fns";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Instrument_Sans } from "next/font/google";
 
 import type { Vehicle } from "@/lib/bods";
@@ -28,7 +28,23 @@ export default function VehiclePopup({
     arrivalTime = useMemo(
       () => renderTime(vehicle.arrivalTime),
       [vehicle.arrivalTime],
-    );
+    ),
+    [distanceToNow, setDistanceToNow] = useState("");
+
+  useEffect(() => {
+    function updateDistance() {
+      setDistanceToNow(
+        formatDistanceToNow(vehicle.recordedAt, {
+          addSuffix: true,
+          includeSeconds: true,
+        }),
+      );
+    }
+
+    updateDistance();
+    const interval = setInterval(updateDistance, 1000);
+    return () => clearInterval(interval);
+  }, [vehicle.recordedAt]);
 
   return (
     <Popup
@@ -51,13 +67,7 @@ export default function VehiclePopup({
           <p className="leading-tight">{vehicle.destinationName}</p>
         </div>
       </div>
-      <p className="mt-2 opacity-50 text-[11px]">
-        Updated{" "}
-        {formatDistanceToNow(vehicle.recordedAt, {
-          addSuffix: true,
-          includeSeconds: true,
-        })}
-      </p>
+      <p className="mt-2 opacity-50 text-[11px]">Updated {distanceToNow}</p>
       <div className="flex gap-2 w-full">
         <button
           onClick={() =>

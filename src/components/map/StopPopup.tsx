@@ -1,9 +1,10 @@
-import type { ApiError, StopTime, Stop } from "@/lib/buslane";
+import type { ApiError, StopTimeWithAssociations, Stop } from "@/lib/buslane";
 import { Instrument_Sans } from "next/font/google";
 import { Popup } from "react-map-gl/maplibre";
 import useSWRImmutable from "swr/immutable";
 import { FiLoader } from "react-icons/fi";
 import { useMemo, useState } from "react";
+import Link from "next/link";
 
 const instrumentSans = Instrument_Sans({ subsets: ["latin"] });
 
@@ -16,9 +17,10 @@ export default function StopPopup({
   noc: string;
   togglePopup: () => void;
 }) {
-  const { data, isLoading } = useSWRImmutable<StopTime[] | ApiError>(
-      `/api/${noc}/stop/${stop.id}`,
-      (url: string) => fetch(url).then((r) => r.json()),
+  const { data, isLoading } = useSWRImmutable<
+      StopTimeWithAssociations[] | ApiError
+    >(`/api/${noc}/stop/${stop.id}`, (url: string) =>
+      fetch(url).then((r) => r.json()),
     ),
     [start, setStart] = useState(0),
     upcomingTimes = useMemo(() => {
@@ -80,7 +82,8 @@ export default function StopPopup({
         <>
           <div className="rounded overflow-hidden">
             {upcomingTimes.map((stopTime) => (
-              <div
+              <Link
+                href={`/${noc}/timetables/trip/${stopTime.trip.id}`}
                 key={stopTime.id}
                 className="flex gap-2 items-center p-1 border-b last:border-b-0 font-medium hover:bg-zinc-800/50 transition-colors"
               >
@@ -89,13 +92,11 @@ export default function StopPopup({
                 >
                   {stopTime.trip.route.short_name}
                 </span>
-                <span>
-                  {stopTime.stop_headsign || stopTime.trip.headsign || "-"}
-                </span>
+                <span>{stopTime.trip.headsign || "-"}</span>
                 <span className="shrink-0 ms-auto">
                   {stopTime.departure_time.split(":").slice(0, 2).join(":")}
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
           {upcomingTimes.length == 5 && (

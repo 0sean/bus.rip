@@ -38,7 +38,7 @@ export type Stop = {
 };
 
 export async function getStops(noc: string): Promise<Stop[] | ApiError> {
-  return await get<Stop[]>(`/agencies/noc:${noc}/stops`);
+  return await get<Stop[]>(`/timetables/agencies/noc:${noc}/stops`);
 }
 
 export type StopTime = {
@@ -183,7 +183,7 @@ export async function getStopTimes(
 export async function getRoutes(
   noc: string,
 ): Promise<RouteWithTrips[] | ApiError> {
-  const data = await get<RouteWithTrips[]>(`/agencies/noc:${noc}/routes`);
+  const data = await get<RouteWithTrips[]>(`/timetables/agencies/noc:${noc}/routes`);
   if (Array.isArray(data)) {
     return data;
   } else {

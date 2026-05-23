@@ -1,7 +1,7 @@
 import HomeForm from "@/components/HomeForm";
-import { getNocLines, revalidate as nocLinesRevalidate } from "@/utils/getNocLines";
+import { getNocLines } from "@/utils/getNocLines";
 
-export const revalidate = nocLinesRevalidate;
+export const revalidate = 2630000;
 
 export default async function Home() {
   const lines = await getNocLines();

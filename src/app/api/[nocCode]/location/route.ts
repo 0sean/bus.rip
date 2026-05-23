@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { revalidatePath } from "next/cache";
 import { getDatafeed } from "@/lib/bods";
 
 const prisma = new PrismaClient(),
@@ -42,6 +43,7 @@ export async function GET(
             hasMissingLocationData: true,
           },
         });
+        revalidatePath("/");
       }
 
       return Response.json({ line, vehicles });

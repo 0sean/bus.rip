@@ -27,7 +27,7 @@ export function OperatorCombobox({
   favourites,
   setFavourites,
 }: {
-  options: { value: string; label: string; subtitle: string }[];
+  options: { value: string; label: string; subtitle: string; hasMissingLocationData: boolean }[];
   setValue: Dispatch<SetStateAction<string | null>>;
   value: string | null;
   favourites: string[];
@@ -92,7 +92,7 @@ function OperatorComboboxContent({
   setFavourites,
   setOpen,
 }: {
-  options: { value: string; label: string; subtitle: string }[];
+  options: { value: string; label: string; subtitle: string; hasMissingLocationData: boolean }[];
   setValue: Dispatch<SetStateAction<string | null>>;
   value: string | null;
   favourites: string[];
@@ -147,7 +147,7 @@ function OperatorComboboxOptions({
   setFavourites,
   setOpen,
 }: {
-  options: { value: string; label: string; subtitle: string }[];
+  options: { value: string; label: string; subtitle: string; hasMissingLocationData: boolean }[];
   setValue: Dispatch<SetStateAction<string | null>>;
   value: string | null;
   favourites: string[];
@@ -179,7 +179,12 @@ function OperatorComboboxOptions({
               />
               <div className="inline-flex flex-col">
                 <span>{option.label}</span>
-                <span className="text-xs text-zinc-500">{option.subtitle}</span>
+                {option.subtitle && (
+                  <span className="text-xs text-zinc-500">{option.subtitle}</span>
+                )}
+                {option.hasMissingLocationData && (
+                  <span className="text-xs text-amber-400">Historically no live location</span>
+                )}
               </div>
               {favourites.includes(option.value) ? (
                 <div
@@ -262,7 +267,7 @@ function OperatorComboboxTrigger({
   ...props
 }: {
   value: string | null;
-  options: { value: string; label: string; subtitle: string }[];
+  options: { value: string; label: string; subtitle: string; hasMissingLocationData: boolean }[];
   open: boolean;
 }) {
   return (

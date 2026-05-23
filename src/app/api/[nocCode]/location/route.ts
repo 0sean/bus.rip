@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { parseStringPromise } from "xml2js";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { getDatafeed } from "@/lib/bods";
@@ -32,8 +31,20 @@ export async function GET(
       return Response.json({ error: "Invalid nocCode" }, { status: 404 });
     } else {
       const vehicles = await getDatafeed(nocLine.nocCode);
+      let line = nocLine;
 
-      return Response.json({ line: nocLine, vehicles });
+      if (!vehicles && !nocLine.hasMissingLocationData) {
+        line = await prisma.nocLine.update({
+          where: {
+            id: nocLine.id,
+          },
+          data: {
+            hasMissingLocationData: true,
+          },
+        });
+      }
+
+      return Response.json({ line, vehicles });
     }
   } else {
     return Response.json({ error: "Too many requests" }, { status: 429 });

@@ -17,22 +17,39 @@ export default function TrackForm({
   const [line, setLine] = useState<string | null>(null),
     [loading, setLoading] = useState(false),
     options = useMemo(
-      () =>
-        lines
-          .sort((a, b) =>
-            b.publicName.includes("Arriva") ||
-            b.publicName.includes("Stagecoach") ||
-            b.publicName.includes("Brighton & Hove Bus and Coach Company") ||
-            b.publicName.includes("East Yorkshire") ||
-            b.publicName.includes("Go-Ahead") ||
-            b.publicName.includes("Go Ahead") ||
-            b.publicName.includes("Go North East") ||
-            b.publicName.includes("Go North West") ||
-            b.publicName.includes("Oxford Bus Company") ||
-            b.publicName.includes("Metrobus")
-              ? 1
-              : -1,
-          )
+      () => {
+        const preferredOperators = [
+          "Arriva",
+          "Stagecoach",
+          "Brighton & Hove Bus and Coach Company",
+          "East Yorkshire",
+          "Go-Ahead",
+          "Go Ahead",
+          "Go North East",
+          "Go North West",
+          "Oxford Bus Company",
+          "Metrobus",
+        ];
+
+        return [...lines]
+          .sort((a, b) => {
+            if (a.hasMissingLocationData !== b.hasMissingLocationData) {
+              return Number(a.hasMissingLocationData) - Number(b.hasMissingLocationData);
+            }
+
+            const aIsPreferred = preferredOperators.some((name) =>
+                a.publicName.includes(name),
+              ),
+              bIsPreferred = preferredOperators.some((name) =>
+                b.publicName.includes(name),
+              );
+
+            if (aIsPreferred !== bIsPreferred) {
+              return aIsPreferred ? -1 : 1;
+            }
+
+            return a.publicName.localeCompare(b.publicName);
+          })
           .map((l) => {
             const label = `${l.publicName}${
               l.referenceName != l.publicName && l.referenceName
@@ -44,8 +61,10 @@ export default function TrackForm({
               value: JSON.stringify([l.nocCode, label]),
               label: l.publicName,
               subtitle: l.referenceName != l.publicName ? l.referenceName : "",
+              hasMissingLocationData: l.hasMissingLocationData,
             };
-          }),
+          });
+      },
       [lines],
     ),
     [favourites, setFavourites] = useState<any[]>([]),

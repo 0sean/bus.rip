@@ -17,4 +17,5 @@ model NocLine {
   nocCode String
   publicName String
   referenceName String
+  hasMissingLocationData Boolean @default(false)
 }

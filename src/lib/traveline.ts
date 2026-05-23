@@ -21,6 +21,7 @@ export async function fetchNocLines(): Promise<FormattedNocLine[]> {
       nocCode: line.NOCCODE[0],
       publicName: line.PubNm[0],
       referenceName: line.RefNm[0],
+      hasMissingLocationData: false,
     }))
     .reduce(
       (prev, curr) =>

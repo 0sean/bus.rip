@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { cacheControl } from "@/middleware/cache-control";
 import { rateLimit } from "@/middleware/rate-limit";
 import { parseStringPromise } from "xml2js";
 import {
@@ -14,12 +15,12 @@ import { getOperator } from "./operators";
 import { operatorCode } from "./validation";
 
 export const getLocations = createServerFn({ method: "GET" })
-  .middleware([rateLimit("locations")])
+  .middleware([cacheControl(10), rateLimit("locations")])
   .validator(operatorCode)
   .handler(async ({ data: nocCode }): Promise<DatafeedRouteResponse> => {
     const operator = await getOperator({ data: nocCode });
     if (!operator) throw new Error("Invalid operator code");
-    
+
     const url = new URL("https://data.bus-data.dft.gov.uk/api/v1/datafeed/");
     url.searchParams.set("operatorRef", nocCode);
     url.searchParams.set("api_key", process.env.BODS_API_KEY || "");

@@ -15,7 +15,6 @@ import { Route as MonitoringRouteImport } from './routes/monitoring'
 import { Route as NocCodeIndexRouteImport } from './routes/$nocCode.index'
 import { Route as NocCodeFaresRouteImport } from './routes/$nocCode.fares'
 import { Route as NocCodeTimetablesRouteImport } from './routes/$nocCode.timetables'
-import { Route as ApiCronRouteImport } from './routes/api.cron'
 import { Route as NocCodeTimetablesRouteRouteRouteImport } from './routes/$nocCode.timetables_.route.$route'
 import { Route as NocCodeTimetablesTripTripRouteImport } from './routes/$nocCode.timetables_.trip.$trip'
 
@@ -49,11 +48,6 @@ const NocCodeTimetablesRoute = NocCodeTimetablesRouteImport.update({
   path: '/timetables',
   getParentRoute: () => NocCodeRoute,
 } as any)
-const ApiCronRoute = ApiCronRouteImport.update({
-  id: '/api/cron',
-  path: '/api/cron',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const NocCodeTimetablesRouteRouteRoute =
   NocCodeTimetablesRouteRouteRouteImport.update({
     id: '/timetables_/route/$route',
@@ -73,7 +67,6 @@ export interface FileRoutesByFullPath {
   '/monitoring': typeof MonitoringRoute
   '/$nocCode/fares': typeof NocCodeFaresRoute
   '/$nocCode/timetables': typeof NocCodeTimetablesRoute
-  '/api/cron': typeof ApiCronRoute
   '/$nocCode/': typeof NocCodeIndexRoute
   '/$nocCode/timetables/route/$route': typeof NocCodeTimetablesRouteRouteRoute
   '/$nocCode/timetables/trip/$trip': typeof NocCodeTimetablesTripTripRoute
@@ -83,7 +76,6 @@ export interface FileRoutesByTo {
   '/monitoring': typeof MonitoringRoute
   '/$nocCode/fares': typeof NocCodeFaresRoute
   '/$nocCode/timetables': typeof NocCodeTimetablesRoute
-  '/api/cron': typeof ApiCronRoute
   '/$nocCode': typeof NocCodeIndexRoute
   '/$nocCode/timetables/route/$route': typeof NocCodeTimetablesRouteRouteRoute
   '/$nocCode/timetables/trip/$trip': typeof NocCodeTimetablesTripTripRoute
@@ -95,7 +87,6 @@ export interface FileRoutesById {
   '/monitoring': typeof MonitoringRoute
   '/$nocCode/fares': typeof NocCodeFaresRoute
   '/$nocCode/timetables': typeof NocCodeTimetablesRoute
-  '/api/cron': typeof ApiCronRoute
   '/$nocCode/': typeof NocCodeIndexRoute
   '/$nocCode/timetables_/route/$route': typeof NocCodeTimetablesRouteRouteRoute
   '/$nocCode/timetables_/trip/$trip': typeof NocCodeTimetablesTripTripRoute
@@ -108,7 +99,6 @@ export interface FileRouteTypes {
     | '/monitoring'
     | '/$nocCode/fares'
     | '/$nocCode/timetables'
-    | '/api/cron'
     | '/$nocCode/'
     | '/$nocCode/timetables/route/$route'
     | '/$nocCode/timetables/trip/$trip'
@@ -118,7 +108,6 @@ export interface FileRouteTypes {
     | '/monitoring'
     | '/$nocCode/fares'
     | '/$nocCode/timetables'
-    | '/api/cron'
     | '/$nocCode'
     | '/$nocCode/timetables/route/$route'
     | '/$nocCode/timetables/trip/$trip'
@@ -129,7 +118,6 @@ export interface FileRouteTypes {
     | '/monitoring'
     | '/$nocCode/fares'
     | '/$nocCode/timetables'
-    | '/api/cron'
     | '/$nocCode/'
     | '/$nocCode/timetables_/route/$route'
     | '/$nocCode/timetables_/trip/$trip'
@@ -139,7 +127,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   NocCodeRoute: typeof NocCodeRouteWithChildren
   MonitoringRoute: typeof MonitoringRoute
-  ApiCronRoute: typeof ApiCronRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -186,13 +173,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NocCodeTimetablesRouteImport
       parentRoute: typeof NocCodeRoute
     }
-    '/api/cron': {
-      id: '/api/cron'
-      path: '/api/cron'
-      fullPath: '/api/cron'
-      preLoaderRoute: typeof ApiCronRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/$nocCode/timetables_/route/$route': {
       id: '/$nocCode/timetables_/route/$route'
       path: '/timetables/route/$route'
@@ -233,7 +213,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   NocCodeRoute: NocCodeRouteWithChildren,
   MonitoringRoute: MonitoringRoute,
-  ApiCronRoute: ApiCronRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

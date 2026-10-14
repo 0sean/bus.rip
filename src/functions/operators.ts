@@ -1,14 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest, setResponseStatus } from "@tanstack/react-start/server";
-import { db, replaceOperators } from "./db.server";
+import { db } from "./db.server";
 import { eq } from "drizzle-orm";
 import { nocLines } from "@/db/schema";
-import { parseOperators } from "./traveline.server";
+import { cacheControl } from "@/middleware/cache-control";
 import { operatorCode } from "./validation";
 
-export const getOperators = createServerFn({ method: "GET" }).handler(() => db.select().from(nocLines));
+export const getOperators = createServerFn({ method: "GET" })
+  .middleware([cacheControl(2_592_000, { staleWhileRevalidate: 86_400 })])
+  .handler(() => db.select().from(nocLines));
 
 export const getOperator = createServerFn({ method: "GET" })
+  .middleware([cacheControl(2_592_000, { staleWhileRevalidate: 86_400 })])
   .validator(operatorCode)
   .handler(async ({ data: nocCode }) => {
     const [operator] = await db

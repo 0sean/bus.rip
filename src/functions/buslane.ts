@@ -8,6 +8,7 @@ import type {
 } from "@/lib/buslane";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { cacheControl } from "@/middleware/cache-control";
 import { rateLimit } from "@/middleware/rate-limit";
 import { operatorCode, resourceId } from "./validation";
 
@@ -33,7 +34,7 @@ async function get<T>(url: string): Promise<T | ApiError> {
 }
 
 export const getStops = createServerFn({ method: "GET" })
-  .middleware([rateLimit("stops")])
+  .middleware([cacheControl(43_200), rateLimit("stops")])
   .validator(operatorCode)
   .handler(async ({ data: nocCode }) => {
     const stops = await get<Stop[]>(
@@ -45,7 +46,7 @@ export const getStops = createServerFn({ method: "GET" })
   });
 
 export const getStopTimes = createServerFn({ method: "GET" })
-  .middleware([rateLimit("stop-times")])
+  .middleware([cacheControl(43_200), rateLimit("stop-times")])
   .validator(z.object({ nocCode: operatorCode, stopId: resourceId }))
   .handler(async ({ data: { nocCode, stopId } }) => {
     const times = await get<StopTimeWithAssociations[]>(
@@ -62,7 +63,7 @@ export const getStopTimes = createServerFn({ method: "GET" })
   });
 
 export const getRoutes = createServerFn({ method: "GET" })
-  .middleware([rateLimit("routes")])
+  .middleware([cacheControl(43_200), rateLimit("routes")])
   .validator(operatorCode)
   .handler(async ({ data: nocCode }) => {
     const routes = await get<RouteWithTrips[]>(
@@ -76,7 +77,7 @@ export const getRoutes = createServerFn({ method: "GET" })
   });
 
 export const getTrip = createServerFn({ method: "GET" })
-  .middleware([rateLimit("trip")])
+  .middleware([cacheControl(43_200), rateLimit("trip")])
   .validator(resourceId)
   .handler(async ({ data: tripId }) => {
     const trip = await get<TripWithAssociations>(
@@ -87,7 +88,7 @@ export const getTrip = createServerFn({ method: "GET" })
   });
 
 export const getRoute = createServerFn({ method: "GET" })
-  .middleware([rateLimit("route")])
+  .middleware([cacheControl(43_200), rateLimit("route")])
   .validator(resourceId)
   .handler(async ({ data: routeId }) => {
     const route = await get<RouteWithStops>(

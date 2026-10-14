@@ -6,9 +6,11 @@ import { operatorsOptions } from "@/data/queries";
 export const Route = createFileRoute("/")({
   loader: ({ context }) =>
     context.queryClient.ensureQueryData(operatorsOptions()),
-  headers: () => ({
+  headers: ({ loaderData }) => ({
     "Cache-Control":
-      "public, max-age=0, s-maxage=300, stale-while-revalidate=3600",
+      loaderData === undefined
+        ? "no-store"
+        : "public, max-age=2592000, s-maxage=2592000, stale-while-revalidate=86400",
   }),
   component: Home,
 });

@@ -6,34 +6,30 @@ import type {
   TripWithAssociations,
   RouteWithStops,
 } from "@/lib/buslane";
-import { cached } from "./cache.server";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { rateLimit } from "@/middleware/rate-limit";
 import { operatorCode, resourceId } from "./validation";
 
-async function get<T>(url: string, cache = true): Promise<T | ApiError> {
+async function get<T>(url: string): Promise<T | ApiError> {
   if (process.env.BUSLANE_ENABLED === "0")
     return { error: "Buslane is not enabled." };
-  const load = async () => {
-    const response = await fetch(
-      `${process.env.BUSLANE_BASE_URL || "http://localhost:3000"}/api${url}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.BUSLANE_API_KEY}`,
-        },
-        signal: AbortSignal.timeout(15_000),
+  const response = await fetch(
+    `${process.env.BUSLANE_BASE_URL || "http://localhost:3000"}/api${url}`,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.BUSLANE_API_KEY}`,
       },
-    );
-    if (!response.ok)
-      throw new Error("Timetable data is temporarily unavailable");
-    const data: T | ApiError = await response.json();
-    if (data && typeof data === "object" && "error" in data)
-      throw new Error("Timetable data is temporarily unavailable");
-    return data;
-  };
-  return cache ? cached(`buslane:${url}`, 43_200_000, load) : load();
+      signal: AbortSignal.timeout(15_000),
+    },
+  );
+  if (!response.ok)
+    throw new Error("Timetable data is temporarily unavailable");
+  const data: T | ApiError = await response.json();
+  if (data && typeof data === "object" && "error" in data)
+    throw new Error("Timetable data is temporarily unavailable");
+  return data;
 }
 
 export const getStops = createServerFn({ method: "GET" })

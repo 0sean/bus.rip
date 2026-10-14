@@ -10,7 +10,6 @@ import {
 import { db } from "./db.server";
 import { eq } from "drizzle-orm";
 import { nocLines } from "@/db/schema";
-import { cached, invalidateCache } from "./cache.server";
 import { getOperator } from "./operators";
 import { operatorCode } from "./validation";
 
@@ -20,17 +19,17 @@ export const getLocations = createServerFn({ method: "GET" })
   .handler(async ({ data: nocCode }): Promise<DatafeedRouteResponse> => {
     const operator = await getOperator({ data: nocCode });
     if (!operator) throw new Error("Invalid operator code");
-    const vehicles = await cached(`vehicles:${nocCode}`, 10_000, async () => {
-      const url = new URL("https://data.bus-data.dft.gov.uk/api/v1/datafeed/");
-      url.searchParams.set("operatorRef", nocCode);
-      url.searchParams.set("api_key", process.env.BODS_API_KEY || "");
-      const response = await fetch(url, {
-        signal: AbortSignal.timeout(15_000),
-      });
-      if (!response.ok)
-        throw new Error("Vehicle data is temporarily unavailable");
-      return parseDatafeed(await response.text());
+    
+    const url = new URL("https://data.bus-data.dft.gov.uk/api/v1/datafeed/");
+    url.searchParams.set("operatorRef", nocCode);
+    url.searchParams.set("api_key", process.env.BODS_API_KEY || "");
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(15_000),
     });
+    if (!response.ok)
+      throw new Error("Vehicle data is temporarily unavailable");
+    const vehicles = await parseDatafeed(await response.text());
+
     let line = operator;
     if (!vehicles && !operator.hasMissingLocationData) {
       const [updatedLine] = await db
@@ -40,7 +39,6 @@ export const getLocations = createServerFn({ method: "GET" })
         .returning();
       if (!updatedLine) throw new Error("Invalid operator code");
       line = updatedLine;
-      invalidateCache("operators:");
     }
     return { line, vehicles };
   });

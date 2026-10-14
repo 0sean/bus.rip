@@ -5,12 +5,18 @@ import * as schema from "./schema.d1";
 
 export const db = drizzle(env.DB, { schema });
 
-export async function replaceOperators(lines: schema.NewNocLine[]) {
-  // D1 batches roll back together. JSON uses one parameter regardless of feed size,
-  // avoiding D1's 100-bound-parameter limit for a regular bulk insert.
-  await db.batch([
-    db.delete(schema.nocLines),
-    db.insert(schema.nocLines).select(
+export async function updateOperators(
+  lines: schema.NewNocLine[],
+  removedLineNos: number[],
+) {
+  // Each JSON payload uses one parameter, avoiding D1's bound-parameter limit.
+  const remove = db.delete(schema.nocLines)
+    .where(sql`${schema.nocLines.lineNo} in (
+      select value from json_each(${JSON.stringify(removedLineNos)})
+    )`);
+  const upsert = db
+    .insert(schema.nocLines)
+    .select(
       db
         .select({
           id: sql`null`.as("id"),
@@ -27,7 +33,25 @@ export async function replaceOperators(lines: schema.NewNocLine[]) {
               "hasMissingLocationData",
             ),
         })
-        .from(sql`json_each(${JSON.stringify(lines)})`),
-    ),
-  ]);
+        .from(sql`json_each(${JSON.stringify(lines)})`)
+        // SQLite requires WHERE to disambiguate INSERT SELECT ... ON CONFLICT.
+        .where(sql`true`),
+    )
+    .onConflictDoUpdate({
+      target: schema.nocLines.lineNo,
+      set: {
+        nocCode: sql`excluded."nocCode"`,
+        publicName: sql`excluded."publicName"`,
+        referenceName: sql`excluded."referenceName"`,
+        hasMissingLocationData: sql`case
+          when ${schema.nocLines.nocCode} = excluded."nocCode"
+          then ${schema.nocLines.hasMissingLocationData}
+          else false end`,
+      },
+    });
+
+  // D1 batches roll back together; single statements are already atomic.
+  if (removedLineNos.length && lines.length) await db.batch([remove, upsert]);
+  else if (removedLineNos.length) await remove;
+  else if (lines.length) await upsert;
 }

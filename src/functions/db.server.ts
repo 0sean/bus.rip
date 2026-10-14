@@ -1,1 +1,1 @@
-export { db, replaceOperators } from "@database";
+export { db, updateOperators } from "@database";

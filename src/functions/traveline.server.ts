@@ -2,10 +2,19 @@ import { parseStringPromise } from "xml2js";
 
 import type { NocLine } from "@/db/schema";
 
-export async function parseOperators(xml: string): Promise<FormattedNocLine[]> {
+export async function fetchNocLines(): Promise<FormattedNocLine[]> {
+  const response = await fetch(
+    "https://www.travelinedata.org.uk/noc/api/1.0/nocrecords.xml",
+    { signal: AbortSignal.timeout(30_000) },
+  );
+  if (!response.ok) throw new Error("Operator data is temporarily unavailable");
+  return parseOperators(await response.text());
+}
+
+async function parseOperators(xml: string): Promise<FormattedNocLine[]> {
   const json: TravelineResponse = await parseStringPromise(xml),
-    lines = json.travelinedata.NOCLines[0].NOCLinesRecord.filter(
-      (line: any) =>
+    lines = (json.travelinedata?.NOCLines?.[0]?.NOCLinesRecord ?? []).filter(
+      (line) =>
         line.DateCeased[0] == "" &&
         line.Duplicate[0] != "Dup" &&
         line.Mode[0] == "Bus",

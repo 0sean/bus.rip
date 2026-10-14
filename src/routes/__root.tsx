@@ -7,7 +7,6 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { BackWatcher } from "@/components/Back";
-import { Telemetry } from "@/components/Telemetry";
 import globals from "@/styles/globals.css?url";
 import mapCss from "@/styles/map.css?url";
 import fontCss from "@/styles/fonts.css?url";
@@ -59,7 +58,6 @@ function RootDocument({ children }: { children: ReactNode }) {
       </head>
       <body className="bg-linear-to-tr from-zinc-950 to-zinc-900 dark !min-h-svh !pointer-events-auto font-sans">
         {children}
-        <Telemetry />
         <Scripts />
       </body>
     </html>

@@ -62,7 +62,8 @@ Configure these server-only variables in `.env` for Node, or `.dev.vars` / Wrang
 | ---------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | `DATABASE_PROVIDER`                                  | Build-time database choice: `postgres` (default) or `d1`                                     |
 | `DATABASE_URL`                                       | PostgreSQL connection URL; required only for PostgreSQL                                      |
-| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Redis connection for rate limiting                                                           |
+| `RATE_LIMIT_ENABLED`                                 | Set to `0` or `false` to disable app rate limiting; enabled by default                       |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Redis connection; required only when app rate limiting is enabled                            |
 | `BODS_API_KEY`                                       | Bus Open Data Service API key                                                                |
 | `IP_HEADER`                                          | Trusted proxy IP header; defaults to `CF-Connecting-IP`                                      |
 | `BUSLANE_BASE_URL`, `BUSLANE_API_KEY`                | Buslane timetable service URL and API key                                                    |
@@ -78,7 +79,7 @@ Update both schemas for shared changes, run `yarn db:generate --name=<change>`, 
 
 ### Data fetching and performance
 
-All application data reads use validated TanStack Start server functions in `src/functions`. Route loaders and polling share query options in `src/data/queries.ts`; each operation is defined directly in its server-function handler. Shared database and XML parsing helpers stay in `*.server.ts` modules. Per-resource rate limiting is attached with `src/middleware/rate-limit.ts`.
+All application data reads use validated TanStack Start server functions in `src/functions`. Route loaders and polling share query options in `src/data/queries.ts`; each operation is defined directly in its server-function handler. Shared database and XML parsing helpers stay in `*.server.ts` modules. Per-resource rate limiting is attached with `src/middleware/rate-limit.ts`. Set `RATE_LIMIT_ENABLED=0` to use your hosting platform's rate limiting instead; the app then skips Upstash entirely and does not require Redis credentials.
 
 - The SSR integration hydrates and streams query results.
 - Critical route data loads in parallel across matched routes. Secondary map stops are prefetched without blocking live vehicle data.

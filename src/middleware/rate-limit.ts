@@ -10,6 +10,9 @@ let limiter: Ratelimit | undefined;
 
 export const rateLimit = (resource: string) =>
   createMiddleware({ type: "function" }).server(async ({ next }) => {
+    const enabled = process.env.RATE_LIMIT_ENABLED?.trim().toLowerCase();
+    if (enabled === "0" || enabled === "false") return next();
+
     limiter ??= new Ratelimit({
       redis: Redis.fromEnv(),
       limiter: Ratelimit.slidingWindow(5, "10s"),

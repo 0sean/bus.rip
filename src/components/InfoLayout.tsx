@@ -1,4 +1,4 @@
-import type { NocLine } from "@prisma/client";
+import type { NocLine } from "@/db/schema";
 import type { ReactNode } from "react";
 export default function InfoLayout({
   children,

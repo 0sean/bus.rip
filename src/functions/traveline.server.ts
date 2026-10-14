@@ -1,6 +1,6 @@
 import { parseStringPromise } from "xml2js";
 
-import type { NocLine } from "@prisma/client";
+import type { NocLine } from "@/db/schema";
 
 export async function parseOperators(xml: string): Promise<FormattedNocLine[]> {
   const json: TravelineResponse = await parseStringPromise(xml),

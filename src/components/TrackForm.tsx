@@ -2,7 +2,7 @@ import { Button } from "./ui/button";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { getCookie, setCookie } from "@/lib/cookies";
 import { useNavigate } from "@tanstack/react-router";
-import type { NocLine } from "@prisma/client";
+import type { NocLine } from "@/db/schema";
 import { OperatorCombobox } from "./ui/combobox";
 import type { Feature } from "@/lib/utils";
 

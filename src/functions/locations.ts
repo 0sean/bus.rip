@@ -7,7 +7,9 @@ import {
   type Vehicle,
   type VehicleActivity,
 } from "@/lib/bods";
-import { prisma } from "./db.server";
+import { db } from "./db.server";
+import { eq } from "drizzle-orm";
+import { nocLines } from "@/db/schema";
 import { cached, invalidateCache } from "./cache.server";
 import { getOperator } from "./operators";
 import { operatorCode } from "./validation";
@@ -31,10 +33,13 @@ export const getLocations = createServerFn({ method: "GET" })
     });
     let line = operator;
     if (!vehicles && !operator.hasMissingLocationData) {
-      line = await prisma.nocLine.update({
-        where: { id: operator.id },
-        data: { hasMissingLocationData: true },
-      });
+      const [updatedLine] = await db
+        .update(nocLines)
+        .set({ hasMissingLocationData: true })
+        .where(eq(nocLines.id, operator.id))
+        .returning();
+      if (!updatedLine) throw new Error("Invalid operator code");
+      line = updatedLine;
       invalidateCache("operators:");
     }
     return { line, vehicles };

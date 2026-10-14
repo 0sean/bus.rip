@@ -1,4 +1,4 @@
-import type { NocLine } from "@prisma/client";
+import type { NocLine } from "@/db/schema";
 import { AnimatedFeatures } from "./FeatureBadge";
 import TrackForm from "./TrackForm";
 import { useState } from "react";

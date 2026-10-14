@@ -1,4 +1,4 @@
-import type { NocLine } from "@prisma/client";
+import type { NocLine } from "@/db/schema";
 
 export type DatafeedRouteResponse = {
   error?: string;

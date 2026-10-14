@@ -12,12 +12,12 @@
 
 ### Self-hosting/running locally
 
-This app uses TanStack Start, TanStack Router, and TanStack Query with Vite. It requires Node.js 22.12+ and Yarn 4. PostgreSQL stores operators through Prisma; Upstash Redis provides server-function rate limits.
+This app uses TanStack Start, TanStack Router, and TanStack Query with Vite. It requires Node.js 22.12+ and Yarn 4. PostgreSQL stores operators through Drizzle ORM and a shared node-postgres connection pool; Upstash Redis provides server-function rate limits.
 
 ```sh
 corepack enable
 yarn install
-yarn prisma migrate deploy
+yarn db:migrate
 yarn dev
 ```
 
@@ -25,8 +25,9 @@ Configure these server-only variables in `.env` locally or your hosting environm
 
 | Variable                                             | Purpose                                                                             |
 | ---------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `POSTGRES_PRISMA_URL`                                | PostgreSQL connection URL used by the Prisma runtime, usually pooled                |
-| `POSTGRES_URL_NON_POOLING`                           | Direct PostgreSQL URL used by Prisma migrations                                     |
+| `DATABASE_URL`                                       | PostgreSQL connection URL used by the application, usually pooled                   |
+| `POSTGRES_PRISMA_URL`                                | Legacy fallback for `DATABASE_URL`; existing deployments can keep this variable     |
+| `POSTGRES_URL_NON_POOLING`                           | Optional direct PostgreSQL URL used by Drizzle migrations                           |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Redis connection for rate limiting                                                  |
 | `BODS_API_KEY`                                       | Bus Open Data Service API key                                                       |
 | `CRON_TOKEN` or `CRON_SECRET`                        | Bearer token for the operator refresh job; Vercel sends `CRON_SECRET` automatically |
@@ -36,7 +37,11 @@ Configure these server-only variables in `.env` locally or your hosting environm
 | `SENTRY_DSN`                                         | Optional Sentry DSN for server and browser monitoring                               |
 | `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`  | Optional build-time source map upload credentials                                   |
 
-The schema uses `POSTGRES_PRISMA_URL` and `POSTGRES_URL_NON_POOLING`; a `DATABASE_URL` variable alone does not satisfy that schema. Never prefix database URLs or API keys with `VITE_`. Only the public Sentry DSN is exposed to the browser.
+The runtime prefers `DATABASE_URL`, falling back to `POSTGRES_PRISMA_URL`. Migrations prefer `POSTGRES_URL_NON_POOLING`, then use the runtime URL. A `DATABASE_URL` alone is sufficient. Never prefix database URLs or API keys with `VITE_`. Only the public Sentry DSN is exposed to the browser.
+
+The Drizzle schema is defined in `src/db/schema.ts` and preserves the existing quoted `"NocLine"` table, column names, serial primary key, and unique line-number index. The baseline migration in `drizzle/0000_baseline.sql` is safe for existing Prisma databases: it keeps operator rows and IDs, adds the location-data flag only when missing, and records Drizzle migration history. The old `_prisma_migrations` table can remain; Drizzle does not modify it. Run `yarn db:migrate` once when adopting Drizzle and on subsequent deployments.
+
+For schema changes, edit `src/db/schema.ts`, run `yarn db:generate --name=<change>`, review the generated SQL, then run `yarn db:migrate`. `yarn db:studio` opens Drizzle Studio. Schema generation and application builds do not connect to the database.
 
 Populate operators by sending an authenticated GET request to `/api/cron`. The job replaces the operator list atomically and invalidates the server's operator cache. The existing monthly cron schedule is retained in `vercel.json`.
 
@@ -61,14 +66,8 @@ Timetable links opened from tracking use a drawer over the mounted map. Direct t
 ```sh
 yarn lint
 yarn typecheck
-yarn test
-yarn playwright install chromium
-yarn test:e2e
-PLAYWRIGHT_PRODUCTION=1 yarn test:e2e
 yarn build
 ```
-
-The browser suite runs a separate Vite configuration that replaces transit services with isolated fixtures. It tests SSR/hydration, direct URLs, navigation, map persistence, polling, unknown operators, and cron authentication without database writes or external transit requests. The production browser check builds fixtures into the isolated `.output-test` directory. Unit tests cover cache expiry, concurrent reads, failed reads, eviction, and timetable integration behavior.
 
 <blockquote>
   <details>

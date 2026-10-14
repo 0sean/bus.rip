@@ -12,40 +12,72 @@
 
 ### Self-hosting/running locally
 
-This app uses TanStack Start, TanStack Router, and TanStack Query with Vite. It requires Node.js 22.12+ and Yarn 4. PostgreSQL stores operators through Drizzle ORM and a shared node-postgres connection pool; Upstash Redis provides server-function rate limits.
+This app uses TanStack Start, TanStack Router, and TanStack Query with Vite. It requires Node.js 22.12+ and Yarn 4. Choose the database **when building the deployment** with `DATABASE_PROVIDER=postgres` (default) or `DATABASE_PROVIDER=d1`. PostgreSQL runs on Node/Vercel; D1 runs on Cloudflare Workers with a native `DB` binding. Changing provider requires rebuilding and does not copy data between databases.
 
 ```sh
 corepack enable
 yarn install
-yarn db:migrate
-yarn dev
 ```
 
-Configure these server-only variables in `.env` locally or your hosting environment:
+#### PostgreSQL (Node or Vercel)
 
-| Variable                                             | Purpose                                                                             |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `DATABASE_URL`                                       | PostgreSQL connection URL used by the application, usually pooled                   |
-| `POSTGRES_PRISMA_URL`                                | Legacy fallback for `DATABASE_URL`; existing deployments can keep this variable     |
-| `POSTGRES_URL_NON_POOLING`                           | Optional direct PostgreSQL URL used by Drizzle migrations                           |
-| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Redis connection for rate limiting                                                  |
-| `BODS_API_KEY`                                       | Bus Open Data Service API key                                                       |
-| `CRON_TOKEN` or `CRON_SECRET`                        | Bearer token for the operator refresh job; Vercel sends `CRON_SECRET` automatically |
-| `IP_HEADER`                                          | Trusted proxy IP header; defaults to `CF-Connecting-IP`                             |
-| `BUSLANE_BASE_URL`, `BUSLANE_API_KEY`                | Buslane timetable service URL and API key                                           |
-| `BUSLANE_ENABLED`                                    | Set to `0` to disable the timetable integration                                     |
-| `SENTRY_DSN`                                         | Optional Sentry DSN for server and browser monitoring                               |
-| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`  | Optional build-time source map upload credentials                                   |
+Set `DATABASE_PROVIDER=postgres` and `DATABASE_URL` in `.env` locally or your deployment environment, then run:
 
-The runtime prefers `DATABASE_URL`, falling back to `POSTGRES_PRISMA_URL`. Migrations prefer `POSTGRES_URL_NON_POOLING`, then use the runtime URL. A `DATABASE_URL` alone is sufficient. Never prefix database URLs or API keys with `VITE_`. Only the public Sentry DSN is exposed to the browser.
+```sh
+yarn db:migrate
+yarn dev
+# Production:
+yarn build
+yarn start
+```
 
-The Drizzle schema is defined in `src/db/schema.ts` and preserves the existing quoted `"NocLine"` table, column names, serial primary key, and unique line-number index. The baseline migration in `drizzle/0000_baseline.sql` is safe for existing Prisma databases: it keeps operator rows and IDs, adds the location-data flag only when missing, and records Drizzle migration history. The old `_prisma_migrations` table can remain; Drizzle does not modify it. Run `yarn db:migrate` once when adopting Drizzle and on subsequent deployments.
+The PostgreSQL schema in `src/db/schema.postgres.ts` preserves the existing quoted `"NocLine"` table, column names, serial primary key, and unique line-number index. The baseline migration in `drizzle/0000_baseline.sql` keeps existing Prisma rows and IDs, adds the location-data flag only when missing, and records Drizzle migration history. The old `_prisma_migrations` table can remain. Run `yarn db:migrate` once when adopting Drizzle and on subsequent deployments.
 
-For schema changes, edit `src/db/schema.ts`, run `yarn db:generate --name=<change>`, review the generated SQL, then run `yarn db:migrate`. `yarn db:studio` opens Drizzle Studio. Schema generation and application builds do not connect to the database.
+Node builds produce a Nitro server. Vercel builds use Nitro's Vercel preset and the monthly cron in `vercel.json`. `yarn start` loads `.env` when present and starts the chosen provider's production server: Node for PostgreSQL, a local Worker preview for D1. `yarn preview` also previews either build through Vite.
 
-Populate operators by sending an authenticated GET request to `/api/cron`. The job replaces the operator list atomically and invalidates the server's operator cache. The existing monthly cron schedule is retained in `vercel.json`.
+#### Cloudflare D1 (Workers)
 
-`yarn build` produces a Nitro Node server; `yarn start` serves it and loads `.env` when present. Vercel builds use Nitro's Vercel preset with explicit TanStack Start framework detection.
+Set `DATABASE_PROVIDER=d1` in `.env` or your build environment. Configure the `DB` binding in `wrangler.jsonc` with your D1 database's name. Local development works without a database ID; add your database's `database_id` before remote migrations or deployment.
+
+```sh
+yarn db:migrate:d1
+yarn dev
+# Build and run the production Worker locally:
+yarn build
+yarn start
+# After configuring your Cloudflare account and database ID:
+yarn db:migrate:d1:remote
+yarn wrangler deploy
+```
+
+The local database persists in `.wrangler/state`; local migrations never touch the remote database. For local Worker secrets, use `.dev.vars` (ignored by Git). For deployed Workers, use Wrangler secrets for API keys and tokens and Wrangler `vars` for non-secret settings. `DATABASE_URL` is unnecessary for D1. The database binding is server-only.
+
+D1 uses the SQLite schema in `src/db/schema.d1.ts` and migrations in `drizzle/d1`. Both providers expose the same `db` import and operator row types; booleans are mapped by Drizzle. Operator refresh uses a PostgreSQL transaction or an [atomic D1 batch](https://developers.cloudflare.com/d1/worker-api/d1-database/). D1 bulk inserts read a single bound JSON payload so large feeds do not exceed the bound-parameter limit.
+
+After creating a fresh database, populate it with an authenticated GET request to `/api/cron`. On Workers, configure an external scheduler to call that endpoint with the bearer token; `vercel.json` only schedules Vercel deployments.
+
+#### Configuration and schema changes
+
+Configure these server-only variables in `.env` for Node, or `.dev.vars` / Wrangler secrets and variables for Workers:
+
+| Variable                                             | Purpose                                                                                      |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `DATABASE_PROVIDER`                                  | Build-time database choice: `postgres` (default) or `d1`                                     |
+| `DATABASE_URL`                                       | PostgreSQL connection URL; required only for PostgreSQL                                      |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Redis connection for rate limiting                                                           |
+| `BODS_API_KEY`                                       | Bus Open Data Service API key                                                                |
+| `CRON_TOKEN` or `CRON_SECRET`                        | Bearer token for operator refresh; Vercel sends `CRON_SECRET` automatically                  |
+| `IP_HEADER`                                          | Trusted proxy IP header; defaults to `CF-Connecting-IP`                                      |
+| `BUSLANE_BASE_URL`, `BUSLANE_API_KEY`                | Buslane timetable service URL and API key                                                    |
+| `BUSLANE_ENABLED`                                    | Set to `0` to disable timetable integration                                                  |
+| `SENTRY_DSN`                                         | Optional Sentry DSN for server monitoring; set at build time too to expose it to the browser |
+| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`  | Optional build-time source map upload credentials                                            |
+
+Never prefix database URLs or API keys with `VITE_`. Only the public Sentry DSN is exposed to the browser.
+
+Update both schemas for shared changes, run `yarn db:generate --name=<change>`, and review the generated SQL before applying it. This command always generates migrations for both PostgreSQL and D1, regardless of `DATABASE_PROVIDER`, and forwards the same options to both generators. `yarn db:migrate` follows `DATABASE_PROVIDER`; D1 defaults to local migrations, with `--remote` required for the deployed database. Keep the PostgreSQL and D1 migrations separate. Use `yarn db:migrate:d1` and `yarn db:migrate:d1:remote` to explicitly apply D1 migrations locally or remotely.
+
+`yarn db:studio` opens PostgreSQL Drizzle Studio. Inspect D1 with `yarn wrangler d1 execute DB --local --command="<SQL>"` (or `--remote`). Schema generation and application builds do not connect to your remote database. The authenticated refresh job replaces the operator list atomically and invalidates the server's operator cache.
 
 ### Data fetching and performance
 
@@ -57,7 +89,7 @@ All application data reads use validated TanStack Start server functions in `src
 - The browser-only map uses selective SSR. Timetables, routes, trips, and operator selection render their data on the server.
 - Vehicle feeds refresh every 10 seconds and pause polling in hidden tabs. Server caching deduplicates concurrent public reads: 10 seconds for vehicle feeds, 12 hours for timetable data, and one hour for operators. Failed reads are evicted. Browser query freshness is 10 seconds for vehicles, 12 hours for timetables, and five minutes for operators.
 - The public home page advertises a five-minute shared-cache window with stale revalidation. Dynamic tracking pages stay live. They are not statically prerendered, so builds do not require database or transit API access.
-- Fonts are self-hosted, and Nitro emits compressed public assets. Map tiles remain direct renderer requests to OpenStreetMap.
+- Fonts are self-hosted, and Node/Vercel builds emit compressed public assets. Map tiles remain direct renderer requests to OpenStreetMap.
 
 Timetable links opened from tracking use a drawer over the mounted map. Direct timetable URLs use a full-page layout. Query caches are reused through drawer navigation and browser history.
 
@@ -65,8 +97,9 @@ Timetable links opened from tracking use a drawer over the mounted map. Direct t
 
 ```sh
 yarn lint
-yarn typecheck
-yarn build
+yarn typecheck # checks both database dialects
+DATABASE_PROVIDER=postgres yarn build
+DATABASE_PROVIDER=d1 yarn build
 ```
 
 <blockquote>

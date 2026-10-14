@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest, setResponseStatus } from "@tanstack/react-start/server";
-import { db } from "./db.server";
+import { db, replaceOperators } from "./db.server";
 import { eq } from "drizzle-orm";
 import { nocLines } from "@/db/schema";
 import { cached, invalidateCache } from "./cache.server";
@@ -42,10 +42,7 @@ export const refreshOperators = createServerFn({ method: "POST" }).handler(
       throw new Error("Operator data is temporarily unavailable");
     const lines = await parseOperators(await response.text());
     if (!lines.length) throw new Error("Operator feed is empty");
-    await db.transaction(async (transaction) => {
-      await transaction.delete(nocLines);
-      await transaction.insert(nocLines).values(lines);
-    });
+    await replaceOperators(lines);
     invalidateCache("operators:");
     return { success: true };
   },

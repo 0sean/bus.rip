@@ -1,21 +1,47 @@
+import { createServerFn } from "@tanstack/react-start";
+import { rateLimit } from "@/middleware/rate-limit";
 import { parseStringPromise } from "xml2js";
+import {
+  Validity,
+  type DatafeedRouteResponse,
+  type Vehicle,
+  type VehicleActivity,
+} from "@/lib/bods";
+import { prisma } from "./db.server";
+import { cached, invalidateCache } from "./cache.server";
+import { getOperator } from "./operators";
+import { operatorCode } from "./validation";
 
-import { Validity, type Vehicle, type VehicleActivity } from "@/lib/bods";
-import { cached } from "./cache.server";
+export const getLocations = createServerFn({ method: "GET" })
+  .middleware([rateLimit("locations")])
+  .validator(operatorCode)
+  .handler(async ({ data: nocCode }): Promise<DatafeedRouteResponse> => {
+    const operator = await getOperator({ data: nocCode });
+    if (!operator) throw new Error("Invalid operator code");
+    const vehicles = await cached(`vehicles:${nocCode}`, 10_000, async () => {
+      const url = new URL("https://data.bus-data.dft.gov.uk/api/v1/datafeed/");
+      url.searchParams.set("operatorRef", nocCode);
+      url.searchParams.set("api_key", process.env.BODS_API_KEY || "");
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!response.ok)
+        throw new Error("Vehicle data is temporarily unavailable");
+      return parseDatafeed(await response.text());
+    });
+    let line = operator;
+    if (!vehicles && !operator.hasMissingLocationData) {
+      line = await prisma.nocLine.update({
+        where: { id: operator.id },
+        data: { hasMissingLocationData: true },
+      });
+      invalidateCache("operators:");
+    }
+    return { line, vehicles };
+  });
 
-export function getDatafeed(nocCode: string): Promise<Vehicle[] | null> {
-  return cached(`vehicles:${nocCode}`, 10_000, () => fetchDatafeed(nocCode));
-}
-
-async function fetchDatafeed(nocCode: string): Promise<Vehicle[] | null> {
-  const r = await fetch(
-      `https://data.bus-data.dft.gov.uk/api/v1/datafeed/?operatorRef=${nocCode}&api_key=${process.env.BODS_API_KEY}`,
-      { signal: AbortSignal.timeout(15_000) },
-    ),
-    xml = await checkedText(r),
-    data: DatafeedResponse = await parseStringPromise(xml);
-
-  return formatDatafeedResponse(data);
+async function parseDatafeed(xml: string): Promise<Vehicle[] | null> {
+  return formatDatafeedResponse(await parseStringPromise(xml));
 }
 
 function formatDatafeedResponse(data: DatafeedResponse): Vehicle[] | null {
@@ -59,11 +85,6 @@ function formatDatafeedResponse(data: DatafeedResponse): Vehicle[] | null {
         validity: Validity.Valid,
       }))
     : null;
-}
-
-async function checkedText(response: Response) {
-  if (!response.ok) throw new Error("Vehicle data is temporarily unavailable");
-  return response.text();
 }
 
 /* TransXChange datafeed response types */

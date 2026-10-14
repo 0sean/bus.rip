@@ -44,7 +44,7 @@ Populate operators by sending an authenticated GET request to `/api/cron`. The j
 
 ### Data fetching and performance
 
-All application data reads use validated TanStack Start server functions in `src/data/transit.ts`. Route loaders and polling share query options in `src/data/queries.ts`; upstream HTTP clients, XML parsing, database access, and credentials stay in `*.server.ts` modules. The authenticated cron URL remains an HTTP endpoint for schedulers.
+All application data reads use validated TanStack Start server functions in `src/functions`. Route loaders and polling share query options in `src/data/queries.ts`; each operation is defined directly in its server-function handler. Shared cache, database, and XML parsing helpers stay in `*.server.ts` modules. Per-resource rate limiting is attached with `src/middleware/rate-limit.ts`. The authenticated cron URL remains an HTTP endpoint for schedulers.
 
 - Each SSR request gets its own QueryClient. The SSR integration hydrates and streams query results, so fresh page data is reused in the browser.
 - Critical route data loads in parallel across matched routes. Secondary map stops are prefetched without blocking live vehicle data.

@@ -2,13 +2,8 @@ import { parseStringPromise } from "xml2js";
 
 import type { NocLine } from "@prisma/client";
 
-export async function fetchNocLines(): Promise<FormattedNocLine[]> {
-  const r = await fetch(
-      "https://www.travelinedata.org.uk/noc/api/1.0/nocrecords.xml",
-      { signal: AbortSignal.timeout(30_000) },
-    ),
-    xml = await checkedText(r),
-    json: TravelineResponse = await parseStringPromise(xml),
+export async function parseOperators(xml: string): Promise<FormattedNocLine[]> {
+  const json: TravelineResponse = await parseStringPromise(xml),
     lines = json.travelinedata.NOCLines[0].NOCLinesRecord.filter(
       (line: any) =>
         line.DateCeased[0] == "" &&
@@ -101,8 +96,3 @@ type NocLinesRecord = {
 };
 
 type FormattedNocLine = Omit<NocLine, "id">;
-
-async function checkedText(response: Response) {
-  if (!response.ok) throw new Error("Operator data is temporarily unavailable");
-  return response.text();
-}

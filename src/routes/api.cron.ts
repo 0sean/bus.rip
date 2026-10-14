@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { refreshOperators } from "@/data/transit";
+import { refreshOperators } from "@/functions/operators";
 export const Route = createFileRoute("/api/cron")({
   server: {
     handlers: {

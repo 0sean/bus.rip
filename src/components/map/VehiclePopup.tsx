@@ -2,13 +2,10 @@ import { Popup } from "react-map-gl/maplibre";
 import { FaArrowRight, FaArrowUpFromBracket } from "react-icons/fa6";
 import { formatDistanceToNow } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
-import { Instrument_Sans } from "next/font/google";
 
 import type { Vehicle } from "@/lib/bods";
 import { renderTime } from "@/lib/map";
 import type { Dispatch, SetStateAction } from "react";
-
-const instrumentSans = Instrument_Sans({ subsets: ["latin"] });
 
 export default function VehiclePopup({
   vehicle,
@@ -52,7 +49,7 @@ export default function VehiclePopup({
       latitude={Number(vehicle.latitude)}
       closeOnClick={false} // This must be false or the popup doesn't show for some reason..
       onClose={togglePopup}
-      className={`pb-2 ${instrumentSans.className}`}
+      className="pb-2"
     >
       <div className="flex w-full">
         <div className="w-2/5">
@@ -78,12 +75,15 @@ export default function VehiclePopup({
           {following ? "Following" : "Follow"}
         </button>
         <button
-          onClick={() => {
-            const url = `${window.location.href}?vehicleId=${vehicle.ref}`;
+          onClick={async () => {
+            const shareUrl = new URL(window.location.href);
+            shareUrl.searchParams.set("vehicleId", vehicle.ref);
+            const url = shareUrl.toString();
             try {
-              navigator.share({ url });
-            } catch (e) {
-              navigator.clipboard.writeText(url);
+              if (navigator.share) await navigator.share({ url });
+              else await navigator.clipboard.writeText(url);
+            } catch {
+              await navigator.clipboard.writeText(url);
             }
           }}
           className="grow-0 w-[32px] p-2 rounded-sm mt-2 border bg-zinc-800/25 hover:bg-zinc-800/50 transition-colors border-zinc-600/50 flex items-center justify-center"

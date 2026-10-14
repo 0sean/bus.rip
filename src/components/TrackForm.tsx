@@ -1,74 +1,73 @@
-"use client";
-
 import { Button } from "./ui/button";
 import { useEffect, useRef, useState, useMemo } from "react";
-import { useGetCookie, setCookie } from "cookies-next";
+import { getCookie, setCookie } from "@/lib/cookies";
+import { useNavigate } from "@tanstack/react-router";
+import type { NocLine } from "@prisma/client";
 import { OperatorCombobox } from "./ui/combobox";
 import type { Feature } from "@/lib/utils";
-import { hardNavigate } from "@/lib/hardNavigate";
 
 export default function TrackForm({
   lines,
   feature,
 }: {
-  lines: any[];
+  lines: NocLine[];
   feature: Feature;
 }) {
+  const navigate = useNavigate();
   const [line, setLine] = useState<string | null>(null),
     [loading, setLoading] = useState(false),
-    options = useMemo(
-      () => {
-        const preferredOperators = [
-          "Arriva",
-          "Stagecoach",
-          "Brighton & Hove Bus and Coach Company",
-          "East Yorkshire",
-          "Go-Ahead",
-          "Go Ahead",
-          "Go North East",
-          "Go North West",
-          "Oxford Bus Company",
-          "Metrobus",
-        ];
+    options = useMemo(() => {
+      const preferredOperators = [
+        "Arriva",
+        "Stagecoach",
+        "Brighton & Hove Bus and Coach Company",
+        "East Yorkshire",
+        "Go-Ahead",
+        "Go Ahead",
+        "Go North East",
+        "Go North West",
+        "Oxford Bus Company",
+        "Metrobus",
+      ];
 
-        return [...lines]
-          .sort((a, b) => {
-            if (a.hasMissingLocationData !== b.hasMissingLocationData) {
-              return Number(a.hasMissingLocationData) - Number(b.hasMissingLocationData);
-            }
+      return [...lines]
+        .sort((a, b) => {
+          if (a.hasMissingLocationData !== b.hasMissingLocationData) {
+            return (
+              Number(a.hasMissingLocationData) -
+              Number(b.hasMissingLocationData)
+            );
+          }
 
-            const aIsPreferred = preferredOperators.some((name) =>
-                a.publicName.includes(name),
-              ),
-              bIsPreferred = preferredOperators.some((name) =>
-                b.publicName.includes(name),
-              );
+          const aIsPreferred = preferredOperators.some((name) =>
+              a.publicName.includes(name),
+            ),
+            bIsPreferred = preferredOperators.some((name) =>
+              b.publicName.includes(name),
+            );
 
-            if (aIsPreferred !== bIsPreferred) {
-              return aIsPreferred ? -1 : 1;
-            }
+          if (aIsPreferred !== bIsPreferred) {
+            return aIsPreferred ? -1 : 1;
+          }
 
-            return a.publicName.localeCompare(b.publicName);
-          })
-          .map((l) => {
-            const label = `${l.publicName}${
-              l.referenceName != l.publicName && l.referenceName
-                ? ` - ${l.referenceName}`
-                : ""
-            }`;
+          return a.publicName.localeCompare(b.publicName);
+        })
+        .map((l) => {
+          const label = `${l.publicName}${
+            l.referenceName != l.publicName && l.referenceName
+              ? ` - ${l.referenceName}`
+              : ""
+          }`;
 
-            return {
-              value: JSON.stringify([l.nocCode, label]),
-              label: l.publicName,
-              subtitle: l.referenceName != l.publicName ? l.referenceName : "",
-              hasMissingLocationData: l.hasMissingLocationData,
-            };
-          });
-      },
-      [lines],
-    ),
-    [favourites, setFavourites] = useState<any[]>([]),
-    getCookie = useGetCookie(),
+          return {
+            value: JSON.stringify([l.nocCode, label]),
+            label: l.publicName,
+            subtitle: l.referenceName != l.publicName ? l.referenceName : "",
+            hasMissingLocationData: l.hasMissingLocationData,
+          };
+        });
+    }, [lines]),
+    [favourites, setFavourites] = useState<string[]>([]),
     favouritesLoaded = useRef(false);
 
   useEffect(() => {
@@ -77,7 +76,7 @@ export default function TrackForm({
       const option = options.find((o) => o.value == cookie);
       if (option) setLine(option.value);
     }
-  }, [getCookie, options]);
+  }, [options]);
 
   useEffect(() => {
     if (!favouritesLoaded.current) {
@@ -91,7 +90,7 @@ export default function TrackForm({
         expires: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
       });
     }
-  }, [favourites, getCookie]);
+  }, [favourites]);
 
   return (
     <>
@@ -107,7 +106,9 @@ export default function TrackForm({
           {favourites.map((f) => (
             <button
               key={f}
-              onClick={() => setLine(options.find((o) => o.value == f)!.value)}
+              onClick={() =>
+                setLine(options.find((o) => o.value == f)?.value ?? null)
+              }
               className="max-w-[150px] whitespace-nowrap text-ellipsis overflow-hidden border rounded-full px-3 py-1 border-zinc-800 text-zinc-300 text-xs"
             >
               {options.find((o) => o.value == f)?.label}
@@ -117,7 +118,8 @@ export default function TrackForm({
       )}
       <Button
         className="mt-4 w-fit"
-        onClick={() => {
+        disabled={!line || loading}
+        onClick={async () => {
           if (line != null) {
             setLoading(true);
             setCookie("line", line, {
@@ -127,12 +129,21 @@ export default function TrackForm({
             });
 
             const nocCode = JSON.parse(line)[0];
-            if (feature === "tracking") {
-              hardNavigate(`/${nocCode}`);
-            } else if (feature === "timetables") {
-              hardNavigate(`/${nocCode}/timetables`);
-            } else if (feature === "fares") {
-              hardNavigate(`/${nocCode}/fares`);
+            try {
+              const to =
+                feature === "tracking"
+                  ? "/$nocCode"
+                  : feature === "timetables"
+                    ? "/$nocCode/timetables"
+                    : "/$nocCode/fares";
+              await navigate({
+                to,
+                params: { nocCode },
+                search: {},
+                state: { mapView: false },
+              });
+            } finally {
+              setLoading(false);
             }
           }
         }}

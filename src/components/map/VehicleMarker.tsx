@@ -1,5 +1,5 @@
-import { Marker, useMap } from "react-map-gl/maplibre";
-import { useMemo, useState, memo, useCallback } from "react";
+import { Marker } from "react-map-gl/maplibre";
+import { useMemo, memo } from "react";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 
 import { Vehicle, Validity } from "@/lib/bods";

@@ -1,13 +1,10 @@
-"use client";
-
 import {
   getRouteRow,
   type RouteWithStops,
   type RouteRow,
-  type Trip,
-  TripWithStops,
+  type TripWithStops,
 } from "@/lib/buslane";
-import { useRouter } from "next/navigation";
+import { Link, useLocation } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Back } from "../Back";
 
@@ -55,8 +52,7 @@ function RouteTrips({
     trips = useMemo(
       () => (tab == "outbound" ? outboundTrips : inboundTrips),
       [tab, outboundTrips, inboundTrips],
-    ),
-    router = useRouter();
+    );
 
   return (
     <div className="flex flex-col gap-2 p-2 bg-zinc-800/25 rounded flex-1 mt-2 border border-zinc-800 min-h-0">
@@ -76,19 +72,14 @@ function RouteTrips({
       </div>
       <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent flex-1 min-h-0">
         <div className="w-full my-2 rounded-md flex flex-col gap-2">
-          {trips
+          {[...trips]
             .sort((a, b) =>
-              (a.stop_times || [])[0]?.departure_time.localeCompare(
-                (b.stop_times || [])[0]?.departure_time,
+              (a.stop_times?.[0]?.departure_time || "").localeCompare(
+                b.stop_times?.[0]?.departure_time || "",
               ),
             )
             .map((trip) => (
-              <RouteTripRow
-                key={trip.id}
-                trip={trip}
-                router={router}
-                noc={noc}
-              />
+              <RouteTripRow key={trip.id} trip={trip} noc={noc} />
             ))}
         </div>
       </div>
@@ -96,20 +87,15 @@ function RouteTrips({
   );
 }
 
-function RouteTripRow({
-  trip,
-  router,
-  noc,
-}: {
-  trip: TripWithStops;
-  router: ReturnType<typeof useRouter>;
-  noc: string;
-}) {
+function RouteTripRow({ trip, noc }: { trip: TripWithStops; noc: string }) {
+  const mapView = useLocation({ select: (location) => location.state.mapView });
   return (
-    <div
+    <Link
+      to="/$nocCode/timetables/trip/$trip"
+      params={{ nocCode: noc, trip: trip.id }}
+      state={{ mapView }}
       key={trip.id}
       className="border rounded-sm bg-zinc-800/25 hover:bg-zinc-800/50 transition-colors cursor-pointer p-4"
-      onClick={() => router.push(`/${noc}/timetables/trip/${trip.id}`)}
     >
       <div className="flex gap-2 items-center">
         <h2 className="text-sm font-semibold flex gap-2">
@@ -127,6 +113,6 @@ function RouteTripRow({
           {trip.headsign}
         </h2>
       </div>
-    </div>
+    </Link>
   );
 }

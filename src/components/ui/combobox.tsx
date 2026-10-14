@@ -1,3 +1,4 @@
+import { useHydrated } from "@tanstack/react-router";
 import { cn, Feature } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,12 +28,18 @@ export function OperatorCombobox({
   favourites,
   setFavourites,
 }: {
-  options: { value: string; label: string; subtitle: string; hasMissingLocationData: boolean }[];
+  options: {
+    value: string;
+    label: string;
+    subtitle: string;
+    hasMissingLocationData: boolean;
+  }[];
   setValue: Dispatch<SetStateAction<string | null>>;
   value: string | null;
   favourites: string[];
   setFavourites: Dispatch<SetStateAction<string[]>>;
 }) {
+  const hydrated = useHydrated();
   const [open, setOpen] = useState(false),
     isDesktop = useMediaQuery("(min-width: 768px)");
 
@@ -44,6 +51,7 @@ export function OperatorCombobox({
             value={value}
             options={options}
             open={open}
+            disabled={!hydrated}
           />
         </PopoverTrigger>
         <PopoverContent
@@ -66,7 +74,12 @@ export function OperatorCombobox({
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <OperatorComboboxTrigger value={value} options={options} open={open} />
+        <OperatorComboboxTrigger
+          value={value}
+          options={options}
+          open={open}
+          disabled={!hydrated}
+        />
       </DrawerTrigger>
       <DrawerContent>
         <div className="mt-4">
@@ -92,7 +105,12 @@ function OperatorComboboxContent({
   setFavourites,
   setOpen,
 }: {
-  options: { value: string; label: string; subtitle: string; hasMissingLocationData: boolean }[];
+  options: {
+    value: string;
+    label: string;
+    subtitle: string;
+    hasMissingLocationData: boolean;
+  }[];
   setValue: Dispatch<SetStateAction<string | null>>;
   value: string | null;
   favourites: string[];
@@ -147,7 +165,12 @@ function OperatorComboboxOptions({
   setFavourites,
   setOpen,
 }: {
-  options: { value: string; label: string; subtitle: string; hasMissingLocationData: boolean }[];
+  options: {
+    value: string;
+    label: string;
+    subtitle: string;
+    hasMissingLocationData: boolean;
+  }[];
   setValue: Dispatch<SetStateAction<string | null>>;
   value: string | null;
   favourites: string[];
@@ -180,10 +203,14 @@ function OperatorComboboxOptions({
               <div className="inline-flex flex-col">
                 <span>{option.label}</span>
                 {option.subtitle && (
-                  <span className="text-xs text-zinc-500">{option.subtitle}</span>
+                  <span className="text-xs text-zinc-500">
+                    {option.subtitle}
+                  </span>
                 )}
                 {option.hasMissingLocationData && (
-                  <span className="text-xs text-amber-400">Historically no live location</span>
+                  <span className="text-xs text-amber-400">
+                    Historically no live location
+                  </span>
                 )}
               </div>
               {favourites.includes(option.value) ? (
@@ -267,9 +294,14 @@ function OperatorComboboxTrigger({
   ...props
 }: {
   value: string | null;
-  options: { value: string; label: string; subtitle: string; hasMissingLocationData: boolean }[];
+  options: {
+    value: string;
+    label: string;
+    subtitle: string;
+    hasMissingLocationData: boolean;
+  }[];
   open: boolean;
-}) {
+} & Omit<React.ComponentProps<typeof Button>, "value">) {
   return (
     <Button
       variant="outline"

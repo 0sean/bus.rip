@@ -1,21 +1,12 @@
 import { Menubar, MenubarMenu, MenubarTrigger } from "@/components/ui/menubar";
 import { FaArrowLeft } from "react-icons/fa";
-import { usePathname, useRouter } from "next/navigation";
+import { useLocation, useNavigate, Link } from "@tanstack/react-router";
 import { useStopwatch } from "react-timer-hook";
 import { Progress } from "@/components/ui/progress";
-import {
-  ComponentProps,
-  Dispatch,
-  memo,
-  SetStateAction,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { memo, useEffect, useMemo, useState, useRef } from "react";
 import { AnimatePresence } from "motion/react";
 import * as motion from "motion/react-client";
 import { LuEllipsis } from "react-icons/lu";
-import Link from "next/link";
 
 import type { DatafeedRouteResponse } from "@/lib/bods";
 import { cn } from "@/lib/utils";
@@ -28,7 +19,7 @@ function MapNavbar({
   data: DatafeedRouteResponse | null;
   isLoading: boolean;
 }) {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   return (
     <div className="fixed top-0 left-0 p-2 w-screen flex flex-col items-center gap-2 z-60">
@@ -37,7 +28,7 @@ function MapNavbar({
           <MenubarTrigger
             className="hover:bg-zinc-800 transition-colors"
             onClick={() => {
-              router.push("/");
+              void navigate({ to: "/" });
             }}
           >
             <FaArrowLeft />
@@ -59,8 +50,11 @@ function MapNavbar({
 export default memo(MapNavbar);
 
 function MapNavbarTabs({ noc }: { noc?: string }) {
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const [shown, setShown] = useState(true),
-    pathname = usePathname(),
+    pathname = useLocation({ select: (location) => location.pathname }),
     tab = useMemo(
       () => pathname.split("/").slice(2, 3)[0] || "tracking",
       [pathname],
@@ -68,9 +62,8 @@ function MapNavbarTabs({ noc }: { noc?: string }) {
     isShown = useMemo(() => shown || tab != "tracking", [shown, tab]);
 
   useEffect(() => {
-    setTimeout(() => {
-      setShown(false);
-    }, 5000);
+    hideTimer.current = setTimeout(() => setShown(false), 5000);
+    return () => clearTimeout(hideTimer.current);
   }, []);
 
   return (
@@ -83,8 +76,14 @@ function MapNavbarTabs({ noc }: { noc?: string }) {
       }}
       initial={{ width: 384, height: 45, padding: 4 }}
       className="max-w-full flex bg-zinc-900 rounded-full border-3 border-zinc-600/50 drop-shadow-2xl shadow-lg justify-center"
-      onMouseEnter={() => setShown(true)}
-      onMouseLeave={() => setTimeout(() => setShown(false), 5000)}
+      onMouseEnter={() => {
+        clearTimeout(hideTimer.current);
+        setShown(true);
+      }}
+      onMouseLeave={() => {
+        clearTimeout(hideTimer.current);
+        hideTimer.current = setTimeout(() => setShown(false), 5000);
+      }}
     >
       <AnimatePresence mode="wait" initial={false}>
         {isShown ? (
@@ -124,7 +123,11 @@ function MapNavbarTab({
 
   return (
     <Link
-      href={name === "Tracking" ? `/${noc}` : `/${noc}/${name.toLowerCase()}`}
+      to={name === "Tracking" ? "/$nocCode" : "/$nocCode/timetables"}
+      params={{ nocCode: noc || "" }}
+      state={{ mapView: true }}
+      search={{}}
+      disabled={!noc}
       className={cn(
         "grow w-full flex justify-center items-center font-medium rounded-full p-2 text-xs transition-colors hover:bg-zinc-800 hover:text-zinc-100",
         classes,

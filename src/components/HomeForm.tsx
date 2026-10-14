@@ -1,16 +1,10 @@
-"use client";
-
-import type { getNocLines } from "@/utils/getNocLines";
+import type { NocLine } from "@prisma/client";
 import { AnimatedFeatures } from "./FeatureBadge";
 import TrackForm from "./TrackForm";
 import { useState } from "react";
 import type { Feature } from "@/lib/utils";
 
-export default function HomeForm({
-  lines,
-}: {
-  lines: Awaited<ReturnType<typeof getNocLines>>;
-}) {
+export default function HomeForm({ lines }: { lines: NocLine[] }) {
   const [feature, setFeature] = useState<Feature>("tracking");
 
   return (

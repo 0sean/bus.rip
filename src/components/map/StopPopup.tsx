@@ -1,12 +1,11 @@
-import type { ApiError, StopTimeWithAssociations, Stop } from "@/lib/buslane";
-import { Instrument_Sans } from "next/font/google";
+import type { Stop } from "@/lib/buslane";
+
 import { Popup } from "react-map-gl/maplibre";
-import useSWRImmutable from "swr/immutable";
+import { useQuery } from "@tanstack/react-query";
+import { stopTimesOptions } from "@/data/queries";
 import { FiLoader } from "react-icons/fi";
 import { useMemo, useState } from "react";
-import Link from "next/link";
-
-const instrumentSans = Instrument_Sans({ subsets: ["latin"] });
+import { Link } from "@tanstack/react-router";
 
 export default function StopPopup({
   stop,
@@ -17,11 +16,7 @@ export default function StopPopup({
   noc: string;
   togglePopup: () => void;
 }) {
-  const { data, isLoading } = useSWRImmutable<
-      StopTimeWithAssociations[] | ApiError
-    >(`/api/${noc}/stop/${stop.id}`, (url: string) =>
-      fetch(url).then((r) => r.json()),
-    ),
+  const { data, isLoading, error } = useQuery(stopTimesOptions(noc, stop.id)),
     [start, setStart] = useState(0),
     upcomingTimes = useMemo(() => {
       if (!data || !Array.isArray(data)) return [];
@@ -64,7 +59,7 @@ export default function StopPopup({
       latitude={Number(stop.lat)}
       closeOnClick={false} // This must be false or the popup doesn't show for some reason..
       onClose={togglePopup}
-      className={`pb-2 !min-w-64 ${instrumentSans.className}`}
+      className="pb-2 !min-w-64"
     >
       <div className="flex gap-2 items-center justify-between">
         <h1 className="text-md font-semibold">{stop.name}</h1>
@@ -74,6 +69,9 @@ export default function StopPopup({
           </span>
         )}
       </div>
+      {error && (
+        <p role="alert">Unable to load departures. Please try again.</p>
+      )}
       {isLoading ? (
         <div className="p-2 flex justify-center">
           <FiLoader className="animate-spin text-lg text-zinc-500" />
@@ -83,7 +81,9 @@ export default function StopPopup({
           <div className="rounded overflow-hidden">
             {upcomingTimes.map((stopTime) => (
               <Link
-                href={`/${noc}/timetables/trip/${stopTime.trip.id}`}
+                to="/$nocCode/timetables/trip/$trip"
+                params={{ nocCode: noc, trip: stopTime.trip.id }}
+                state={{ mapView: true }}
                 key={stopTime.id}
                 className="flex gap-2 items-center p-1 border-b last:border-b-0 font-medium hover:bg-zinc-800/50 transition-colors"
               >

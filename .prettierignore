@@ -8,9 +8,14 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
+# generated output
+/dist/
+/.output/
+/.output-test/
+/.tanstack/
+/src/routeTree.gen.ts
+/test-results/
+/playwright-report/
 
 # production
 /build
@@ -33,7 +38,6 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 
 .vercel
 

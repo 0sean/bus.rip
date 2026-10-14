@@ -8,9 +8,13 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
+# TanStack Start / Vite / Nitro
+/dist/
+/.output/
+/.output-test/
+/.tanstack/
+/test-results/
+/playwright-report/
 
 # production
 /build
@@ -33,7 +37,6 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 
 .vercel
 

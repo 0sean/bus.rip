@@ -38,8 +38,9 @@ export default function Trip({ trip }: { trip: TripWithAssociations }) {
       </div>
       <div className="flex gap-4 items-center">
         <p className="text-xl font-semibold text-zinc-400">
-          {trip.stop_times[0].departure_time.split(":").slice(0, 2).join(":")} -{" "}
-          {trip.stop_times[trip.stop_times.length - 1].arrival_time
+          {trip.stop_times[0]?.departure_time.split(":").slice(0, 2).join(":")}{" "}
+          -{" "}
+          {trip.stop_times[trip.stop_times.length - 1]?.arrival_time
             .split(":")
             .slice(0, 2)
             .join(":")}

@@ -1,15 +1,6 @@
-"use client";
-
 import { LuMapPin, LuClock, LuCoins } from "react-icons/lu";
 import * as motion from "motion/react-client";
-import {
-  Dispatch,
-  SetStateAction,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { cn, Feature } from "@/lib/utils";
 import { FeatureCombobox } from "./ui/combobox";
 
@@ -80,9 +71,10 @@ export function AnimatedFeatures({
         return;
       }
 
-      setTimeout(() => setStep(step + 1), 800);
+      const timer = setTimeout(() => setStep(step + 1), 800);
+      return () => clearTimeout(timer);
     }
-  }, [step, setStep, feature]);
+  }, [step, animationFinished, feature]);
 
   return (
     <motion.h2 className="text-zinc-300 text-lg font-semibold flex gap-2 items-center">

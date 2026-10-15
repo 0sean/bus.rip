@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { getOperators, getOperator } from "@/functions/operators";
 import { getLocations } from "@/functions/locations";
+import type { NocLine } from "@/db/schema";
 import {
   getStops,
   getStopTimes,
@@ -14,7 +15,12 @@ const code = (value: string) => value.toUpperCase();
 export const operatorsOptions = () =>
   queryOptions({
     queryKey: ["operators"],
-    queryFn: ({ signal }) => getOperators({ signal }),
+    queryFn: async ({ signal }): Promise<NocLine[]> => {
+      const response = await getOperators({ signal });
+      if (!response.ok)
+        throw new Error("Operator data is temporarily unavailable");
+      return response.json();
+    },
     staleTime: 300_000,
   });
 

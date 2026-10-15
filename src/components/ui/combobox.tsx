@@ -27,6 +27,7 @@ export function OperatorCombobox({
   value,
   favourites,
   setFavourites,
+  loading = false,
 }: {
   options: {
     value: string;
@@ -38,6 +39,7 @@ export function OperatorCombobox({
   value: string | null;
   favourites: string[];
   setFavourites: Dispatch<SetStateAction<string[]>>;
+  loading?: boolean;
 }) {
   const hydrated = useHydrated();
   const [open, setOpen] = useState(false),
@@ -51,7 +53,8 @@ export function OperatorCombobox({
             value={value}
             options={options}
             open={open}
-            disabled={!hydrated}
+            disabled={!hydrated || loading}
+            aria-busy={loading}
           />
         </PopoverTrigger>
         <PopoverContent
@@ -78,7 +81,8 @@ export function OperatorCombobox({
           value={value}
           options={options}
           open={open}
-          disabled={!hydrated}
+          disabled={!hydrated || loading}
+          aria-busy={loading}
         />
       </DrawerTrigger>
       <DrawerContent>

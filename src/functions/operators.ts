@@ -35,10 +35,12 @@ export const getOperators = createServerFn({ method: "GET" })
     const removed = lines
       .filter((line) => !incomingLineNos.has(line.lineNo))
       .map((line) => line.lineNo);
-    if (!changed.length && !removed.length) return lines;
+    // These rows are plain JSON. Bypass the RPC object-graph serializer, which
+    // adds significant CPU and payload overhead for thousands of operators.
+    if (!changed.length && !removed.length) return Response.json(lines);
 
     await updateOperators(changed, removed);
-    return db.select().from(nocLines);
+    return Response.json(await db.select().from(nocLines));
   });
 
 export const getOperator = createServerFn({ method: "GET" })

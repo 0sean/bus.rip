@@ -1,22 +1,25 @@
 import HomeForm from "@/components/HomeForm";
-import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, useHydrated } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { operatorsOptions } from "@/data/queries";
 
 export const Route = createFileRoute("/")({
-  loader: ({ context }) =>
-    context.queryClient.ensureQueryData(operatorsOptions()),
-  headers: ({ loaderData }) => ({
+  // Render a cacheable shell. Loading the list in its own request avoids doing
+  // feed import, RPC hydration, sorting, and SSR in one server CPU budget.
+  headers: () => ({
     "Cache-Control":
-      loaderData === undefined
-        ? "no-store"
-        : "public, max-age=2592000, s-maxage=2592000, stale-while-revalidate=86400",
+      "public, max-age=2592000, s-maxage=2592000, stale-while-revalidate=86400",
   }),
   component: Home,
 });
 
 function Home() {
-  const { data: lines } = useSuspenseQuery(operatorsOptions());
+  const hydrated = useHydrated();
+  const { data: lines } = useQuery({
+    ...operatorsOptions(),
+    enabled: hydrated,
+    throwOnError: true,
+  });
 
   return (
     <div className="flex flex-col justify-center h-svh p-8 md:p-12">

@@ -84,7 +84,9 @@ All application data reads use validated TanStack Start server functions in `src
 - The SSR integration hydrates and streams query results.
 - Critical route data loads in parallel across matched routes. Secondary map stops are prefetched without blocking live vehicle data.
 - Intent preloading, automatic route code splitting, and scroll restoration are enabled. MapLibre and the map view load only for tracking; analytics and speed insights load after hydration.
-- The browser-only map uses selective SSR. Timetables, routes, trips, and operator selection render their data on the server.
+- The browser-only map uses selective SSR. Timetables, routes, and trips render their data on the server.
+- The index renders a cacheable shell with an accessible loading status. After hydration, a separate cacheable request loads operators as plain JSON. On a cache miss, that request still fetches Traveline, compares the feed with the database, and commits changes before returning the operator list. No cron or platform-specific background execution is required. The operator list is sorted in the browser and is not serialized into the SSR hydration payload.
+- The Traveline importer projects only the fields needed from `NOCLines`, with linear-time NOC-code deduplication. It avoids materializing the entire XML document and rejects incomplete tables before updating the database. A field-name fallback handles changes to the export's column order.
 - Vehicle feeds refresh every 10 seconds and pause polling in hidden tabs.
 - Dynamic tracking pages stay live. They are not statically prerendered, so builds do not require database or transit API access.
 - Fonts are self-hosted, and Node/Vercel builds emit compressed public assets. Map tiles remain direct renderer requests to OpenStreetMap.
@@ -96,9 +98,19 @@ Timetable links opened from tracking use a drawer over the mounted map. Direct t
 ```sh
 yarn lint
 yarn typecheck # checks both database dialects
+yarn vitest run
 DATABASE_PROVIDER=postgres yarn build
 DATABASE_PROVIDER=d1 yarn build
 ```
+
+To compare XML parsing costs with the same feed snapshot:
+
+```sh
+curl -fsSL https://www.travelinedata.org.uk/noc/api/1.0/nocrecords.xml -o /tmp/nocrecords.xml
+TRAVELINE_FEED_PATH=/tmp/nocrecords.xml yarn vitest bench --run
+```
+
+The benchmark measures parsing independently of network latency, database operations, and framework overhead. Verify the complete uncached request against your deployment's CPU metrics when checking a hosting CPU limit.
 
 <blockquote>
   <details>

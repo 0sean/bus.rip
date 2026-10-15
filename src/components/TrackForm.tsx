@@ -9,9 +9,11 @@ import type { Feature } from "@/lib/utils";
 export default function TrackForm({
   lines,
   feature,
+  operatorsLoading = false,
 }: {
   lines: NocLine[];
   feature: Feature;
+  operatorsLoading?: boolean;
 }) {
   const navigate = useNavigate();
   const [line, setLine] = useState<string | null>(null),
@@ -100,6 +102,7 @@ export default function TrackForm({
         value={line}
         favourites={favourites}
         setFavourites={setFavourites}
+        loading={operatorsLoading}
       />
       {favourites.length > 0 && (
         <div className="mt-4 flex gap-2">
@@ -118,7 +121,7 @@ export default function TrackForm({
       )}
       <Button
         className="mt-4 w-fit"
-        disabled={!line || loading}
+        disabled={!line || loading || operatorsLoading}
         onClick={async () => {
           if (line != null) {
             setLoading(true);

@@ -32,20 +32,8 @@ function OperatorLayout() {
   if (showMap)
     return (
       <>
-        <ClientOnly
-          fallback={
-            <p role="status" className="p-8">
-              Loading map…
-            </p>
-          }
-        >
-          <Suspense
-            fallback={
-              <p role="status" className="p-8">
-                Loading map…
-              </p>
-            }
-          >
+        <ClientOnly>
+          <Suspense fallback={null}>
             <MapPage
               nocCode={nocCode}
               vehicleId={

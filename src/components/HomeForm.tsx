@@ -4,8 +4,6 @@ import TrackForm from "./TrackForm";
 import { useState } from "react";
 import type { Feature } from "@/lib/utils";
 
-const EMPTY_LINES: NocLine[] = [];
-
 export default function HomeForm({ lines }: { lines?: NocLine[] }) {
   const [feature, setFeature] = useState<Feature>("tracking");
 
@@ -18,15 +16,10 @@ export default function HomeForm({ lines }: { lines?: NocLine[] }) {
         <AnimatedFeatures feature={feature} setFeature={setFeature} />
       </div>
       <TrackForm
-        lines={lines ?? EMPTY_LINES}
+        lines={lines ?? []}
         feature={feature}
         operatorsLoading={lines === undefined}
       />
-      {lines === undefined && (
-        <span role="status" className="sr-only">
-          Loading operators…
-        </span>
-      )}
     </>
   );
 }

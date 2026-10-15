@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { routesOptions } from "@/data/queries";
+import { routesOptions, staticQuery } from "@/data/queries";
 import Timetables from "@/components/pages/Timetables";
 export const Route = createFileRoute("/$nocCode/timetables")({
   loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(routesOptions(params.nocCode)),
+    context.queryClient.query(staticQuery(routesOptions(params.nocCode))),
   head: () => ({ meta: [{ title: "Timetables | bus.rip" }] }),
   component: TimetablesPage,
 });

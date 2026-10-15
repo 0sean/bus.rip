@@ -1,11 +1,11 @@
 import HomeForm from "@/components/HomeForm";
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { operatorsOptions } from "@/data/queries";
+import { operatorsOptions, staticQuery } from "@/data/queries";
 
 export const Route = createFileRoute("/")({
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(operatorsOptions());
+    await context.queryClient.query(staticQuery(operatorsOptions()));
   },
   headers: () => ({
     "Cache-Control":

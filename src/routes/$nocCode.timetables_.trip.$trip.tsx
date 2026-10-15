@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { tripOptions } from "@/data/queries";
+import { staticQuery, tripOptions } from "@/data/queries";
 import Trip from "@/components/pages/Trip";
 export const Route = createFileRoute("/$nocCode/timetables_/trip/$trip")({
   loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(tripOptions(params.trip)),
+    context.queryClient.query(staticQuery(tripOptions(params.trip))),
   head: () => ({ meta: [{ title: "Trip details | bus.rip" }] }),
   component: TripPage,
 });

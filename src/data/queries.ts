@@ -10,6 +10,10 @@ import {
   getTrip,
 } from "@/functions/buslane";
 
+export function staticQuery<T>(query: T): T {
+  return { ...query, staleTime: "static" } as T;
+}
+
 const TIMETABLE_STALE_TIME = 43_200_000;
 const code = (value: string) => value.toUpperCase();
 export const operatorsOptions = () =>

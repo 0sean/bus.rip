@@ -1,8 +1,7 @@
 import HomeForm from "@/components/HomeForm";
-import { ClientOnly, createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, useHydrated } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { operatorsOptions } from "@/data/queries";
-import { Suspense } from "react";
 
 export const Route = createFileRoute("/")({
   // Render a cacheable shell. Loading the list in its own request avoids doing
@@ -15,13 +14,16 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const hydrated = useHydrated();
+  const { data: lines } = useQuery({
+    ...operatorsOptions(),
+    enabled: hydrated,
+    throwOnError: true,
+  });
+
   return (
     <div className="flex flex-col justify-center h-svh p-8 md:p-12">
-      <ClientOnly fallback={<HomeForm />}>
-        <Suspense fallback={<HomeForm />}>
-          <OperatorsHomeForm />
-        </Suspense>
-      </ClientOnly>
+      <HomeForm lines={lines} />
       <div className="absolute bottom-8 left-8 md:bottom-12 md:left-12 flex flex-col gap-1">
         <a
           href="https://transit.fyi/"
@@ -41,9 +43,4 @@ function Home() {
       </div>
     </div>
   );
-}
-
-function OperatorsHomeForm() {
-  const { data: lines } = useSuspenseQuery(operatorsOptions());
-  return <HomeForm lines={lines} />;
 }

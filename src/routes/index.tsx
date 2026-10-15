@@ -1,26 +1,27 @@
 import HomeForm from "@/components/HomeForm";
-import { createFileRoute } from "@tanstack/react-router";
+import { ClientOnly, createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { operatorsOptions } from "@/data/queries";
+import { Suspense } from "react";
 
 export const Route = createFileRoute("/")({
-  loader: ({ context }) =>
-    context.queryClient.ensureQueryData(operatorsOptions()),
-  headers: ({ loaderData }) => ({
+  // Render a cacheable shell. Loading the list in its own request avoids doing
+  // feed import, RPC hydration, sorting, and SSR in one server CPU budget.
+  headers: () => ({
     "Cache-Control":
-      loaderData === undefined
-        ? "no-store"
-        : "public, max-age=2592000, s-maxage=2592000, stale-while-revalidate=86400",
+      "public, max-age=2592000, s-maxage=2592000, stale-while-revalidate=86400",
   }),
   component: Home,
 });
 
 function Home() {
-  const { data: lines } = useSuspenseQuery(operatorsOptions());
-
   return (
     <div className="flex flex-col justify-center h-svh p-8 md:p-12">
-      <HomeForm lines={lines} />
+      <ClientOnly fallback={<HomeForm />}>
+        <Suspense fallback={<HomeForm />}>
+          <OperatorsHomeForm />
+        </Suspense>
+      </ClientOnly>
       <div className="absolute bottom-8 left-8 md:bottom-12 md:left-12 flex flex-col gap-1">
         <a
           href="https://transit.fyi/"
@@ -40,4 +41,9 @@ function Home() {
       </div>
     </div>
   );
+}
+
+function OperatorsHomeForm() {
+  const { data: lines } = useSuspenseQuery(operatorsOptions());
+  return <HomeForm lines={lines} />;
 }

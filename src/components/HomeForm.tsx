@@ -4,7 +4,7 @@ import TrackForm from "./TrackForm";
 import { useState } from "react";
 import type { Feature } from "@/lib/utils";
 
-export default function HomeForm({ lines }: { lines: NocLine[] }) {
+export default function HomeForm({ lines }: { lines?: NocLine[] }) {
   const [feature, setFeature] = useState<Feature>("tracking");
 
   return (
@@ -15,7 +15,13 @@ export default function HomeForm({ lines }: { lines: NocLine[] }) {
         </h1>
         <AnimatedFeatures feature={feature} setFeature={setFeature} />
       </div>
-      <TrackForm lines={lines} feature={feature} />
+      {lines ? (
+        <TrackForm lines={lines} feature={feature} />
+      ) : (
+        <p role="status" className="text-sm text-zinc-400">
+          Loading operators…
+        </p>
+      )}
     </>
   );
 }

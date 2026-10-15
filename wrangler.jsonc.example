@@ -16,4 +16,7 @@
 			"migrations_dir": "drizzle/d1"
 		},
 	],
+	"cache": {
+		"enabled": true
+	}
 }

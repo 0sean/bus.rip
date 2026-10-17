@@ -148,16 +148,15 @@ function MapDisabledNavbarTab({ name, tab }: { name: string; tab: string }) {
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <div
-          aria-disabled={true}
-          className={cn(
-            "grow w-full flex justify-center items-center font-medium rounded-full p-2 text-xs transition-colors hover:bg-zinc-800 hover:text-zinc-100 cursor-not-allowed",
-            classes,
-          )}
-        >
-          <span>{name}</span>
-        </div>
+      <TooltipTrigger
+        render={<div />}
+        aria-disabled={true}
+        className={cn(
+          "grow w-full flex justify-center items-center font-medium rounded-full p-2 text-xs transition-colors hover:bg-zinc-800 hover:text-zinc-100 cursor-not-allowed",
+          classes,
+        )}
+      >
+        <span>{name}</span>
       </TooltipTrigger>
       <TooltipContent className="!z-100 shadow-md" side="bottom">
         <p>Coming soon</p>

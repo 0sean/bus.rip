@@ -187,7 +187,12 @@ function MapNavbarProgress() {
 
   return (
     <div className="px-3 py-1.5">
-      <Progress value={totalSeconds * 10} style={{ width: 14, height: 14 }} />
+      <Progress
+        value={totalSeconds * 10}
+        style={{ width: 14, height: 14 }}
+        className="[&_[data-slot=progress-track]]:h-full"
+        aria-label="Time until the next map refresh"
+      />
     </div>
   );
 }

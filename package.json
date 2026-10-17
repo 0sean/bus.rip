@@ -93,7 +93,7 @@
   "lint-staged": {
     "src/**/*": "prettier --write --ignore-unknown"
   },
-  "packageManager": "yarn@4.9.2",
+  "packageManager": "pnpm@10.26.2",
   "resolutions": {
     "@types/react": "19.1.8",
     "@types/react-dom": "19.1.6"

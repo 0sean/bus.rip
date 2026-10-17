@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { getCookie, setCookie } from "@/lib/cookies";
 import { useNavigate } from "@tanstack/react-router";
 import type { NocLine } from "@/db/schema";
-import { OperatorCombobox } from "./ui/combobox";
+import { OperatorCombobox } from "./OperatorCombobox";
 import type { Feature } from "@/lib/utils";
 
 export default function TrackForm({
@@ -121,6 +121,7 @@ export default function TrackForm({
       )}
       <Button
         className="mt-4 w-fit"
+        size="lg"
         disabled={!line || loading || operatorsLoading}
         onClick={async () => {
           if (line != null) {

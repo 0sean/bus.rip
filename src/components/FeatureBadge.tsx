@@ -2,7 +2,7 @@ import { LuMapPin, LuClock, LuCoins } from "react-icons/lu";
 import * as motion from "motion/react-client";
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { cn, Feature } from "@/lib/utils";
-import { FeatureCombobox } from "./ui/combobox";
+import { FeatureCombobox } from "./FeatureCombobox";
 
 function AnimatedFeatureBadge({
   step,

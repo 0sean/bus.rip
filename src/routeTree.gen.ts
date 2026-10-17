@@ -10,20 +10,20 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as NocCodeRouteImport } from './routes/$nocCode'
+import { Route as NocCodeRouteRouteImport } from './routes/$nocCode/route'
 import { Route as MonitoringRouteImport } from './routes/monitoring'
-import { Route as NocCodeIndexRouteImport } from './routes/$nocCode.index'
-import { Route as NocCodeFaresRouteImport } from './routes/$nocCode.fares'
-import { Route as NocCodeTimetablesRouteImport } from './routes/$nocCode.timetables'
-import { Route as NocCodeTimetablesRouteRouteRouteImport } from './routes/$nocCode.timetables_.route.$route'
-import { Route as NocCodeTimetablesTripTripRouteImport } from './routes/$nocCode.timetables_.trip.$trip'
+import { Route as NocCodeIndexRouteImport } from './routes/$nocCode/index'
+import { Route as NocCodeFaresRouteImport } from './routes/$nocCode/fares'
+import { Route as NocCodeTimetablesRouteImport } from './routes/$nocCode/timetables'
+import { Route as NocCodeTimetablesRouteRouteRouteImport } from './routes/$nocCode/timetables_.route.$route'
+import { Route as NocCodeTimetablesTripTripRouteImport } from './routes/$nocCode/timetables_.trip.$trip'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NocCodeRoute = NocCodeRouteImport.update({
+const NocCodeRouteRoute = NocCodeRouteRouteImport.update({
   id: '/$nocCode',
   path: '/$nocCode',
   getParentRoute: () => rootRouteImport,
@@ -36,34 +36,34 @@ const MonitoringRoute = MonitoringRouteImport.update({
 const NocCodeIndexRoute = NocCodeIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => NocCodeRoute,
+  getParentRoute: () => NocCodeRouteRoute,
 } as any)
 const NocCodeFaresRoute = NocCodeFaresRouteImport.update({
   id: '/fares',
   path: '/fares',
-  getParentRoute: () => NocCodeRoute,
+  getParentRoute: () => NocCodeRouteRoute,
 } as any)
 const NocCodeTimetablesRoute = NocCodeTimetablesRouteImport.update({
   id: '/timetables',
   path: '/timetables',
-  getParentRoute: () => NocCodeRoute,
+  getParentRoute: () => NocCodeRouteRoute,
 } as any)
 const NocCodeTimetablesRouteRouteRoute =
   NocCodeTimetablesRouteRouteRouteImport.update({
     id: '/timetables_/route/$route',
     path: '/timetables/route/$route',
-    getParentRoute: () => NocCodeRoute,
+    getParentRoute: () => NocCodeRouteRoute,
   } as any)
 const NocCodeTimetablesTripTripRoute =
   NocCodeTimetablesTripTripRouteImport.update({
     id: '/timetables_/trip/$trip',
     path: '/timetables/trip/$trip',
-    getParentRoute: () => NocCodeRoute,
+    getParentRoute: () => NocCodeRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/$nocCode': typeof NocCodeRouteWithChildren
+  '/$nocCode': typeof NocCodeRouteRouteWithChildren
   '/monitoring': typeof MonitoringRoute
   '/$nocCode/fares': typeof NocCodeFaresRoute
   '/$nocCode/timetables': typeof NocCodeTimetablesRoute
@@ -83,7 +83,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/$nocCode': typeof NocCodeRouteWithChildren
+  '/$nocCode': typeof NocCodeRouteRouteWithChildren
   '/monitoring': typeof MonitoringRoute
   '/$nocCode/fares': typeof NocCodeFaresRoute
   '/$nocCode/timetables': typeof NocCodeTimetablesRoute
@@ -125,7 +125,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  NocCodeRoute: typeof NocCodeRouteWithChildren
+  NocCodeRouteRoute: typeof NocCodeRouteRouteWithChildren
   MonitoringRoute: typeof MonitoringRoute
 }
 
@@ -142,7 +142,7 @@ declare module '@tanstack/react-router' {
       id: '/$nocCode'
       path: '/$nocCode'
       fullPath: '/$nocCode'
-      preLoaderRoute: typeof NocCodeRouteImport
+      preLoaderRoute: typeof NocCodeRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/monitoring': {
@@ -157,40 +157,40 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/$nocCode/'
       preLoaderRoute: typeof NocCodeIndexRouteImport
-      parentRoute: typeof NocCodeRoute
+      parentRoute: typeof NocCodeRouteRoute
     }
     '/$nocCode/fares': {
       id: '/$nocCode/fares'
       path: '/fares'
       fullPath: '/$nocCode/fares'
       preLoaderRoute: typeof NocCodeFaresRouteImport
-      parentRoute: typeof NocCodeRoute
+      parentRoute: typeof NocCodeRouteRoute
     }
     '/$nocCode/timetables': {
       id: '/$nocCode/timetables'
       path: '/timetables'
       fullPath: '/$nocCode/timetables'
       preLoaderRoute: typeof NocCodeTimetablesRouteImport
-      parentRoute: typeof NocCodeRoute
+      parentRoute: typeof NocCodeRouteRoute
     }
     '/$nocCode/timetables_/route/$route': {
       id: '/$nocCode/timetables_/route/$route'
       path: '/timetables/route/$route'
       fullPath: '/$nocCode/timetables/route/$route'
       preLoaderRoute: typeof NocCodeTimetablesRouteRouteRouteImport
-      parentRoute: typeof NocCodeRoute
+      parentRoute: typeof NocCodeRouteRoute
     }
     '/$nocCode/timetables_/trip/$trip': {
       id: '/$nocCode/timetables_/trip/$trip'
       path: '/timetables/trip/$trip'
       fullPath: '/$nocCode/timetables/trip/$trip'
       preLoaderRoute: typeof NocCodeTimetablesTripTripRouteImport
-      parentRoute: typeof NocCodeRoute
+      parentRoute: typeof NocCodeRouteRoute
     }
   }
 }
 
-interface NocCodeRouteChildren {
+interface NocCodeRouteRouteChildren {
   NocCodeFaresRoute: typeof NocCodeFaresRoute
   NocCodeTimetablesRoute: typeof NocCodeTimetablesRoute
   NocCodeIndexRoute: typeof NocCodeIndexRoute
@@ -198,7 +198,7 @@ interface NocCodeRouteChildren {
   NocCodeTimetablesTripTripRoute: typeof NocCodeTimetablesTripTripRoute
 }
 
-const NocCodeRouteChildren: NocCodeRouteChildren = {
+const NocCodeRouteRouteChildren: NocCodeRouteRouteChildren = {
   NocCodeFaresRoute: NocCodeFaresRoute,
   NocCodeTimetablesRoute: NocCodeTimetablesRoute,
   NocCodeIndexRoute: NocCodeIndexRoute,
@@ -206,12 +206,13 @@ const NocCodeRouteChildren: NocCodeRouteChildren = {
   NocCodeTimetablesTripTripRoute: NocCodeTimetablesTripTripRoute,
 }
 
-const NocCodeRouteWithChildren =
-  NocCodeRoute._addFileChildren(NocCodeRouteChildren)
+const NocCodeRouteRouteWithChildren = NocCodeRouteRoute._addFileChildren(
+  NocCodeRouteRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  NocCodeRoute: NocCodeRouteWithChildren,
+  NocCodeRouteRoute: NocCodeRouteRouteWithChildren,
   MonitoringRoute: MonitoringRoute,
 }
 export const routeTree = rootRouteImport

@@ -8,7 +8,7 @@ import {
   type SetStateAction,
 } from "react";
 import { LuChevronsUpDown, LuSearch, LuStar, LuStarOff } from "react-icons/lu";
-import { useDebounce } from "use-debounce";
+import { useDebounce } from "@uidotdev/usehooks";
 import { VList, type VListHandle } from "virtua";
 import { Button } from "@/components/ui/button";
 import {

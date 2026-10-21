@@ -2,7 +2,7 @@ import { getRouteRow, type RouteRow, type RouteWithTrips } from "@/lib/buslane";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Input } from "../ui/input";
-import { useDebounce } from "use-debounce";
+import { useDebounce } from "@uidotdev/usehooks";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export default function Timetables({

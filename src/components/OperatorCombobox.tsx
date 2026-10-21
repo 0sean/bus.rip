@@ -236,12 +236,10 @@ export function OperatorCombobox({
         </>
       ) : (
         <Drawer open={open} onOpenChange={handleOpenChange}>
-          <DrawerTrigger asChild>{trigger}</DrawerTrigger>
+          <DrawerTrigger render={trigger} />
           <DrawerContent aria-describedby={undefined}>
             <DrawerTitle className="sr-only">Select operator</DrawerTitle>
-            <div className="group/combobox-content mt-4 bg-zinc-900 text-zinc-50">
-              {content}
-            </div>
+            <div className="group/combobox-content">{content}</div>
           </DrawerContent>
         </Drawer>
       )}

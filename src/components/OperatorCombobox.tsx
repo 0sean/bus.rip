@@ -25,6 +25,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { Star } from "lucide-react";
 
 type OperatorOption = {
   value: string;
@@ -60,29 +61,34 @@ export function OperatorCombobox({
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [favouritesOnly, setFavouritesOnly] = useState(false);
   const [debouncedSearch] = useDebounce(search, 500);
   const listRef = useRef<VListHandle>(null);
   const filteredOptions = useMemo(() => {
     const query = debouncedSearch.toLowerCase();
     return options.filter(
       (option) =>
-        option.label.toLowerCase().includes(query) ||
-        option.subtitle.toLowerCase().includes(query),
+        (!favouritesOnly || favourites.includes(option.value)) &&
+        (option.label.toLowerCase().includes(query) ||
+          option.subtitle.toLowerCase().includes(query)),
     );
-  }, [debouncedSearch, options]);
+  }, [debouncedSearch, options, favouritesOnly, favourites]);
   const selectedOption =
     options.find((option) => option.value === value) ?? null;
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
-    if (!nextOpen) setSearch("");
+    if (!nextOpen) {
+      setSearch("");
+      setFavouritesOnly(false);
+    }
   }
 
   const trigger = (
     <Button
       variant="outline"
       size="lg"
-      className="flex w-fit min-w-[250px] max-w-full justify-between lg:max-w-[350px]"
+      className="flex w-full max-w-full justify-between"
       disabled={!hydrated || loading}
       aria-busy={loading}
       aria-label={
@@ -108,22 +114,34 @@ export function OperatorCombobox({
           className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
-      {!debouncedSearch && (
-        <div className="flex w-full gap-2 overflow-x-auto p-1 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-zinc-900">
-          {shortcuts.map((shortcut) => (
-            <button
-              key={shortcut.name}
-              type="button"
-              className="shrink-0 rounded-sm bg-zinc-800/50 px-2 py-1 text-xs font-medium text-zinc-400 transition-colors duration-150 hover:bg-zinc-800"
-              onClick={() => setSearch(shortcut.search)}
-            >
-              {shortcut.name}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="flex w-full gap-2 overflow-x-auto p-1 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-zinc-900">
+        <button
+          type="button"
+          aria-pressed={favouritesOnly}
+          className="flex gap-1 items-center shrink-0 rounded-sm bg-zinc-800/50 px-2 py-1 text-xs font-medium text-zinc-400 transition-colors duration-150 hover:bg-zinc-800 aria-pressed:bg-zinc-800 aria-pressed:text-zinc-50"
+          onClick={() => setFavouritesOnly((current) => !current)}
+        >
+          <Star size={12} />
+          Favourites
+        </button>
+        {shortcuts.map((shortcut) => (
+          <button
+            key={shortcut.name}
+            type="button"
+            className="shrink-0 rounded-sm bg-zinc-800/50 px-2 py-1 text-xs font-medium text-zinc-400 transition-colors duration-150 hover:bg-zinc-800"
+            onClick={() => {
+              setFavouritesOnly(false);
+              setSearch(shortcut.search);
+            }}
+          >
+            {shortcut.name}
+          </button>
+        ))}
+      </div>
       <ComboboxEmpty className="flex py-6 empty:py-0">
-        No operators found.
+        {favouritesOnly
+          ? "No favourite operators found."
+          : "No operators found."}
       </ComboboxEmpty>
       <ComboboxList className="max-h-none overflow-hidden">
         {filteredOptions.length > 0 && (

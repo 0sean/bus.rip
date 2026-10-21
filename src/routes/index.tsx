@@ -2,6 +2,13 @@ import HomeForm from "@/components/HomeForm";
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { operatorsOptions, staticQuery } from "@/data/queries";
+import StackedLogo from "@/components/StackedLogo";
+import { CircleQuestionMark, MapPin, Route as RouteIcon } from "lucide-react";
+import { useMemo, useState } from "react";
+import { OperatorCombobox } from "@/components/OperatorCombobox";
+import { Button } from "@/components/ui/button";
+import { transformOperators } from "@/lib/utils";
+import { useLocalStorage } from "@uidotdev/usehooks";
 
 export const Route = createFileRoute("/")({
   loader: async ({ context }) => {
@@ -15,27 +22,66 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const { data: lines } = useSuspenseQuery(operatorsOptions());
+  return (
+    <div className="flex flex-col justify-between h-svh px-4 py-6">
+      <Header />
+      <Content />
+    </div>
+  );
+}
+
+function Header() {
+  return (
+    <div className="flex w-full items-center justify-between">
+      <StackedLogo />
+      <div className="flex gap-2 text-muted">
+        <p className="font-semibold text-xs">Bus info that actually works</p>
+        <CircleQuestionMark size={16} />
+      </div>
+    </div>
+  );
+}
+
+function Content() {
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <h1 className="text-3xl font-bold">Find any bus in the UK</h1>
+        <p className="text-muted font-semibold">
+          Powered by Bus Open Data Service
+        </p>
+      </div>
+      <Form />
+    </div>
+  );
+}
+
+function Form() {
+  const { data, isLoading } = useSuspenseQuery(operatorsOptions());
+  const operators = useMemo(() => transformOperators(data), [data]);
+  const [operator, setOperator] = useState<string | null>(null);
+  const [favourites, setFavourites] = useLocalStorage<string[]>(
+    "favourites",
+    [],
+  );
 
   return (
-    <div className="flex flex-col justify-center h-svh p-8 md:p-12">
-      <HomeForm lines={lines} />
-      <div className="absolute bottom-8 left-8 md:bottom-12 md:left-12 flex flex-col gap-1">
-        <a
-          href="https://transit.fyi/"
-          className="text-zinc-500 hover:text-zinc-100 transition-colors text-sm"
-          target="_blank"
-        >
-          A <span className="font-semibold">Transit.fyi</span> project
-        </a>
-        <a
-          href="https://www.bus-data.dft.gov.uk/"
-          className="text-zinc-500 hover:text-zinc-100 transition-colors text-xs"
-          target="_blank"
-        >
-          Powered by{" "}
-          <span className="font-semibold">Bus Open Data Service</span>
-        </a>
+    <div className="flex flex-col gap-2">
+      <OperatorCombobox
+        options={operators}
+        setValue={setOperator}
+        value={operator}
+        favourites={favourites}
+        setFavourites={setFavourites}
+        loading={isLoading}
+      />
+      <div className="grid gap-2 grid-cols-2">
+        <Button variant="secondary" size="lg">
+          <MapPin /> Find nearby
+        </Button>
+        <Button size="lg" disabled={isLoading || !operator}>
+          <RouteIcon /> Track
+        </Button>
       </div>
     </div>
   );

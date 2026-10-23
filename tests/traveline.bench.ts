@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { bench, describe } from "vitest";
-import { parseStringPromise } from "xml2js";
+import { parse, filter, type TNode } from "txml";
 import { parseOperators } from "../src/functions/traveline.server";
 
 // Use one saved upstream response for a reproducible comparison. Downloading
@@ -23,29 +23,43 @@ describe("Traveline operator import", () => {
     },
   );
   bench(
-    "previous full XML parse",
-    async () => {
-      const json = await parseStringPromise(xml);
-      const seen = new Set();
-      return json.travelinedata.NOCLines[0].NOCLinesRecord.filter(
-        (line: Record<string, string[]>) =>
-          line.DateCeased[0] === "" &&
-          line.Duplicate[0] !== "Dup" &&
-          line.Mode[0] === "Bus",
-      ).flatMap((line: Record<string, string[]>) => {
-        const nocCode = line.NOCCODE[0];
-        if (seen.has(nocCode)) return [];
-        seen.add(nocCode);
-        return [
-          {
-            lineNo: Number(line.NOCLineNo[0]),
-            nocCode,
-            publicName: line.PubNm[0],
-            referenceName: line.RefNm[0],
-            hasMissingLocationData: false,
-          },
-        ];
-      });
+    "full txml parse",
+    () => {
+      const nodes = parse(xml, { decodeEntities: true, keepWhitespace: true });
+      const table = filter(nodes, (node) => node.tagName === "NOCLines")[0];
+      const records = table.children.filter(
+        (node): node is TNode =>
+          typeof node !== "string" && node.tagName === "NOCLinesRecord",
+      );
+      const value = (line: TNode, name: string) => {
+        const field = line.children.find(
+          (node): node is TNode =>
+            typeof node !== "string" && node.tagName === name,
+        );
+        return field?.children.join("") ?? "";
+      };
+      const seen = new Set<string>();
+      records
+        .filter(
+          (line) =>
+            value(line, "DateCeased") === "" &&
+            value(line, "Duplicate") !== "Dup" &&
+            value(line, "Mode") === "Bus",
+        )
+        .flatMap((line) => {
+          const nocCode = value(line, "NOCCODE");
+          if (seen.has(nocCode)) return [];
+          seen.add(nocCode);
+          return [
+            {
+              lineNo: Number(value(line, "NOCLineNo")),
+              nocCode,
+              publicName: value(line, "PubNm"),
+              referenceName: value(line, "RefNm"),
+              hasMissingLocationData: false,
+            },
+          ];
+        });
     },
     {
       iterations: 3,

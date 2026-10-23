@@ -11,7 +11,6 @@ import { locationsOptions, stopsOptions } from "@/data/queries";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Map, MapRef } from "react-map-gl/maplibre";
-import "animate.css";
 
 import { mapStyle } from "@/lib/map";
 
@@ -164,7 +163,7 @@ export default function MapPage({
     <>
       <MapNavbar data={data} isLoading={isLoading} />
       {data && !data.error && !data.vehicles && (
-        <Alert className="right-2 bottom-2 fixed z-10 w-fit drop-shadow-2xl animate__animated animate__faster animate__fadeInUp">
+        <Alert className="map-alert-enter right-2 bottom-2 fixed z-10 w-fit drop-shadow-2xl">
           <AlertTitle className="font-semibold">
             No location data available
           </AlertTitle>

@@ -122,6 +122,28 @@
   display: none !important;
 }
 
+@keyframes map-alert-enter {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.map-alert-enter {
+  animation: map-alert-enter 500ms ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-alert-enter {
+    animation: none;
+  }
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
 

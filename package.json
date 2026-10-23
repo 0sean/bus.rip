@@ -43,7 +43,6 @@
     "react-map-gl": "^8.0.4",
     "react-timer-hook": "^4.0.5",
     "shadcn": "^4.22.0",
-    "simplebar-react": "^3.3.1",
     "tailwind-scrollbar": "^4.0.2",
     "tailwindcss-animate": "^1.0.7",
     "virtua": "^0.41.5",

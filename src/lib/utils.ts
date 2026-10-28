@@ -32,7 +32,7 @@ export function transformOperators(operators: NocLine[]) {
       const label = subtitle ? `${publicName} - ${subtitle}` : publicName;
 
       return {
-        value: JSON.stringify([nocCode, label]),
+        value: nocCode,
         label: publicName,
         subtitle,
         hasMissingLocationData,

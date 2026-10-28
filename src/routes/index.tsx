@@ -1,10 +1,15 @@
 import HomeForm from "@/components/HomeForm";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { operatorsOptions, staticQuery } from "@/data/queries";
 import StackedLogo from "@/components/StackedLogo";
-import { CircleQuestionMark, MapPin, Route as RouteIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+  CircleQuestionMark,
+  Loader2,
+  MapPin,
+  Route as RouteIcon,
+} from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
 import { OperatorCombobox } from "@/components/OperatorCombobox";
 import { Button } from "@/components/ui/button";
 import { transformOperators } from "@/lib/utils";
@@ -58,9 +63,11 @@ function Content() {
 }
 
 function Form() {
+  const navigate = useNavigate();
   const { data, isLoading } = useSuspenseQuery(operatorsOptions());
   const operators = useMemo(() => transformOperators(data), [data]);
   const [operator, setOperator] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   return (
     <div className="flex flex-col gap-2">
@@ -80,8 +87,24 @@ function Form() {
         <Button variant="secondary" size="lg">
           <MapPin /> Find nearby
         </Button>
-        <Button size="lg" disabled={isLoading || !operator}>
-          <RouteIcon /> Track
+        <Button
+          size="lg"
+          disabled={isLoading || !operator || isPending}
+          onClick={() =>
+            startTransition(() => {
+              navigate({ to: "/$nocCode", params: { nocCode: operator! } });
+            })
+          }
+        >
+          {isPending ? (
+            <>
+              <Loader2 className="animate-spin" /> Loading...
+            </>
+          ) : (
+            <>
+              <RouteIcon /> Track
+            </>
+          )}
         </Button>
       </div>
     </div>

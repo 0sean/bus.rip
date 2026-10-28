@@ -1,20 +1,8 @@
-import HomeForm from "@/components/HomeForm";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import { operatorsOptions, staticQuery } from "@/data/queries";
 import StackedLogo from "@/components/StackedLogo";
-import {
-  CircleQuestionMark,
-  Loader2,
-  MapPin,
-  Route as RouteIcon,
-} from "lucide-react";
-import { useMemo, useState, useTransition } from "react";
-import { OperatorCombobox } from "@/components/OperatorCombobox";
-import { Button } from "@/components/ui/button";
-import { transformOperators } from "@/lib/utils";
-import { useIsClient, useLocalStorage } from "@uidotdev/usehooks";
-import { ClientOnlyStorage } from "@/components/ClientOnlyStorage";
+import { CircleQuestionMark } from "lucide-react";
+import { OperatorForm } from "@/components/OperatorForm";
 
 export const Route = createFileRoute("/")({
   loader: async ({ context }) => {
@@ -36,7 +24,7 @@ function Home() {
   );
 }
 
-function Header() {
+export function Header() {
   return (
     <div className="flex w-full items-center justify-between">
       <StackedLogo />
@@ -57,56 +45,7 @@ function Content() {
           Powered by Bus Open Data Service
         </p>
       </div>
-      <Form />
-    </div>
-  );
-}
-
-function Form() {
-  const navigate = useNavigate();
-  const { data, isLoading } = useSuspenseQuery(operatorsOptions());
-  const operators = useMemo(() => transformOperators(data), [data]);
-  const [operator, setOperator] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-
-  return (
-    <div className="flex flex-col gap-2">
-      <ClientOnlyStorage key="favourites" defaultValue={[] as string[]}>
-        {(favourites, setFavourites) => (
-          <OperatorCombobox
-            options={operators}
-            setValue={setOperator}
-            value={operator}
-            favourites={favourites}
-            setFavourites={setFavourites}
-            loading={isLoading}
-          />
-        )}
-      </ClientOnlyStorage>
-      <div className="grid gap-2 grid-cols-2">
-        <Button variant="secondary" size="lg">
-          <MapPin /> Find nearby
-        </Button>
-        <Button
-          size="lg"
-          disabled={isLoading || !operator || isPending}
-          onClick={() =>
-            startTransition(() => {
-              navigate({ to: "/$nocCode", params: { nocCode: operator! } });
-            })
-          }
-        >
-          {isPending ? (
-            <>
-              <Loader2 className="animate-spin" /> Loading...
-            </>
-          ) : (
-            <>
-              <RouteIcon /> Track
-            </>
-          )}
-        </Button>
-      </div>
+      <OperatorForm to="/$nocCode" />
     </div>
   );
 }

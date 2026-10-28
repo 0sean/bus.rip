@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NocCodeRouteRouteImport } from './routes/$nocCode/route'
+import { Route as FaresRouteImport } from './routes/fares'
 import { Route as MonitoringRouteImport } from './routes/monitoring'
+import { Route as TimetablesRouteImport } from './routes/timetables'
 import { Route as NocCodeIndexRouteImport } from './routes/$nocCode/index'
 import { Route as NocCodeFaresRouteImport } from './routes/$nocCode/fares'
 import { Route as NocCodeTimetablesRouteImport } from './routes/$nocCode/timetables'
@@ -28,9 +30,19 @@ const NocCodeRouteRoute = NocCodeRouteRouteImport.update({
   path: '/$nocCode',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FaresRoute = FaresRouteImport.update({
+  id: '/fares',
+  path: '/fares',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MonitoringRoute = MonitoringRouteImport.update({
   id: '/monitoring',
   path: '/monitoring',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TimetablesRoute = TimetablesRouteImport.update({
+  id: '/timetables',
+  path: '/timetables',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NocCodeIndexRoute = NocCodeIndexRouteImport.update({
@@ -64,7 +76,9 @@ const NocCodeTimetablesTripTripRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$nocCode': typeof NocCodeRouteRouteWithChildren
+  '/fares': typeof FaresRoute
   '/monitoring': typeof MonitoringRoute
+  '/timetables': typeof TimetablesRoute
   '/$nocCode/fares': typeof NocCodeFaresRoute
   '/$nocCode/timetables': typeof NocCodeTimetablesRoute
   '/$nocCode/': typeof NocCodeIndexRoute
@@ -73,7 +87,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/fares': typeof FaresRoute
   '/monitoring': typeof MonitoringRoute
+  '/timetables': typeof TimetablesRoute
   '/$nocCode/fares': typeof NocCodeFaresRoute
   '/$nocCode/timetables': typeof NocCodeTimetablesRoute
   '/$nocCode': typeof NocCodeIndexRoute
@@ -84,7 +100,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$nocCode': typeof NocCodeRouteRouteWithChildren
+  '/fares': typeof FaresRoute
   '/monitoring': typeof MonitoringRoute
+  '/timetables': typeof TimetablesRoute
   '/$nocCode/fares': typeof NocCodeFaresRoute
   '/$nocCode/timetables': typeof NocCodeTimetablesRoute
   '/$nocCode/': typeof NocCodeIndexRoute
@@ -96,7 +114,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$nocCode'
+    | '/fares'
     | '/monitoring'
+    | '/timetables'
     | '/$nocCode/fares'
     | '/$nocCode/timetables'
     | '/$nocCode/'
@@ -105,7 +125,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/fares'
     | '/monitoring'
+    | '/timetables'
     | '/$nocCode/fares'
     | '/$nocCode/timetables'
     | '/$nocCode'
@@ -115,7 +137,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$nocCode'
+    | '/fares'
     | '/monitoring'
+    | '/timetables'
     | '/$nocCode/fares'
     | '/$nocCode/timetables'
     | '/$nocCode/'
@@ -126,7 +150,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   NocCodeRouteRoute: typeof NocCodeRouteRouteWithChildren
+  FaresRoute: typeof FaresRoute
   MonitoringRoute: typeof MonitoringRoute
+  TimetablesRoute: typeof TimetablesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -145,11 +171,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NocCodeRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/fares': {
+      id: '/fares'
+      path: '/fares'
+      fullPath: '/fares'
+      preLoaderRoute: typeof FaresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/monitoring': {
       id: '/monitoring'
       path: '/monitoring'
       fullPath: '/monitoring'
       preLoaderRoute: typeof MonitoringRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/timetables': {
+      id: '/timetables'
+      path: '/timetables'
+      fullPath: '/timetables'
+      preLoaderRoute: typeof TimetablesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$nocCode/': {
@@ -213,7 +253,9 @@ const NocCodeRouteRouteWithChildren = NocCodeRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   NocCodeRouteRoute: NocCodeRouteRouteWithChildren,
+  FaresRoute: FaresRoute,
   MonitoringRoute: MonitoringRoute,
+  TimetablesRoute: TimetablesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

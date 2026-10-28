@@ -3,11 +3,11 @@ import { useLocalStorage } from "@uidotdev/usehooks";
 import { Dispatch, ReactNode, SetStateAction } from "react";
 
 export function ClientOnlyStorage<T>({
-  key,
+  storageKey: key,
   defaultValue,
   children,
 }: {
-  key: string;
+  storageKey: string;
   defaultValue: T;
   children: (value: T, setValue: Dispatch<SetStateAction<T>>) => ReactNode;
 }) {

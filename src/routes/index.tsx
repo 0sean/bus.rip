@@ -3,6 +3,7 @@ import { operatorsOptions, staticQuery } from "@/data/queries";
 import StackedLogo from "@/components/StackedLogo";
 import { CircleQuestionMark } from "lucide-react";
 import { OperatorForm } from "@/components/OperatorForm";
+import { Navbar } from "@/components/Navbar";
 
 export const Route = createFileRoute("/")({
   loader: async ({ context }) => {
@@ -17,9 +18,10 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   return (
-    <div className="flex flex-col justify-between h-svh px-4 py-6">
+    <div className="flex flex-col h-svh px-4 py-6 gap-6">
       <Header />
       <Content />
+      <Navbar />
     </div>
   );
 }
@@ -38,7 +40,7 @@ export function Header() {
 
 function Content() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 grow justify-end">
       <div>
         <h1 className="text-3xl font-bold">Find any bus in the UK</h1>
         <p className="text-muted font-semibold">

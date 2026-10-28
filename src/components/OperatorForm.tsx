@@ -21,7 +21,7 @@ export function OperatorForm({
 
   return (
     <div className="flex flex-col gap-2">
-      <ClientOnlyStorage key="favourites" defaultValue={[] as string[]}>
+      <ClientOnlyStorage storageKey="favourites" defaultValue={[] as string[]}>
         {(favourites, setFavourites) => (
           <OperatorCombobox
             options={operators}

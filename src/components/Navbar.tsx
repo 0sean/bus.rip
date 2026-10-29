@@ -4,16 +4,40 @@ import {
   IconMapPinFilled,
 } from "@tabler/icons-react";
 import type { Icon as IconType } from "@tabler/icons-react";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useParams } from "@tanstack/react-router";
 import { clsx } from "cn";
 import * as motion from "motion/react-client";
 
+function relative(
+  path: string,
+  location: { pathname: string },
+  params: Record<string, string>,
+) {
+  if (params.nocCode) return `${path}/${params.nocCode}`;
+  if (location.pathname === "/map") return path;
+  if (
+    path === "/map" &&
+    (location.pathname === "/timetables" || location.pathname === "/fares")
+  )
+    return "/";
+  return path;
+}
+
 export function Navbar() {
+  const location = useLocation();
+  const params = useParams({ strict: false });
+
   return (
-    <div className="bg-neutral-950 shadow-lg border rounded-full p-1.5 w-fit mx-auto flex gap-2">
-      <NavbarItem icon={IconMapPinFilled} to="/" />
-      <NavbarItem icon={IconCalendarMonthFilled} to="/timetables" />
-      <NavbarItem icon={IconCoins} to="/fares" />
+    <div className="bg-neutral-950 shadow-lg border rounded-full p-1.5 w-fit mx-auto flex gap-2 pointer-events-auto">
+      <NavbarItem
+        icon={IconMapPinFilled}
+        to={relative("/map", location, params)}
+      />
+      <NavbarItem
+        icon={IconCalendarMonthFilled}
+        to={relative("/timetables", location, params)}
+      />
+      <NavbarItem icon={IconCoins} to={relative("/fares", location, params)} />
     </div>
   );
 }
@@ -21,7 +45,9 @@ export function Navbar() {
 function NavbarItem({ icon, to }: { icon: IconType; to: string }) {
   const Icon = icon;
   const location = useLocation();
-  const active = location.pathname === to;
+  const active =
+    location.pathname.startsWith(to) ||
+    (to === "/map" && location.pathname === "/");
 
   return (
     <Link

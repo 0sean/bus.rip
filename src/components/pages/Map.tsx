@@ -21,6 +21,7 @@ import MapNavbar from "@/components/map/MapNavbar";
 import LocationMarker from "@/components/map/LocationMarker";
 
 import StopMarker from "@/components/map/StopMarker";
+import { Navbar } from "../Navbar";
 
 export default function MapPage({
   nocCode,
@@ -187,6 +188,9 @@ export default function MapPage({
   return (
     <>
       <MapNavbar data={data} isLoading={isLoading} nearby={!nocCode} />
+      <div className="fixed bottom-0 left-0 right-0 z-10 p-4 pointer-events-none">
+        <Navbar />
+      </div>
       {!nocCode && !userLocation && (
         <Alert
           role={geolocationError ? "alert" : "status"}

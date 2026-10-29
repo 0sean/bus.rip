@@ -91,7 +91,7 @@ function RouteTripRow({ trip, noc }: { trip: TripWithStops; noc: string }) {
   const mapView = useLocation({ select: (location) => location.state.mapView });
   return (
     <Link
-      to="/$nocCode/timetables/trip/$trip"
+      to="/timetables/$nocCode/trip/$trip"
       params={{ nocCode: noc, trip: trip.id }}
       state={{ mapView }}
       key={trip.id}

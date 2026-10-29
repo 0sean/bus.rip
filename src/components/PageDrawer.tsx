@@ -18,14 +18,15 @@ export default function PageDrawer({
   return (
     <Drawer
       open
-      onClose={() =>
+      onOpenChange={(open) => {
+        if (open) return;
         void navigate({
-          to: "/$nocCode",
+          to: "/map/$nocCode",
           params: { nocCode },
           state: { mapView: true },
           search: {},
-        })
-      }
+        });
+      }}
     >
       <DrawerContent className="w-full md:w-128 mx-auto h-full !max-h-[calc(100svh-110px)] bg-zinc-900 border-3 !border-t-3 border-zinc-600/50">
         <DrawerClose

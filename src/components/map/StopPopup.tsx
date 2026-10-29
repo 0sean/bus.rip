@@ -81,7 +81,7 @@ export default function StopPopup({
           <div className="rounded overflow-hidden">
             {upcomingTimes.map((stopTime) => (
               <Link
-                to="/$nocCode/timetables/trip/$trip"
+                to="/timetables/$nocCode/trip/$trip"
                 params={{ nocCode: noc, trip: stopTime.trip.id }}
                 state={{ mapView: true }}
                 key={stopTime.id}

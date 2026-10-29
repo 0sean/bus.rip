@@ -47,7 +47,7 @@ function Content() {
           Powered by Bus Open Data Service
         </p>
       </div>
-      <OperatorForm to="/$nocCode" />
+      <OperatorForm to="/map/$nocCode" />
     </div>
   );
 }

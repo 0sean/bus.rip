@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { operatorsOptions, staticQuery } from "@/data/queries";
 import { Header } from ".";
 import { OperatorForm } from "@/components/OperatorForm";
@@ -34,7 +34,7 @@ function Content() {
           Powered by Bus Open Data Service
         </p>
       </div>
-      <OperatorForm to="/$nocCode/timetables" />
+      <OperatorForm to="/timetables/$nocCode" />
     </div>
   );
 }

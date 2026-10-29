@@ -11,7 +11,7 @@ import { OperatorCombobox } from "./OperatorCombobox";
 export function OperatorForm({
   to,
 }: {
-  to: "/$nocCode" | "/$nocCode/timetables" | "/$nocCode/fares";
+  to: "/map/$nocCode" | "/timetables/$nocCode" | "/fares/$nocCode";
 }) {
   const navigate = useNavigate();
   const { data, isLoading } = useSuspenseQuery(operatorsOptions());
@@ -37,7 +37,7 @@ export function OperatorForm({
         <Button
           variant="secondary"
           size="lg"
-          render={<Link to="/nearby" />}
+          render={<Link to="/map" />}
           nativeButton={false}
         >
           <MapPin /> Find nearby

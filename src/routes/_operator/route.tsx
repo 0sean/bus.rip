@@ -5,29 +5,29 @@ import {
   notFound,
   Outlet,
   useLocation,
+  useParams,
 } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { operatorOptions, staticQuery } from "@/data/queries";
+import { operatorOptions } from "@/data/queries";
 import InfoLayout from "@/components/InfoLayout";
 
 const MapPage = lazy(() => import("@/components/pages/Map"));
 const PageDrawer = lazy(() => import("@/components/PageDrawer"));
-export const Route = createFileRoute("/$nocCode")({
-  loader: async ({ context, params }) => {
-    const operator = await context.queryClient.query(
-      staticQuery(operatorOptions(params.nocCode)),
-    );
-    if (!operator) throw notFound();
-    return operator;
-  },
+export const Route = createFileRoute("/_operator")({
   component: OperatorLayout,
 });
 
 function OperatorLayout() {
-  const { nocCode } = Route.useParams();
+  const nocCode = useParams({
+    strict: false,
+    select: (params) => {
+      if (!params.nocCode) throw notFound();
+      return params.nocCode;
+    },
+  });
   const { data: operator } = useSuspenseQuery(operatorOptions(nocCode));
   const location = useLocation();
-  const isMap = location.pathname.replace(/\/$/, "") === `/${nocCode}`;
+  const isMap = location.pathname.replace(/\/$/, "") === `/map/${nocCode}`;
   const showMap = isMap || location.state.mapView === true;
   if (showMap)
     return (

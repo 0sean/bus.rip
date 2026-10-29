@@ -65,7 +65,7 @@ function TimetableRow({ route, noc }: { route: RouteRow; noc: string }) {
         </h2>
         <div className="font-medium">
           <Link
-            to="/$nocCode/timetables/route/$route"
+            to="/timetables/$nocCode/route/$route"
             params={{ nocCode: noc, route: String(route.id) }}
             state={{ mapView }}
           >

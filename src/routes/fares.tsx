@@ -34,7 +34,7 @@ function Content() {
           Powered by Bus Open Data Service
         </p>
       </div>
-      <OperatorForm to="/$nocCode/fares" />
+      <OperatorForm to="/fares/$nocCode" />
     </div>
   );
 }

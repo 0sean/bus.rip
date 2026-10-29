@@ -3,7 +3,7 @@ import { ClientOnly, createFileRoute } from "@tanstack/react-router";
 
 const MapPage = lazy(() => import("@/components/pages/Map"));
 
-export const Route = createFileRoute("/nearby")({
+export const Route = createFileRoute("/map")({
   ssr: "data-only",
   validateSearch: (
     search: Record<string, unknown>,

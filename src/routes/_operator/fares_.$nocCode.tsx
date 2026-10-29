@@ -1,5 +1,8 @@
+import { loadOperator } from "@/data/operator";
 import { createFileRoute } from "@tanstack/react-router";
-export const Route = createFileRoute("/$nocCode/fares")({
+export const Route = createFileRoute("/_operator/fares_/$nocCode")({
+  loader: ({ context, params }) =>
+    loadOperator(context.queryClient, params.nocCode),
   head: () => ({ meta: [{ title: "Fares | bus.rip" }] }),
   component: () => (
     <>

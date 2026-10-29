@@ -10,25 +10,24 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as NocCodeRouteRouteImport } from './routes/$nocCode/route'
+import { Route as OperatorRouteRouteImport } from './routes/_operator/route'
 import { Route as FaresRouteImport } from './routes/fares'
+import { Route as MapRouteImport } from './routes/map'
 import { Route as MonitoringRouteImport } from './routes/monitoring'
-import { Route as NearbyRouteImport } from './routes/nearby'
 import { Route as TimetablesRouteImport } from './routes/timetables'
-import { Route as NocCodeIndexRouteImport } from './routes/$nocCode/index'
-import { Route as NocCodeFaresRouteImport } from './routes/$nocCode/fares'
-import { Route as NocCodeTimetablesRouteImport } from './routes/$nocCode/timetables'
-import { Route as NocCodeTimetablesRouteRouteRouteImport } from './routes/$nocCode/timetables_.route.$route'
-import { Route as NocCodeTimetablesTripTripRouteImport } from './routes/$nocCode/timetables_.trip.$trip'
+import { Route as OperatorFaresNocCodeRouteImport } from './routes/_operator/fares_.$nocCode'
+import { Route as OperatorMapNocCodeRouteImport } from './routes/_operator/map.$nocCode'
+import { Route as OperatorTimetablesNocCodeRouteImport } from './routes/_operator/timetables_.$nocCode'
+import { Route as OperatorTimetablesNocCodeRouteRouteRouteImport } from './routes/_operator/timetables_.$nocCode_.route.$route'
+import { Route as OperatorTimetablesNocCodeTripTripRouteImport } from './routes/_operator/timetables_.$nocCode_.trip.$trip'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NocCodeRouteRoute = NocCodeRouteRouteImport.update({
-  id: '/$nocCode',
-  path: '/$nocCode',
+const OperatorRouteRoute = OperatorRouteRouteImport.update({
+  id: '/_operator',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FaresRoute = FaresRouteImport.update({
@@ -36,14 +35,14 @@ const FaresRoute = FaresRouteImport.update({
   path: '/fares',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MapRoute = MapRouteImport.update({
+  id: '/map',
+  path: '/map',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MonitoringRoute = MonitoringRouteImport.update({
   id: '/monitoring',
   path: '/monitoring',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NearbyRoute = NearbyRouteImport.update({
-  id: '/nearby',
-  path: '/nearby',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TimetablesRoute = TimetablesRouteImport.update({
@@ -51,120 +50,119 @@ const TimetablesRoute = TimetablesRouteImport.update({
   path: '/timetables',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NocCodeIndexRoute = NocCodeIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => NocCodeRouteRoute,
+const OperatorFaresNocCodeRoute = OperatorFaresNocCodeRouteImport.update({
+  id: '/fares_/$nocCode',
+  path: '/fares/$nocCode',
+  getParentRoute: () => OperatorRouteRoute,
 } as any)
-const NocCodeFaresRoute = NocCodeFaresRouteImport.update({
-  id: '/fares',
-  path: '/fares',
-  getParentRoute: () => NocCodeRouteRoute,
+const OperatorMapNocCodeRoute = OperatorMapNocCodeRouteImport.update({
+  id: '/map/$nocCode',
+  path: '/map/$nocCode',
+  getParentRoute: () => OperatorRouteRoute,
 } as any)
-const NocCodeTimetablesRoute = NocCodeTimetablesRouteImport.update({
-  id: '/timetables',
-  path: '/timetables',
-  getParentRoute: () => NocCodeRouteRoute,
-} as any)
-const NocCodeTimetablesRouteRouteRoute =
-  NocCodeTimetablesRouteRouteRouteImport.update({
-    id: '/timetables_/route/$route',
-    path: '/timetables/route/$route',
-    getParentRoute: () => NocCodeRouteRoute,
+const OperatorTimetablesNocCodeRoute =
+  OperatorTimetablesNocCodeRouteImport.update({
+    id: '/timetables_/$nocCode',
+    path: '/timetables/$nocCode',
+    getParentRoute: () => OperatorRouteRoute,
   } as any)
-const NocCodeTimetablesTripTripRoute =
-  NocCodeTimetablesTripTripRouteImport.update({
-    id: '/timetables_/trip/$trip',
-    path: '/timetables/trip/$trip',
-    getParentRoute: () => NocCodeRouteRoute,
+const OperatorTimetablesNocCodeRouteRouteRoute =
+  OperatorTimetablesNocCodeRouteRouteRouteImport.update({
+    id: '/timetables_/$nocCode_/route/$route',
+    path: '/timetables/$nocCode/route/$route',
+    getParentRoute: () => OperatorRouteRoute,
+  } as any)
+const OperatorTimetablesNocCodeTripTripRoute =
+  OperatorTimetablesNocCodeTripTripRouteImport.update({
+    id: '/timetables_/$nocCode_/trip/$trip',
+    path: '/timetables/$nocCode/trip/$trip',
+    getParentRoute: () => OperatorRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/$nocCode': typeof NocCodeRouteRouteWithChildren
   '/fares': typeof FaresRoute
+  '/map': typeof MapRoute
   '/monitoring': typeof MonitoringRoute
-  '/nearby': typeof NearbyRoute
   '/timetables': typeof TimetablesRoute
-  '/$nocCode/fares': typeof NocCodeFaresRoute
-  '/$nocCode/timetables': typeof NocCodeTimetablesRoute
-  '/$nocCode/': typeof NocCodeIndexRoute
-  '/$nocCode/timetables/route/$route': typeof NocCodeTimetablesRouteRouteRoute
-  '/$nocCode/timetables/trip/$trip': typeof NocCodeTimetablesTripTripRoute
+  '/fares/$nocCode': typeof OperatorFaresNocCodeRoute
+  '/map/$nocCode': typeof OperatorMapNocCodeRoute
+  '/timetables/$nocCode': typeof OperatorTimetablesNocCodeRoute
+  '/timetables/$nocCode/route/$route': typeof OperatorTimetablesNocCodeRouteRouteRoute
+  '/timetables/$nocCode/trip/$trip': typeof OperatorTimetablesNocCodeTripTripRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/fares': typeof FaresRoute
+  '/map': typeof MapRoute
   '/monitoring': typeof MonitoringRoute
-  '/nearby': typeof NearbyRoute
   '/timetables': typeof TimetablesRoute
-  '/$nocCode/fares': typeof NocCodeFaresRoute
-  '/$nocCode/timetables': typeof NocCodeTimetablesRoute
-  '/$nocCode': typeof NocCodeIndexRoute
-  '/$nocCode/timetables/route/$route': typeof NocCodeTimetablesRouteRouteRoute
-  '/$nocCode/timetables/trip/$trip': typeof NocCodeTimetablesTripTripRoute
+  '/fares/$nocCode': typeof OperatorFaresNocCodeRoute
+  '/map/$nocCode': typeof OperatorMapNocCodeRoute
+  '/timetables/$nocCode': typeof OperatorTimetablesNocCodeRoute
+  '/timetables/$nocCode/route/$route': typeof OperatorTimetablesNocCodeRouteRouteRoute
+  '/timetables/$nocCode/trip/$trip': typeof OperatorTimetablesNocCodeTripTripRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/$nocCode': typeof NocCodeRouteRouteWithChildren
+  '/_operator': typeof OperatorRouteRouteWithChildren
   '/fares': typeof FaresRoute
+  '/map': typeof MapRoute
   '/monitoring': typeof MonitoringRoute
-  '/nearby': typeof NearbyRoute
   '/timetables': typeof TimetablesRoute
-  '/$nocCode/fares': typeof NocCodeFaresRoute
-  '/$nocCode/timetables': typeof NocCodeTimetablesRoute
-  '/$nocCode/': typeof NocCodeIndexRoute
-  '/$nocCode/timetables_/route/$route': typeof NocCodeTimetablesRouteRouteRoute
-  '/$nocCode/timetables_/trip/$trip': typeof NocCodeTimetablesTripTripRoute
+  '/_operator/fares_/$nocCode': typeof OperatorFaresNocCodeRoute
+  '/_operator/map/$nocCode': typeof OperatorMapNocCodeRoute
+  '/_operator/timetables_/$nocCode': typeof OperatorTimetablesNocCodeRoute
+  '/_operator/timetables_/$nocCode_/route/$route': typeof OperatorTimetablesNocCodeRouteRouteRoute
+  '/_operator/timetables_/$nocCode_/trip/$trip': typeof OperatorTimetablesNocCodeTripTripRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/$nocCode'
     | '/fares'
+    | '/map'
     | '/monitoring'
-    | '/nearby'
     | '/timetables'
-    | '/$nocCode/fares'
-    | '/$nocCode/timetables'
-    | '/$nocCode/'
-    | '/$nocCode/timetables/route/$route'
-    | '/$nocCode/timetables/trip/$trip'
+    | '/fares/$nocCode'
+    | '/map/$nocCode'
+    | '/timetables/$nocCode'
+    | '/timetables/$nocCode/route/$route'
+    | '/timetables/$nocCode/trip/$trip'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/fares'
+    | '/map'
     | '/monitoring'
-    | '/nearby'
     | '/timetables'
-    | '/$nocCode/fares'
-    | '/$nocCode/timetables'
-    | '/$nocCode'
-    | '/$nocCode/timetables/route/$route'
-    | '/$nocCode/timetables/trip/$trip'
+    | '/fares/$nocCode'
+    | '/map/$nocCode'
+    | '/timetables/$nocCode'
+    | '/timetables/$nocCode/route/$route'
+    | '/timetables/$nocCode/trip/$trip'
   id:
     | '__root__'
     | '/'
-    | '/$nocCode'
+    | '/_operator'
     | '/fares'
+    | '/map'
     | '/monitoring'
-    | '/nearby'
     | '/timetables'
-    | '/$nocCode/fares'
-    | '/$nocCode/timetables'
-    | '/$nocCode/'
-    | '/$nocCode/timetables_/route/$route'
-    | '/$nocCode/timetables_/trip/$trip'
+    | '/_operator/fares_/$nocCode'
+    | '/_operator/map/$nocCode'
+    | '/_operator/timetables_/$nocCode'
+    | '/_operator/timetables_/$nocCode_/route/$route'
+    | '/_operator/timetables_/$nocCode_/trip/$trip'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  NocCodeRouteRoute: typeof NocCodeRouteRouteWithChildren
+  OperatorRouteRoute: typeof OperatorRouteRouteWithChildren
   FaresRoute: typeof FaresRoute
+  MapRoute: typeof MapRoute
   MonitoringRoute: typeof MonitoringRoute
-  NearbyRoute: typeof NearbyRoute
   TimetablesRoute: typeof TimetablesRoute
 }
 
@@ -177,11 +175,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/$nocCode': {
-      id: '/$nocCode'
-      path: '/$nocCode'
-      fullPath: '/$nocCode'
-      preLoaderRoute: typeof NocCodeRouteRouteImport
+    '/_operator': {
+      id: '/_operator'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof OperatorRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fares': {
@@ -191,18 +189,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FaresRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/map': {
+      id: '/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof MapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/monitoring': {
       id: '/monitoring'
       path: '/monitoring'
       fullPath: '/monitoring'
       preLoaderRoute: typeof MonitoringRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/nearby': {
-      id: '/nearby'
-      path: '/nearby'
-      fullPath: '/nearby'
-      preLoaderRoute: typeof NearbyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/timetables': {
@@ -212,70 +210,72 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TimetablesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/$nocCode/': {
-      id: '/$nocCode/'
-      path: '/'
-      fullPath: '/$nocCode/'
-      preLoaderRoute: typeof NocCodeIndexRouteImport
-      parentRoute: typeof NocCodeRouteRoute
+    '/_operator/fares_/$nocCode': {
+      id: '/_operator/fares_/$nocCode'
+      path: '/fares/$nocCode'
+      fullPath: '/fares/$nocCode'
+      preLoaderRoute: typeof OperatorFaresNocCodeRouteImport
+      parentRoute: typeof OperatorRouteRoute
     }
-    '/$nocCode/fares': {
-      id: '/$nocCode/fares'
-      path: '/fares'
-      fullPath: '/$nocCode/fares'
-      preLoaderRoute: typeof NocCodeFaresRouteImport
-      parentRoute: typeof NocCodeRouteRoute
+    '/_operator/map/$nocCode': {
+      id: '/_operator/map/$nocCode'
+      path: '/map/$nocCode'
+      fullPath: '/map/$nocCode'
+      preLoaderRoute: typeof OperatorMapNocCodeRouteImport
+      parentRoute: typeof OperatorRouteRoute
     }
-    '/$nocCode/timetables': {
-      id: '/$nocCode/timetables'
-      path: '/timetables'
-      fullPath: '/$nocCode/timetables'
-      preLoaderRoute: typeof NocCodeTimetablesRouteImport
-      parentRoute: typeof NocCodeRouteRoute
+    '/_operator/timetables_/$nocCode': {
+      id: '/_operator/timetables_/$nocCode'
+      path: '/timetables/$nocCode'
+      fullPath: '/timetables/$nocCode'
+      preLoaderRoute: typeof OperatorTimetablesNocCodeRouteImport
+      parentRoute: typeof OperatorRouteRoute
     }
-    '/$nocCode/timetables_/route/$route': {
-      id: '/$nocCode/timetables_/route/$route'
-      path: '/timetables/route/$route'
-      fullPath: '/$nocCode/timetables/route/$route'
-      preLoaderRoute: typeof NocCodeTimetablesRouteRouteRouteImport
-      parentRoute: typeof NocCodeRouteRoute
+    '/_operator/timetables_/$nocCode_/route/$route': {
+      id: '/_operator/timetables_/$nocCode_/route/$route'
+      path: '/timetables/$nocCode/route/$route'
+      fullPath: '/timetables/$nocCode/route/$route'
+      preLoaderRoute: typeof OperatorTimetablesNocCodeRouteRouteRouteImport
+      parentRoute: typeof OperatorRouteRoute
     }
-    '/$nocCode/timetables_/trip/$trip': {
-      id: '/$nocCode/timetables_/trip/$trip'
-      path: '/timetables/trip/$trip'
-      fullPath: '/$nocCode/timetables/trip/$trip'
-      preLoaderRoute: typeof NocCodeTimetablesTripTripRouteImport
-      parentRoute: typeof NocCodeRouteRoute
+    '/_operator/timetables_/$nocCode_/trip/$trip': {
+      id: '/_operator/timetables_/$nocCode_/trip/$trip'
+      path: '/timetables/$nocCode/trip/$trip'
+      fullPath: '/timetables/$nocCode/trip/$trip'
+      preLoaderRoute: typeof OperatorTimetablesNocCodeTripTripRouteImport
+      parentRoute: typeof OperatorRouteRoute
     }
   }
 }
 
-interface NocCodeRouteRouteChildren {
-  NocCodeFaresRoute: typeof NocCodeFaresRoute
-  NocCodeTimetablesRoute: typeof NocCodeTimetablesRoute
-  NocCodeIndexRoute: typeof NocCodeIndexRoute
-  NocCodeTimetablesRouteRouteRoute: typeof NocCodeTimetablesRouteRouteRoute
-  NocCodeTimetablesTripTripRoute: typeof NocCodeTimetablesTripTripRoute
+interface OperatorRouteRouteChildren {
+  OperatorFaresNocCodeRoute: typeof OperatorFaresNocCodeRoute
+  OperatorMapNocCodeRoute: typeof OperatorMapNocCodeRoute
+  OperatorTimetablesNocCodeRoute: typeof OperatorTimetablesNocCodeRoute
+  OperatorTimetablesNocCodeRouteRouteRoute: typeof OperatorTimetablesNocCodeRouteRouteRoute
+  OperatorTimetablesNocCodeTripTripRoute: typeof OperatorTimetablesNocCodeTripTripRoute
 }
 
-const NocCodeRouteRouteChildren: NocCodeRouteRouteChildren = {
-  NocCodeFaresRoute: NocCodeFaresRoute,
-  NocCodeTimetablesRoute: NocCodeTimetablesRoute,
-  NocCodeIndexRoute: NocCodeIndexRoute,
-  NocCodeTimetablesRouteRouteRoute: NocCodeTimetablesRouteRouteRoute,
-  NocCodeTimetablesTripTripRoute: NocCodeTimetablesTripTripRoute,
+const OperatorRouteRouteChildren: OperatorRouteRouteChildren = {
+  OperatorFaresNocCodeRoute: OperatorFaresNocCodeRoute,
+  OperatorMapNocCodeRoute: OperatorMapNocCodeRoute,
+  OperatorTimetablesNocCodeRoute: OperatorTimetablesNocCodeRoute,
+  OperatorTimetablesNocCodeRouteRouteRoute:
+    OperatorTimetablesNocCodeRouteRouteRoute,
+  OperatorTimetablesNocCodeTripTripRoute:
+    OperatorTimetablesNocCodeTripTripRoute,
 }
 
-const NocCodeRouteRouteWithChildren = NocCodeRouteRoute._addFileChildren(
-  NocCodeRouteRouteChildren,
+const OperatorRouteRouteWithChildren = OperatorRouteRoute._addFileChildren(
+  OperatorRouteRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  NocCodeRouteRoute: NocCodeRouteRouteWithChildren,
+  OperatorRouteRoute: OperatorRouteRouteWithChildren,
   FaresRoute: FaresRoute,
+  MapRoute: MapRoute,
   MonitoringRoute: MonitoringRoute,
-  NearbyRoute: NearbyRoute,
   TimetablesRoute: TimetablesRoute,
 }
 export const routeTree = rootRouteImport

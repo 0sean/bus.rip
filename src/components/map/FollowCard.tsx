@@ -1,10 +1,26 @@
 import { Vehicle } from "@/lib/bods";
-import { Alert } from "../ui/alert";
 import { formatDistanceToNow } from "date-fns";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@base-ui/react";
+import {
+  IconArrowRight,
+  IconHourglass,
+  IconClock,
+  IconShare,
+} from "@tabler/icons-react";
+import { Card, CardHeader, CardContent, CardFooter } from "../ui/card";
+import { renderTime } from "@/lib/map";
 
 export default function FollowCard({ vehicle }: { vehicle: Vehicle }) {
-  const [distanceToNow, setDistanceToNow] = useState("");
+  const departureTime = useMemo(
+      () => renderTime(vehicle.departureTime),
+      [vehicle.departureTime],
+    ),
+    arrivalTime = useMemo(
+      () => renderTime(vehicle.arrivalTime),
+      [vehicle.arrivalTime],
+    ),
+    [distanceToNow, setDistanceToNow] = useState("");
 
   useEffect(() => {
     function updateDistance() {
@@ -22,62 +38,33 @@ export default function FollowCard({ vehicle }: { vehicle: Vehicle }) {
   }, [vehicle.recordedAt]);
 
   return (
-    <div className="fixed bottom-4 w-screen p-4 flex justify-center">
-      <Alert className="w-full md:w-128 bg-zinc-900 border-3 border-zinc-600/50 drop-shadow-2xl">
-        <div className="flex w-full">
-          <div className="w-[40%]">
-            <p className="text-2xl font-semibold mb-1.5">
-              {vehicle.departureTime != undefined
-                ? new Date(vehicle.departureTime)
-                    .getHours()
-                    .toString()
-                    .padStart(2, "0")
-                : "-"}
-              :
-              {vehicle.departureTime != undefined
-                ? new Date(vehicle.departureTime)
-                    .getMinutes()
-                    .toString()
-                    .padStart(2, "0")
-                : "-"}
+    <div className="fixed bottom-16 w-screen p-4 flex justify-center">
+      <Card className="w-xs !font-sans gap-0">
+        <CardHeader className="border-b">
+          <div className="flex justify-between items-center">
+            <p className="font-medium text-2xl">{departureTime}</p>
+            <IconArrowRight size={16} />
+            <p className="font-medium text-2xl">{arrivalTime}</p>
+          </div>
+          <div className="flex justify-between items-center">
+            <p className="text-muted-foreground text-xs">
+              {vehicle.originName}
             </p>
-            <p className="leading-tight text-sm">{vehicle.originName}</p>
-          </div>
-          <div className="w-[20%] flex justify-center items-center">
-            <svg
-              width="14"
-              height="16"
-              viewBox="0 0 14 16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M13.7062 8.70625L8.70624 13.7062C8.51249 13.9031 8.25624 14 7.99999 14C7.74374 14 7.48812 13.9023 7.29312 13.707C6.90249 13.3164 6.90249 12.6836 7.29312 12.293L10.5875 9H0.999999C0.447812 9 4.95911e-05 8.55312 4.95911e-05 8C4.95911e-05 7.44688 0.447812 7 0.999999 7H10.5875L7.29374 3.70625C6.90312 3.31563 6.90312 2.68282 7.29374 2.29219C7.68437 1.90157 8.31718 1.90157 8.70781 2.29219L13.7078 7.29219C14.0969 7.68438 14.0969 8.31563 13.7062 8.70625Z"
-                fill="white"
-              />
-            </svg>
-          </div>
-          <div className="w-[40%] text-end">
-            <p className="text-2xl font-semibold mb-1.5">
-              {vehicle.arrivalTime != undefined
-                ? new Date(vehicle.arrivalTime)
-                    .getHours()
-                    .toString()
-                    .padStart(2, "0")
-                : "-"}
-              :
-              {vehicle.arrivalTime != undefined
-                ? new Date(vehicle.arrivalTime)
-                    .getMinutes()
-                    .toString()
-                    .padStart(2, "0")
-                : "-"}
+            <p className="text-muted-foreground text-xs">
+              {vehicle.destinationName}
             </p>
-            <p className="leading-tight text-sm">{vehicle.destinationName}</p>
           </div>
-        </div>
-        <p className="mt-2 opacity-50 text-[11px]">Updated {distanceToNow}</p>
-      </Alert>
+        </CardHeader>
+        <CardContent className="flex justify-between pt-3">
+          {/* TODO: Lateness */}
+          <p className="text-muted-foreground text-xs flex gap-1">
+            <IconHourglass size={16} /> Running on time
+          </p>
+          <p className="text-muted-foreground text-xs flex gap-1">
+            <IconClock size={16} /> {distanceToNow}
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

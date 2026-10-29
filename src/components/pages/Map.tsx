@@ -194,7 +194,7 @@ export default function MapPage({
       {!nocCode && !userLocation && (
         <Alert
           role={geolocationError ? "alert" : "status"}
-          className="right-2 bottom-2 fixed z-10 w-fit"
+          className="right-2 bottom-20 fixed z-10 w-fit"
         >
           <AlertTitle>
             {geolocationError
@@ -207,7 +207,7 @@ export default function MapPage({
         </Alert>
       )}
       {data && !data.error && !data.vehicles && (
-        <Alert className="map-alert-enter right-2 bottom-2 fixed z-10 w-fit drop-shadow-2xl">
+        <Alert className="map-alert-enter right-2 bottom-20 fixed z-10 w-fit drop-shadow-2xl">
           <AlertTitle className="font-semibold">
             {nocCode ? "No location data available" : "No buses nearby"}
           </AlertTitle>
@@ -219,7 +219,7 @@ export default function MapPage({
         </Alert>
       )}
       {(locationError || stopsError) && (
-        <Alert role="alert" className="right-2 bottom-2 fixed z-10 w-fit">
+        <Alert role="alert" className="right-2 bottom-20 fixed z-10 w-fit">
           <AlertTitle>Unable to refresh transit data</AlertTitle>
           <AlertDescription>
             {locationError?.message || stopsError?.message}

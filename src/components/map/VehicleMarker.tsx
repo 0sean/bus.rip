@@ -59,10 +59,10 @@ function VehicleMarkerDot({ vehicle }: { vehicle: Vehicle }) {
 
   return (
     <div
-      className={`size-[28px] bg-zinc-800 border-2 border-zinc-600/50 rounded-full shadow-xl flex justify-center items-center${validityClass}`}
+      className={`size-[28px] bg-background border rounded-full shadow-xl flex justify-center items-center${validityClass}`}
     >
       <span
-        className={`font-bold ${vehicle.lineName.length > 2 ? "text-[10px]" : "text-xs"} rotate-(--rotation)`}
+        className={`font-semibold ${vehicle.lineName.length > 2 ? "text-[10px]" : "text-xs"} rotate-(--rotation)`}
         style={style}
       >
         {vehicle.lineName}

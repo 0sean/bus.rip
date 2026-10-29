@@ -6,6 +6,14 @@ import { useEffect, useMemo, useState } from "react";
 import type { Vehicle } from "@/lib/bods";
 import { renderTime } from "@/lib/map";
 import type { Dispatch, SetStateAction } from "react";
+import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
+import { Button } from "../ui/button";
+import {
+  IconArrowRight,
+  IconClock,
+  IconHourglass,
+  IconShare,
+} from "@tabler/icons-react";
 
 export default function VehiclePopup({
   vehicle,
@@ -50,47 +58,61 @@ export default function VehiclePopup({
       closeOnClick={false} // This must be false or the popup doesn't show for some reason..
       onClose={togglePopup}
       className="pb-2"
+      closeButton={false}
     >
-      <div className="flex w-full">
-        <div className="w-2/5">
-          <p className={"font-semibold text-2xl mb-1.5"}>{departureTime}</p>
-          <p className="leading-tight">{vehicle.originName}</p>
-        </div>
-        <div className="w-1/5 flex justify-center items-center">
-          <FaArrowRight />
-        </div>
-        <div className="w-2/5 text-end">
-          <p className="font-semibold text-2xl mb-1.5">{arrivalTime}</p>
-          <p className="leading-tight">{vehicle.destinationName}</p>
-        </div>
-      </div>
-      <p className="mt-2 opacity-50 text-[11px]">Updated {distanceToNow}</p>
-      <div className="flex gap-2 w-full">
-        <button
-          onClick={() =>
-            following ? setFollowing(null) : setFollowing(vehicle.ref)
-          }
-          className="grow p-1.5 outline-0 rounded-sm mt-2 border bg-zinc-800/25 hover:bg-zinc-800/50 transition-colors border-zinc-600/50"
-        >
-          {following ? "Following" : "Follow"}
-        </button>
-        <button
-          onClick={async () => {
-            const shareUrl = new URL(window.location.href);
-            shareUrl.searchParams.set("vehicleId", vehicle.ref);
-            const url = shareUrl.toString();
-            try {
-              if (navigator.share) await navigator.share({ url });
-              else await navigator.clipboard.writeText(url);
-            } catch {
-              await navigator.clipboard.writeText(url);
+      <Card className="w-xs !font-sans gap-0">
+        <CardHeader className="border-b">
+          <div className="flex justify-between items-center">
+            <p className="font-medium text-2xl">{departureTime}</p>
+            <IconArrowRight size={16} />
+            <p className="font-medium text-2xl">{arrivalTime}</p>
+          </div>
+          <div className="flex justify-between items-center">
+            <p className="text-muted-foreground text-xs">
+              {vehicle.originName}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {vehicle.destinationName}
+            </p>
+          </div>
+        </CardHeader>
+        <CardContent className="flex justify-between py-3">
+          {/* TODO: Lateness */}
+          <p className="text-muted-foreground text-xs flex gap-1">
+            <IconHourglass size={16} /> Running on time
+          </p>
+          <p className="text-muted-foreground text-xs flex gap-1">
+            <IconClock size={16} /> {distanceToNow}
+          </p>
+        </CardContent>
+        <CardFooter className="gap-2">
+          {/* TODO: Share button operator? */}
+          <Button
+            className="grow"
+            onClick={() =>
+              following ? setFollowing(null) : setFollowing(vehicle.ref)
             }
-          }}
-          className="grow-0 w-[32px] p-2 rounded-sm mt-2 border bg-zinc-800/25 hover:bg-zinc-800/50 transition-colors border-zinc-600/50 flex items-center justify-center"
-        >
-          <FaArrowUpFromBracket />
-        </button>
-      </div>
+          >
+            {following ? "Following" : "Follow"}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={async () => {
+              const shareUrl = new URL(window.location.href);
+              shareUrl.searchParams.set("vehicleId", vehicle.ref);
+              const url = shareUrl.toString();
+              try {
+                if (navigator.share) await navigator.share({ url });
+                else await navigator.clipboard.writeText(url);
+              } catch {
+                await navigator.clipboard.writeText(url);
+              }
+            }}
+          >
+            <IconShare size={16} />
+          </Button>
+        </CardFooter>
+      </Card>
     </Popup>
   );
 }

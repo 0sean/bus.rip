@@ -8,7 +8,6 @@ import {
 } from "@tanstack/react-router";
 import { BackWatcher } from "@/components/Back";
 import globals from "@/styles/globals.css?url";
-import mapCss from "@/styles/map.css?url";
 import fontCss from "@/styles/fonts.css?url";
 import fontFile from "@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2?url";
 
@@ -28,7 +27,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       ],
       links: [
         { rel: "stylesheet", href: globals },
-        { rel: "stylesheet", href: mapCss },
         { rel: "stylesheet", href: fontCss },
         {
           rel: "preload",

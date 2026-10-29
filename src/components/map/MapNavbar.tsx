@@ -20,10 +20,9 @@ function MapNavbar({
 
   return (
     <div className="fixed top-0 left-0 p-2 w-screen flex flex-col items-center gap-2 z-60">
-      <Menubar className="w-full md:w-128 drop-shadow-2xl">
+      <Menubar className="w-full md:w-128">
         <MenubarMenu>
           <MenubarTrigger
-            className="hover:bg-zinc-800 transition-colors"
             onClick={() => {
               void navigate({ to: "/" });
             }}

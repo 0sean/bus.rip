@@ -2,7 +2,7 @@ import { operatorsOptions } from "@/data/queries";
 import { transformOperators } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { MapPin, Loader2, RouteIcon } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 import { ClientOnlyStorage } from "./ClientOnlyStorage";
@@ -34,7 +34,12 @@ export function OperatorForm({
         )}
       </ClientOnlyStorage>
       <div className="grid gap-2 grid-cols-2">
-        <Button variant="secondary" size="lg">
+        <Button
+          variant="secondary"
+          size="lg"
+          render={<Link to="/nearby" />}
+          nativeButton={false}
+        >
           <MapPin /> Find nearby
         </Button>
         <Button

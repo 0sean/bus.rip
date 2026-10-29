@@ -14,7 +14,7 @@ import { Map, MapRef } from "react-map-gl/maplibre";
 
 import { mapStyle } from "@/lib/map";
 
-import { DatafeedRouteResponse, Validity } from "@/lib/bods";
+import { DatafeedRouteResponse, nearbyBoundingBox, Validity } from "@/lib/bods";
 import FollowCard from "@/components/map/FollowCard";
 import VehicleMarker from "@/components/map/VehicleMarker";
 import MapNavbar from "@/components/map/MapNavbar";
@@ -26,7 +26,7 @@ export default function MapPage({
   nocCode,
   vehicleId,
 }: {
-  nocCode: string;
+  nocCode?: string;
   vehicleId?: string;
 }) {
   const mapRef = useRef<MapRef>(null),
@@ -43,13 +43,21 @@ export default function MapPage({
     [bearing, setBearing] = useState(0),
     [initialLocationSet, setInitialLocationSet] = useState(false),
     [userLocation, setUserLocation] = useState<[number, number] | null>(null),
+    [geolocationError, setGeolocationError] = useState<string | null>(null),
+    boundingBox = useMemo(
+      () => (userLocation ? nearbyBoundingBox(...userLocation) : null),
+      [userLocation],
+    ),
     {
       data: datafeed,
       isLoading,
       error: locationError,
       dataUpdatedAt,
-    } = useQuery(locationsOptions(nocCode)),
-    { data: stops, error: stopsError } = useQuery(stopsOptions(nocCode)),
+    } = useQuery(locationsOptions(nocCode ?? boundingBox)),
+    { data: stops, error: stopsError } = useQuery({
+      ...stopsOptions(nocCode ?? ""),
+      enabled: !!nocCode,
+    }),
     [data, setData] = useState<DatafeedRouteResponse | null>(null),
     [following, setFollowing] = useState<string | null>(null),
     [openPopup, setOpenPopup] = useState<string | null>(null),
@@ -80,7 +88,7 @@ export default function MapPage({
   }, [datafeed, dataUpdatedAt]);
   // Center the map when the first vehicles arrive.
   useEffect(() => {
-    if (!data || isLoading) return;
+    if (!nocCode || !data || isLoading) return;
 
     function moveToVehicle() {
       if (!initialLocationSet && data!.vehicles && data!.vehicles.length > 0) {
@@ -90,28 +98,45 @@ export default function MapPage({
     }
 
     enqueueLoadAction(moveToVehicle);
-  }, [data, isLoading, initialLocationSet, enqueueLoadAction, setLocation]);
+  }, [
+    nocCode,
+    data,
+    isLoading,
+    initialLocationSet,
+    enqueueLoadAction,
+    setLocation,
+  ]);
   // Get user location
   useEffect(() => {
-    function moveToUser() {
-      if (navigator.geolocation && !vehicleId) {
-        navigator.permissions
-          ?.query({ name: "geolocation" })
-          .then((result) => {
-            if (result.state == "granted" || result.state == "prompt") {
-              navigator.geolocation.getCurrentPosition((pos) => {
-                setLocation(pos.coords.longitude, pos.coords.latitude);
-                setInitialLocationSet(true);
-                setUserLocation([pos.coords.longitude, pos.coords.latitude]);
-              });
-            }
-          })
-          .catch(() => {});
-      }
+    if (nocCode && vehicleId) return;
+    if (!navigator.geolocation) {
+      setGeolocationError("Your browser does not support location access.");
+      return;
     }
-
-    enqueueLoadAction(moveToUser);
-  }, [vehicleId, enqueueLoadAction, setLocation]);
+    let cancelled = false;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (cancelled) return;
+        const { longitude, latitude } = pos.coords;
+        enqueueLoadAction(() => setLocation(longitude, latitude));
+        setInitialLocationSet(true);
+        setUserLocation([longitude, latitude]);
+        setGeolocationError(null);
+      },
+      (error) => {
+        if (cancelled) return;
+        setGeolocationError(
+          error.code === 1
+            ? "Allow location access in your browser to find nearby buses."
+            : "Unable to find your location. Please try reloading the page.",
+        );
+      },
+      { timeout: 15_000, maximumAge: 60_000 },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [nocCode, vehicleId, enqueueLoadAction, setLocation]);
   // Set following from URL
   useEffect(() => {
     if (typeof window == "undefined") return;
@@ -161,14 +186,31 @@ export default function MapPage({
 
   return (
     <>
-      <MapNavbar data={data} isLoading={isLoading} />
+      <MapNavbar data={data} isLoading={isLoading} nearby={!nocCode} />
+      {!nocCode && !userLocation && (
+        <Alert
+          role={geolocationError ? "alert" : "status"}
+          className="right-2 bottom-2 fixed z-10 w-fit"
+        >
+          <AlertTitle>
+            {geolocationError
+              ? "Location unavailable"
+              : "Finding your location"}
+          </AlertTitle>
+          <AlertDescription>
+            {geolocationError ?? "Allow location access to see buses near you."}
+          </AlertDescription>
+        </Alert>
+      )}
       {data && !data.error && !data.vehicles && (
         <Alert className="map-alert-enter right-2 bottom-2 fixed z-10 w-fit drop-shadow-2xl">
           <AlertTitle className="font-semibold">
-            No location data available
+            {nocCode ? "No location data available" : "No buses nearby"}
           </AlertTitle>
           <AlertDescription>
-            It may be available under another provider.
+            {nocCode
+              ? "It may be available under another provider."
+              : "No buses are currently reporting locations in your area."}
           </AlertDescription>
         </Alert>
       )}
@@ -224,7 +266,8 @@ export default function MapPage({
               />
             ))}
           {userLocation && <LocationMarker location={userLocation} />}
-          {stops &&
+          {nocCode &&
+            stops &&
             Array.isArray(stops) &&
             stops
               .filter((stop) =>

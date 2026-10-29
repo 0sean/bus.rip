@@ -15,9 +15,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 function MapNavbar({
   data,
   isLoading,
+  nearby = false,
 }: {
   data: DatafeedRouteResponse | null;
   isLoading: boolean;
+  nearby?: boolean;
 }) {
   const navigate = useNavigate();
 
@@ -34,15 +36,12 @@ function MapNavbar({
             <FaArrowLeft />
           </MenubarTrigger>
           <h1 className="text-sm grow text-center font-semibold">
-            {data != undefined &&
-              data.line != undefined &&
-              !isLoading &&
-              data.line.publicName}
+            {nearby ? "Nearby" : !isLoading && data?.line?.publicName}
           </h1>
           <MapNavbarProgress />
         </MenubarMenu>
       </Menubar>
-      <MapNavbarTabs noc={data?.line.nocCode} />
+      {!nearby && <MapNavbarTabs noc={data?.line?.nocCode} />}
     </div>
   );
 }

@@ -1,4 +1,5 @@
-import { queryOptions } from "@tanstack/react-query";
+import { queryOptions, skipToken } from "@tanstack/react-query";
+import type { BoundingBox } from "@/lib/bods";
 import { getOperators, getOperator } from "@/functions/operators";
 import { getLocations } from "@/functions/locations";
 import type { NocLine } from "@/db/schema";
@@ -35,10 +36,18 @@ export const operatorOptions = (nocCode: string) =>
     staleTime: 300_000,
   });
 
-export const locationsOptions = (nocCode: string) =>
+export const locationsOptions = (filter: string | BoundingBox | null) =>
   queryOptions({
-    queryKey: ["locations", code(nocCode)],
-    queryFn: ({ signal }) => getLocations({ data: nocCode, signal }),
+    queryKey: ["locations", typeof filter === "string" ? code(filter) : filter],
+    queryFn:
+      filter === null
+        ? skipToken
+        : ({ signal }) =>
+            getLocations({
+              data:
+                typeof filter === "string" ? filter : { boundingBox: filter },
+              signal,
+            }),
     staleTime: 10_000,
     refetchInterval: 10_000,
     retry: false,

@@ -2,9 +2,27 @@ import type { NocLine } from "@/db/schema";
 
 export type DatafeedRouteResponse = {
   error?: string;
-  line: NocLine;
+  line?: NocLine;
   vehicles: Vehicle[] | null;
 };
+
+// BODS uses west, south, east, north coordinate order.
+export type BoundingBox = [number, number, number, number];
+
+export function nearbyBoundingBox(
+  longitude: number,
+  latitude: number,
+): BoundingBox {
+  const latitudeDelta = 5 / 111.32;
+  const longitudeDelta =
+    latitudeDelta / Math.max(Math.cos((latitude * Math.PI) / 180), 0.01);
+  return [
+    Math.max(-180, longitude - longitudeDelta),
+    Math.max(-90, latitude - latitudeDelta),
+    Math.min(180, longitude + longitudeDelta),
+    Math.min(90, latitude + latitudeDelta),
+  ];
+}
 
 export type Vehicle = {
   lineName: string;

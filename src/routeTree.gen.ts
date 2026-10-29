@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as NocCodeRouteRouteImport } from './routes/$nocCode/route'
 import { Route as FaresRouteImport } from './routes/fares'
 import { Route as MonitoringRouteImport } from './routes/monitoring'
+import { Route as NearbyRouteImport } from './routes/nearby'
 import { Route as TimetablesRouteImport } from './routes/timetables'
 import { Route as NocCodeIndexRouteImport } from './routes/$nocCode/index'
 import { Route as NocCodeFaresRouteImport } from './routes/$nocCode/fares'
@@ -38,6 +39,11 @@ const FaresRoute = FaresRouteImport.update({
 const MonitoringRoute = MonitoringRouteImport.update({
   id: '/monitoring',
   path: '/monitoring',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NearbyRoute = NearbyRouteImport.update({
+  id: '/nearby',
+  path: '/nearby',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TimetablesRoute = TimetablesRouteImport.update({
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/$nocCode': typeof NocCodeRouteRouteWithChildren
   '/fares': typeof FaresRoute
   '/monitoring': typeof MonitoringRoute
+  '/nearby': typeof NearbyRoute
   '/timetables': typeof TimetablesRoute
   '/$nocCode/fares': typeof NocCodeFaresRoute
   '/$nocCode/timetables': typeof NocCodeTimetablesRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/fares': typeof FaresRoute
   '/monitoring': typeof MonitoringRoute
+  '/nearby': typeof NearbyRoute
   '/timetables': typeof TimetablesRoute
   '/$nocCode/fares': typeof NocCodeFaresRoute
   '/$nocCode/timetables': typeof NocCodeTimetablesRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/$nocCode': typeof NocCodeRouteRouteWithChildren
   '/fares': typeof FaresRoute
   '/monitoring': typeof MonitoringRoute
+  '/nearby': typeof NearbyRoute
   '/timetables': typeof TimetablesRoute
   '/$nocCode/fares': typeof NocCodeFaresRoute
   '/$nocCode/timetables': typeof NocCodeTimetablesRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/$nocCode'
     | '/fares'
     | '/monitoring'
+    | '/nearby'
     | '/timetables'
     | '/$nocCode/fares'
     | '/$nocCode/timetables'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/'
     | '/fares'
     | '/monitoring'
+    | '/nearby'
     | '/timetables'
     | '/$nocCode/fares'
     | '/$nocCode/timetables'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/$nocCode'
     | '/fares'
     | '/monitoring'
+    | '/nearby'
     | '/timetables'
     | '/$nocCode/fares'
     | '/$nocCode/timetables'
@@ -152,6 +164,7 @@ export interface RootRouteChildren {
   NocCodeRouteRoute: typeof NocCodeRouteRouteWithChildren
   FaresRoute: typeof FaresRoute
   MonitoringRoute: typeof MonitoringRoute
+  NearbyRoute: typeof NearbyRoute
   TimetablesRoute: typeof TimetablesRoute
 }
 
@@ -183,6 +196,13 @@ declare module '@tanstack/react-router' {
       path: '/monitoring'
       fullPath: '/monitoring'
       preLoaderRoute: typeof MonitoringRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nearby': {
+      id: '/nearby'
+      path: '/nearby'
+      fullPath: '/nearby'
+      preLoaderRoute: typeof NearbyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/timetables': {
@@ -255,6 +275,7 @@ const rootRouteChildren: RootRouteChildren = {
   NocCodeRouteRoute: NocCodeRouteRouteWithChildren,
   FaresRoute: FaresRoute,
   MonitoringRoute: MonitoringRoute,
+  NearbyRoute: NearbyRoute,
   TimetablesRoute: TimetablesRoute,
 }
 export const routeTree = rootRouteImport

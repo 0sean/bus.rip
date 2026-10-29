@@ -1,6 +1,39 @@
 import { describe, expect, it } from "vitest";
 import { parseDatafeed } from "../src/functions/locations.server";
-import { Validity } from "../src/lib/bods";
+import { nearbyBoundingBox, Validity } from "../src/lib/bods";
+import { locationFilter } from "../src/functions/validation";
+
+describe("location filters", () => {
+  it("keeps operator codes normalized", () => {
+    expect(locationFilter.parse(" abcd ")).toBe("ABCD");
+  });
+
+  it("creates a box extending approximately 5 km around the user", () => {
+    const [west, south, east, north] = nearbyBoundingBox(-0.12, 51.5);
+    expect((west + east) / 2).toBeCloseTo(-0.12);
+    expect((south + north) / 2).toBeCloseTo(51.5);
+    expect((north - 51.5) * 111.32).toBeCloseTo(5);
+    expect(
+      (east + 0.12) * 111.32 * Math.cos((51.5 * Math.PI) / 180),
+    ).toBeCloseTo(5);
+    expect(
+      locationFilter.parse({ boundingBox: [west, south, east, north] }),
+    ).toEqual({ boundingBox: [west, south, east, north] });
+  });
+
+  it.each([
+    undefined,
+    {},
+    { boundingBox: [0, 50, 1] },
+    { boundingBox: [1, 50, 0, 51] },
+    { boundingBox: [0, 51, 1, 50] },
+    { boundingBox: [-181, 50, 0, 51] },
+    { boundingBox: [0, 50, 1, 91] },
+    { boundingBox: [0, 50, Infinity, 51] },
+  ])("rejects missing or invalid filters: %j", (filter) => {
+    expect(locationFilter.safeParse(filter).success).toBe(false);
+  });
+});
 
 const feed = (activities: string) =>
   `<?xml version="1.0"?><Siri xmlns="http://www.siri.org.uk/siri" version="2.0"><ServiceDelivery><VehicleMonitoringDelivery>${activities}</VehicleMonitoringDelivery></ServiceDelivery></Siri>`;

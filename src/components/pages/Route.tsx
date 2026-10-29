@@ -25,7 +25,7 @@ export default function Route({
     <div className="flex flex-col h-full">
       <Back />
       <div className="flex gap-2 items-center mb-1 mt-2">
-        <h1 className="font-semibold bg-zinc-100 !text-zinc-800 w-fit px-1 rounded">
+        <h1 className="font-semibold bg-primary !text-primary-foreground w-fit px-1 rounded">
           {route.short_name}
         </h1>
         <h2 className="text-xl font-semibold">{routeRow.mainRoute}</h2>
@@ -55,22 +55,22 @@ function RouteTrips({
     );
 
   return (
-    <div className="flex flex-col gap-2 p-2 bg-zinc-800/25 rounded flex-1 mt-2 border border-zinc-800 min-h-0">
+    <div className="flex flex-col gap-2 p-2 bg-muted/25 rounded flex-1 mt-2 border border-border min-h-0">
       <div className="flex gap-2">
         <div
-          className={`${tab == "outbound" ? "bg-zinc-100 text-zinc-900" : "bg-zinc-800/50 hover:bg-zinc-800"} transition-colors cursor-pointer text-xs font-medium p-2 grow text-center rounded`}
+          className={`${tab == "outbound" ? "bg-primary text-primary-foreground" : "bg-muted/50 hover:bg-accent"} transition-colors cursor-pointer text-xs font-medium p-2 grow text-center rounded`}
           onClick={() => setTab("outbound")}
         >
           Outbound
         </div>
         <div
-          className={`${tab == "inbound" ? "bg-zinc-100 text-zinc-900" : "bg-zinc-800/50 hover:bg-zinc-800"} transition-colors cursor-pointer text-xs font-medium p-2 grow text-center rounded`}
+          className={`${tab == "inbound" ? "bg-primary text-primary-foreground" : "bg-muted/50 hover:bg-accent"} transition-colors cursor-pointer text-xs font-medium p-2 grow text-center rounded`}
           onClick={() => setTab("inbound")}
         >
           Inbound
         </div>
       </div>
-      <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent flex-1 min-h-0">
+      <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent flex-1 min-h-0">
         <div className="w-full my-2 rounded-md flex flex-col gap-2">
           {[...trips]
             .sort((a, b) =>
@@ -95,11 +95,11 @@ function RouteTripRow({ trip, noc }: { trip: TripWithStops; noc: string }) {
       params={{ nocCode: noc, trip: trip.id }}
       state={{ mapView }}
       key={trip.id}
-      className="border rounded-sm bg-zinc-800/25 hover:bg-zinc-800/50 transition-colors cursor-pointer p-4"
+      className="border rounded-sm bg-muted/25 hover:bg-accent/50 transition-colors cursor-pointer p-4"
     >
       <div className="flex gap-2 items-center">
         <h2 className="text-sm font-semibold flex gap-2">
-          <span className="text-zinc-400">
+          <span className="text-muted-foreground">
             {trip.stop_times[0]?.departure_time
               .split(":")
               .slice(0, 2)

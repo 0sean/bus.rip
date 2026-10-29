@@ -106,19 +106,19 @@ export function OperatorCombobox({
 
   const content = (
     <>
-      <div className="flex h-9 items-center gap-2 border-b border-zinc-800 px-3">
-        <LuSearch className="size-4 shrink-0 text-zinc-400 opacity-80" />
+      <div className="flex h-9 items-center gap-2 border-b border-border px-3">
+        <LuSearch className="size-4 shrink-0 text-muted-foreground opacity-80" />
         <ComboboxPrimitive.Input
           placeholder="Search operators..."
           aria-label="Search operators"
-          className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
-      <div className="flex w-full gap-2 overflow-x-auto p-1 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-zinc-900">
+      <div className="flex w-full gap-2 overflow-x-auto p-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-popover">
         <button
           type="button"
           aria-pressed={favouritesOnly}
-          className="flex gap-1 items-center shrink-0 rounded-sm bg-zinc-800/50 px-2 py-1 text-xs font-medium text-zinc-400 transition-colors duration-150 hover:bg-zinc-800 aria-pressed:bg-zinc-800 aria-pressed:text-zinc-50"
+          className="flex gap-1 items-center shrink-0 rounded-sm bg-muted/50 px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent aria-pressed:bg-accent aria-pressed:text-accent-foreground"
           onClick={() => setFavouritesOnly((current) => !current)}
         >
           <Star size={12} />
@@ -128,7 +128,7 @@ export function OperatorCombobox({
           <button
             key={shortcut.name}
             type="button"
-            className="shrink-0 rounded-sm bg-zinc-800/50 px-2 py-1 text-xs font-medium text-zinc-400 transition-colors duration-150 hover:bg-zinc-800"
+            className="shrink-0 rounded-sm bg-muted/50 px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent"
             onClick={() => {
               setFavouritesOnly(false);
               setSearch(shortcut.search);
@@ -148,7 +148,7 @@ export function OperatorCombobox({
           <VList
             ref={listRef}
             style={{ height: debouncedSearch ? 292 : 260, maxHeight: "50dvh" }}
-            className="scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-zinc-900 [scrollbar-gutter:stable]"
+            className="scrollbar-thin scrollbar-thumb-border scrollbar-track-popover [scrollbar-gutter:stable]"
           >
             {filteredOptions.map((option, index) => {
               const favourite = favourites.includes(option.value);
@@ -157,12 +157,12 @@ export function OperatorCombobox({
                   key={option.value}
                   value={option}
                   index={index}
-                  className="rounded-sm py-1.5 pr-2 pl-10 text-zinc-50 data-highlighted:bg-zinc-800 data-highlighted:text-zinc-50 not-data-[variant=destructive]:data-highlighted:**:text-inherit [&>span:last-child]:right-auto [&>span:last-child]:left-2"
+                  className="rounded-sm py-1.5 pr-2 pl-10 text-foreground data-highlighted:bg-accent data-highlighted:text-accent-foreground not-data-[variant=destructive]:data-highlighted:**:text-inherit [&>span:last-child]:right-auto [&>span:last-child]:left-2"
                 >
                   <div className="flex min-w-0 flex-col">
                     <span>{option.label}</span>
                     {option.subtitle && (
-                      <span className="text-xs text-zinc-500!">
+                      <span className="text-xs text-muted-foreground!">
                         {option.subtitle}
                       </span>
                     )}
@@ -174,7 +174,7 @@ export function OperatorCombobox({
                   </div>
                   <button
                     type="button"
-                    className="ml-auto mr-2 shrink-0 text-zinc-400!"
+                    className="ml-auto mr-2 shrink-0 text-muted-foreground!"
                     aria-label={`${favourite ? "Remove" : "Add"} ${option.label} ${favourite ? "from" : "to"} favourites`}
                     aria-pressed={favourite}
                     onPointerDown={(event) => event.stopPropagation()}
@@ -229,7 +229,7 @@ export function OperatorCombobox({
           <ComboboxPrimitive.Trigger render={trigger} />
           <ComboboxContent
             sideOffset={4}
-            className="w-[350px] min-w-0 max-w-full rounded-md border border-zinc-800 bg-zinc-900 text-zinc-50 ring-0"
+            className="w-[350px] min-w-0 max-w-full rounded-md border border-border bg-popover text-popover-foreground ring-0"
           >
             {content}
           </ComboboxContent>

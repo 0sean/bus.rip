@@ -17,7 +17,7 @@ export function getRouter() {
     defaultPreloadStaleTime: 0,
     scrollRestoration: true,
     defaultPendingComponent: () => (
-      <p role="status" className="p-8 text-zinc-400">
+      <p role="status" className="p-8 text-muted-foreground">
         Loading…
       </p>
     ),

@@ -28,7 +28,7 @@ export function Navbar() {
   const params = useParams({ strict: false });
 
   return (
-    <div className="bg-neutral-950 shadow-lg border rounded-full p-1.5 w-fit mx-auto flex gap-2 pointer-events-auto">
+    <div className="bg-white dark:bg-neutral-950 shadow-lg border rounded-full p-1.5 w-fit mx-auto flex gap-2 pointer-events-auto">
       <NavbarItem
         icon={IconMapPinFilled}
         to={relative("/map", location, params)}

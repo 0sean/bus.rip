@@ -29,7 +29,7 @@ export function Back() {
   return (
     <button
       type="button"
-      className="flex gap-2 items-center text-zinc-400 hover:text-zinc-300 transition-colors cursor-pointer"
+      className="flex gap-2 items-center text-muted-foreground hover:text-primary transition-colors cursor-pointer"
       onClick={() => router.history.back()}
     >
       <FiArrowLeft />

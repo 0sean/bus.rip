@@ -31,13 +31,13 @@ export default function Trip({ trip }: { trip: TripWithAssociations }) {
     <>
       <Back />
       <div className="flex gap-2 items-center my-1">
-        <h1 className="font-semibold bg-zinc-100 !text-zinc-800 w-fit px-1 rounded">
+        <h1 className="font-semibold bg-primary !text-primary-foreground w-fit px-1 rounded">
           {trip.route && trip.route.short_name}
         </h1>
         <h2 className="text-3xl font-semibold">{trip.headsign}</h2>
       </div>
       <div className="flex gap-4 items-center">
-        <p className="text-xl font-semibold text-zinc-400">
+        <p className="text-xl font-semibold text-muted-foreground">
           {trip.stop_times[0]?.departure_time.split(":").slice(0, 2).join(":")}{" "}
           -{" "}
           {trip.stop_times[trip.stop_times.length - 1]?.arrival_time
@@ -47,19 +47,19 @@ export default function Trip({ trip }: { trip: TripWithAssociations }) {
         </p>
         <Direction direction={trip.direction_id} />
         {days.length > 0 && (
-          <span className="text-sm font-medium text-zinc-400 flex gap-1 items-center">
+          <span className="text-sm font-medium text-muted-foreground flex gap-1 items-center">
             <FiClock />
             Runs {daysString}
           </span>
         )}
         {trip.wheelchair_accessible && (
-          <span className="text-sm font-medium text-zinc-400 flex gap-1 items-center">
+          <span className="text-sm font-medium text-muted-foreground flex gap-1 items-center">
             <TbDisabled />
             Wheelchair accessible
           </span>
         )}
       </div>
-      <div className="relative overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-zinc-900">
+      <div className="relative overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-background">
         <table className="group-[&]/drawer-content:w-full">
           <tbody>
             {trip.stop_times.map((stopTime) => (
@@ -67,7 +67,7 @@ export default function Trip({ trip }: { trip: TripWithAssociations }) {
             ))}
           </tbody>
         </table>
-        {/* <div className="w-1 h-[calc(100%-2rem)] bg-zinc-800 absolute rounded top-4 left-2 ms-[2px]"></div> */}
+        {/* <div className="w-1 h-[calc(100%-2rem)] bg-muted absolute rounded top-4 left-2 ms-[2px]"></div> */}
       </div>
     </>
   );
@@ -75,7 +75,7 @@ export default function Trip({ trip }: { trip: TripWithAssociations }) {
 
 function Direction({ direction }: { direction: "inbound" | "outbound" }) {
   return (
-    <span className="text-sm font-medium text-zinc-400 flex gap-1 items-center">
+    <span className="text-sm font-medium text-muted-foreground flex gap-1 items-center">
       {direction === "inbound" ? <FiArrowDown /> : <FiArrowUp />}
       {direction === "inbound" ? "Inbound" : "Outbound"}
     </span>
@@ -88,18 +88,18 @@ function TripStopTimeRow({
   stopTime: TripWithAssociations["stop_times"][number];
 }) {
   return (
-    <tr className="border-b hover:bg-zinc-800/25 transition-colors group/row">
+    <tr className="border-b hover:bg-accent/25 transition-colors group/row">
       <td className="p-2">
         <div className="relative !w-2">
-          <div className="size-2 relative z-10 bg-zinc-400 group-first/row:bg-zinc-100 group-last/row:bg-zinc-100 rounded-full"></div>
-          <div className="w-1 h-10 bg-zinc-700 absolute left-1/2 -translate-x-1/2 top-1 rounded-full group-last/row:hidden"></div>
+          <div className="size-2 relative z-10 bg-muted-foreground group-first/row:bg-primary group-last/row:bg-primary rounded-full"></div>
+          <div className="w-1 h-10 bg-border absolute left-1/2 -translate-x-1/2 top-1 rounded-full group-last/row:hidden"></div>
         </div>
       </td>
       <td className="p-2">
         <span className="text-sm font-medium">{stopTime.stop.name}</span>
       </td>
       <td className="p-2 text-end">
-        <span className="text-sm text-zinc-400">
+        <span className="text-sm text-muted-foreground">
           {(stopTime.departure_time || stopTime.arrival_time)
             .split(":")
             .slice(0, 2)

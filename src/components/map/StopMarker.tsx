@@ -23,8 +23,8 @@ function StopMarker({
         anchor="top"
         onClick={togglePopup}
       >
-        <div className="size-6 bg-zinc-900/50 backdrop-blur-sm border border-zinc-300/50 rounded-full flex justify-center items-center shadow-md">
-          <TbBusStop className="text-zinc-100 text-base" />
+        <div className="size-6 bg-background/50 backdrop-blur-sm border border-border rounded-full flex justify-center items-center shadow-md">
+          <TbBusStop className="text-foreground text-base" />
         </div>
       </Marker>
       {popupOpen && (

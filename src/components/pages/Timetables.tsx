@@ -41,7 +41,7 @@ export default function Timetables({
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
-      <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-zinc-900">
+      <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-background">
         <div className="w-full my-2 rounded-md flex flex-col gap-2">
           {filteredRoutes.map((route) => (
             <TimetableRow key={route.id} route={route} noc={noc} />
@@ -57,10 +57,10 @@ function TimetableRow({ route, noc }: { route: RouteRow; noc: string }) {
   return (
     <div
       key={route.id}
-      className="border rounded-sm bg-zinc-800/25 hover:bg-zinc-800/50 transition-colors cursor-pointer p-4"
+      className="border rounded-sm bg-muted/25 hover:bg-accent/50 transition-colors cursor-pointer p-4"
     >
       <div className="flex gap-2 items-center">
-        <h2 className="text-sm font-semibold bg-zinc-100 !text-zinc-800 w-fit px-1 rounded">
+        <h2 className="text-sm font-semibold bg-primary !text-primary-foreground w-fit px-1 rounded">
           {route.route}
         </h2>
         <div className="font-medium">
@@ -74,7 +74,7 @@ function TimetableRow({ route, noc }: { route: RouteRow; noc: string }) {
           {route.additionalRoutes.length > 0 && (
             <Tooltip>
               <TooltipTrigger>
-                <span className="italic text-zinc-400 text-sm ms-2">
+                <span className="italic text-muted-foreground text-sm ms-2">
                   + {route.additionalRoutes.length} route
                   {route.additionalRoutes.length > 1 ? "s" : ""}
                 </span>
@@ -92,7 +92,7 @@ function TimetableRow({ route, noc }: { route: RouteRow; noc: string }) {
           )}
         </div>
       </div>
-      {/* <p className="italic text-zinc-400 text-sm w-full">every x minutes</p> */}
+      {/* <p className="italic text-muted-foreground text-sm w-full">every x minutes</p> */}
       {/* TODO: route frequency? */}
     </div>
   );

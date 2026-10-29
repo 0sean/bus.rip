@@ -15,7 +15,9 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
   return (
     <div role="alert" className="p-8">
       <h1 className="text-xl font-semibold">Unable to load this page</h1>
-      <p className="my-2 text-zinc-400">Please try again in a moment.</p>
+      <p className="my-2 text-muted-foreground">
+        Please try again in a moment.
+      </p>
       <button
         className="mr-4 underline"
         onClick={() => void router.invalidate().then(reset)}

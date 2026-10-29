@@ -28,13 +28,13 @@ export default function PageDrawer({
         });
       }}
     >
-      <DrawerContent className="w-full md:w-128 mx-auto h-full !max-h-[calc(100svh-110px)] bg-zinc-900 border-3 !border-t-3 border-zinc-600/50">
+      <DrawerContent className="w-full md:w-128 mx-auto h-full !max-h-[calc(100svh-110px)] bg-background border-3 !border-t-3 border-border">
         <DrawerClose
           render={
             <button
               type="button"
               aria-label="Close operator information"
-              className="absolute top-3 right-3 rounded p-2 text-zinc-400 hover:text-zinc-100"
+              className="absolute top-3 right-3 rounded p-2 text-muted-foreground hover:text-foreground"
             >
               ×
             </button>

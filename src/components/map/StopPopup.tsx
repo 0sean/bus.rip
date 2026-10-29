@@ -64,7 +64,7 @@ export default function StopPopup({
       <div className="flex gap-2 items-center justify-between">
         <h1 className="text-md font-semibold">{stop.name}</h1>
         {stop.platform_code && (
-          <span className="text-xs font-semibold text-zinc-500">
+          <span className="text-xs font-semibold text-muted-foreground">
             Platform {stop.platform_code}
           </span>
         )}
@@ -74,7 +74,7 @@ export default function StopPopup({
       )}
       {isLoading ? (
         <div className="p-2 flex justify-center">
-          <FiLoader className="animate-spin text-lg text-zinc-500" />
+          <FiLoader className="animate-spin text-lg text-muted-foreground" />
         </div>
       ) : (
         <>
@@ -85,10 +85,10 @@ export default function StopPopup({
                 params={{ nocCode: noc, trip: stopTime.trip.id }}
                 state={{ mapView: true }}
                 key={stopTime.id}
-                className="flex gap-2 items-center p-1 border-b last:border-b-0 font-medium hover:bg-zinc-800/50 transition-colors"
+                className="flex gap-2 items-center p-1 border-b last:border-b-0 font-medium hover:bg-accent/50 transition-colors"
               >
                 <span
-                  className={`shrink-0 size-4 bg-zinc-100 text-zinc-900 flex justify-center items-center rounded ${stopTime.trip.route.short_name.length > 1 ? (stopTime.trip.route.short_name.length > 2 ? "text-[8px]" : "text-[10px]") : "text-xs"}`}
+                  className={`shrink-0 size-4 bg-primary text-primary-foreground flex justify-center items-center rounded ${stopTime.trip.route.short_name.length > 1 ? (stopTime.trip.route.short_name.length > 2 ? "text-[8px]" : "text-[10px]") : "text-xs"}`}
                 >
                   {stopTime.trip.route.short_name}
                 </span>
@@ -102,7 +102,7 @@ export default function StopPopup({
           {upcomingTimes.length == 5 && (
             <button
               onClick={() => setStart((prev) => prev + 5)}
-              className="grow p-1.5 outline-0 rounded-sm mt-2 w-full border bg-zinc-800/25 hover:bg-zinc-800/50 transition-colors border-zinc-600/50"
+              className="grow p-1.5 outline-0 rounded-sm mt-2 w-full border bg-muted/25 hover:bg-accent/50 transition-colors border-border"
             >
               Show more
             </button>

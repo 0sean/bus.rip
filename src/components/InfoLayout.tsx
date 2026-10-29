@@ -8,7 +8,7 @@ export default function InfoLayout({
   operator: NocLine;
 }) {
   return (
-    <div className="p-8">
+    <div className="safe-area-content">
       <div className="flex gap-4 items-center mb-8">
         <img src="/logo.svg" alt="bus.rip logo" width={32} height={32} />
         <p className="text-sm font-medium">{operator.publicName}</p>

@@ -13,7 +13,7 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
     );
   }, [error]);
   return (
-    <div role="alert" className="p-8">
+    <div role="alert" className="safe-area-content">
       <h1 className="text-xl font-semibold">Unable to load this page</h1>
       <p className="my-2 text-muted-foreground">
         Please try again in a moment.

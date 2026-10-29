@@ -49,7 +49,10 @@ function OperatorLayout() {
         ) : (
           <Suspense
             fallback={
-              <p role="status" className="fixed bottom-4 left-4">
+              <p
+                role="status"
+                className="fixed bottom-[calc(var(--safe-area-bottom)+1rem)] left-[calc(var(--safe-area-left)+1rem)]"
+              >
                 Loading…
               </p>
             }

@@ -19,7 +19,7 @@ function MapNavbar({
   const navigate = useNavigate();
 
   return (
-    <div className="fixed top-0 left-0 p-2 w-screen flex flex-col items-center gap-2 z-60">
+    <div className="map-header fixed top-0 inset-x-0 flex flex-col items-center gap-2 z-60">
       <Menubar className="w-full md:w-128">
         <MenubarMenu>
           <MenubarTrigger

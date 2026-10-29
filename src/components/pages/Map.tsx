@@ -188,13 +188,13 @@ export default function MapPage({
   return (
     <>
       <MapNavbar data={data} isLoading={isLoading} nearby={!nocCode} />
-      <div className="fixed bottom-0 left-0 right-0 z-10 p-4 pointer-events-none">
+      <div className="map-navigation fixed bottom-0 inset-x-0 z-10 pointer-events-none">
         <Navbar />
       </div>
       {!nocCode && !userLocation && (
         <Alert
           role={geolocationError ? "alert" : "status"}
-          className="right-2 bottom-20 fixed z-10 w-fit"
+          className="map-alert fixed z-10 w-fit"
         >
           <AlertTitle>
             {geolocationError
@@ -207,7 +207,7 @@ export default function MapPage({
         </Alert>
       )}
       {data && !data.error && !data.vehicles && (
-        <Alert className="map-alert-enter right-2 bottom-20 fixed z-10 w-fit drop-shadow-2xl">
+        <Alert className="map-alert-enter map-alert fixed z-10 w-fit drop-shadow-2xl">
           <AlertTitle className="font-semibold">
             {nocCode ? "No location data available" : "No buses nearby"}
           </AlertTitle>
@@ -219,14 +219,14 @@ export default function MapPage({
         </Alert>
       )}
       {(locationError || stopsError) && (
-        <Alert role="alert" className="right-2 bottom-20 fixed z-10 w-fit">
+        <Alert role="alert" className="map-alert fixed z-10 w-fit">
           <AlertTitle>Unable to refresh transit data</AlertTitle>
           <AlertDescription>
             {locationError?.message || stopsError?.message}
           </AlertDescription>
         </Alert>
       )}
-      <div className="h-screen w-screen" style={rotationStyle}>
+      <div className="map-viewport fixed inset-0" style={rotationStyle}>
         <Map
           mapStyle={mapStyle}
           ref={mapRef}

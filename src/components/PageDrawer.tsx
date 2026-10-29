@@ -28,7 +28,7 @@ export default function PageDrawer({
         });
       }}
     >
-      <DrawerContent className="w-full md:w-128 mx-auto h-full !max-h-[calc(100svh-110px)] bg-background border-3 !border-t-3 border-border">
+      <DrawerContent className="page-drawer w-full md:w-128 mx-auto h-full bg-background border-3 !border-t-3 border-border">
         <DrawerClose
           render={
             <button
@@ -44,7 +44,9 @@ export default function PageDrawer({
         <DrawerDescription className="sr-only">
           Timetables, routes, and trip details
         </DrawerDescription>
-        <div className="px-4 py-6 flex h-full min-h-0 flex-col">{children}</div>
+        <div className="page-drawer-content px-4 flex h-full min-h-0 flex-col">
+          {children}
+        </div>
       </DrawerContent>
     </Drawer>
   );

@@ -38,8 +38,8 @@ export default function FollowCard({ vehicle }: { vehicle: Vehicle }) {
   }, [vehicle.recordedAt]);
 
   return (
-    <div className="fixed bottom-16 w-screen p-4 flex justify-center">
-      <Card className="w-xs !font-sans gap-0">
+    <div className="map-follow-card fixed inset-x-0 flex justify-center">
+      <Card className="w-xs max-w-full !font-sans gap-0">
         <CardHeader className="border-b">
           <div className="flex justify-between items-center">
             <p className="font-medium text-2xl">{departureTime}</p>

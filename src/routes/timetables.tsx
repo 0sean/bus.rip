@@ -17,7 +17,7 @@ export const Route = createFileRoute("/timetables")({
 
 function Timetables() {
   return (
-    <div className="flex flex-col h-svh px-4 py-6 gap-6">
+    <div className="safe-area-page flex flex-col min-h-svh gap-6">
       <Header />
       <Content />
       <Navbar />

@@ -13,7 +13,7 @@ export default function Timetables({
   routes: RouteWithTrips[];
 }) {
   const [search, setSearch] = useState(""),
-    [debouncedSearch] = useDebounce(search, 150),
+    debouncedSearch = useDebounce(search, 150),
     routeRows = useMemo<RouteRow[]>(
       () => routes.map((route) => getRouteRow(route)),
       [routes],

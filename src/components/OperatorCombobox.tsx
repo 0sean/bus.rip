@@ -62,7 +62,7 @@ export function OperatorCombobox({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [favouritesOnly, setFavouritesOnly] = useState(false);
-  const [debouncedSearch] = useDebounce(search, 500);
+  const debouncedSearch = useDebounce(search, 500);
   const listRef = useRef<VListHandle>(null);
   const filteredOptions = useMemo(() => {
     const query = (debouncedSearch || "").toLowerCase();

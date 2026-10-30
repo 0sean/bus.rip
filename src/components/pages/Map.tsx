@@ -12,8 +12,6 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Map, MapRef } from "react-map-gl/maplibre";
 
-import { mapStyle } from "@/lib/map";
-
 import { DatafeedRouteResponse, nearbyBoundingBox, Validity } from "@/lib/bods";
 import FollowCard from "@/components/map/FollowCard";
 import VehicleMarker from "@/components/map/VehicleMarker";
@@ -22,6 +20,7 @@ import LocationMarker from "@/components/map/LocationMarker";
 
 import StopMarker from "@/components/map/StopMarker";
 import { Navbar } from "../Navbar";
+import { useMediaQuery } from "@uidotdev/usehooks";
 
 export default function MapPage({
   nocCode,
@@ -69,7 +68,8 @@ export default function MapPage({
       } else {
         loadQueue.current.push(action);
       }
-    }, []);
+    }, []),
+    dark = useMediaQuery("(prefers-color-scheme: dark)");
 
   useEffect(() => {
     if (!datafeed) return;
@@ -228,7 +228,11 @@ export default function MapPage({
       )}
       <div className="map-viewport fixed inset-0" style={rotationStyle}>
         <Map
-          mapStyle={mapStyle}
+          mapStyle={
+            dark
+              ? "https://tiles.openfreemap.org/styles/dark"
+              : "https://tiles.openfreemap.org/styles/bright"
+          }
           ref={mapRef}
           onRotate={(e) => setBearing(e.viewState.bearing || 0)}
           onClick={(e) => {

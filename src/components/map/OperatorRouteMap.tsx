@@ -11,8 +11,16 @@ import {
   type MapLayerMouseEvent,
 } from "react-map-gl/maplibre";
 import { routeNetworkOptions } from "@/data/queries";
-import { getRouteRow, type RouteWithTrips } from "@/lib/buslane";
-import { networkBounds } from "@/lib/route-network";
+import {
+  getRouteRow,
+  type RouteWithStops,
+  type RouteWithTrips,
+} from "@/lib/buslane";
+import {
+  networkBounds,
+  routeLines,
+  type RouteNetwork,
+} from "@/lib/route-network";
 import { useMediaQuery } from "@/lib/use-media-query";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Card, CardContent } from "../ui/card";
@@ -38,13 +46,40 @@ type Selection = {
 export default function OperatorRouteMap({
   noc,
   routes,
+  route,
 }: {
   noc: string;
   routes: RouteWithTrips[];
+  route?: RouteWithStops;
 }) {
-  const { data, isPending, error, refetch, isFetching } = useQuery(
-    routeNetworkOptions(noc),
-  );
+  const {
+    data: operatorData,
+    isPending,
+    error,
+    refetch,
+    isFetching,
+  } = useQuery({
+    ...routeNetworkOptions(noc),
+    enabled: !route,
+  });
+  const data = useMemo(() => {
+    if (!route) return operatorData;
+    const coordinates = routeLines(route.trips);
+    const network: RouteNetwork = {
+      type: "FeatureCollection",
+      features: coordinates.length
+        ? [
+            {
+              type: "Feature",
+              id: route.id,
+              properties: { routeId: route.id },
+              geometry: { type: "MultiLineString", coordinates },
+            },
+          ]
+        : [],
+    };
+    return { network, missingRouteIds: [] };
+  }, [route, operatorData]);
   const map = useRef<MapRef>(null);
   const [loaded, setLoaded] = useState(false);
   const [mapError, setMapError] = useState(false);
@@ -82,9 +117,19 @@ export default function OperatorRouteMap({
     [data],
   );
   useEffect(() => {
-    if (loaded && bounds)
-      map.current?.fitBounds(bounds, { padding: 40, maxZoom: 14, duration: 0 });
-  }, [loaded, bounds]);
+    if (loaded && bounds) {
+      const wide = (map.current?.getContainer().clientWidth ?? 0) > 640;
+      map.current?.fitBounds(bounds, {
+        padding: route
+          ? wide
+            ? { left: 380, right: 40, top: 40, bottom: 40 }
+            : { left: 30, right: 30, top: 180, bottom: 35 }
+          : 40,
+        maxZoom: 14,
+        duration: 0,
+      });
+    }
+  }, [loaded, bounds, route]);
 
   function clearHover() {
     setSelection((previous) => (previous?.pinned ? previous : null));
@@ -137,7 +182,9 @@ export default function OperatorRouteMap({
   const missing = data?.missingRouteIds.length ?? 0;
   return (
     <section
-      aria-label="Operator route map"
+      aria-label={
+        route ? `Route ${route.short_name} map` : "Operator route map"
+      }
       className="relative h-[352px] overflow-hidden rounded-[14px] border bg-muted/30"
     >
       <Map
@@ -150,10 +197,10 @@ export default function OperatorRouteMap({
         }
         onLoad={() => setLoaded(true)}
         onError={() => setMapError(true)}
-        interactiveLayerIds={network ? [HIT_LAYER] : []}
-        onMouseMove={(event) => selectRoutes(event, false)}
-        onMouseLeave={clearHover}
-        onClick={(event) => selectRoutes(event, true)}
+        interactiveLayerIds={network && !route ? [HIT_LAYER] : []}
+        onMouseMove={route ? undefined : (event) => selectRoutes(event, false)}
+        onMouseLeave={route ? undefined : clearHover}
+        onClick={route ? undefined : (event) => selectRoutes(event, true)}
         scrollZoom={false}
         touchPitch={false}
         dragRotate={false}
@@ -189,7 +236,7 @@ export default function OperatorRouteMap({
             />
           </Source>
         ) : null}
-        {selection ? (
+        {!route && selection ? (
           <Popup
             longitude={selection.longitude}
             latitude={selection.latitude}
@@ -229,21 +276,21 @@ export default function OperatorRouteMap({
           </Popup>
         ) : null}
       </Map>
-      {isPending || error || !bounds || mapError || missing ? (
+      {(!route && (isPending || error)) || !bounds || mapError || missing ? (
         <div
           role={error ? "alert" : "status"}
-          className="absolute left-3 top-14 max-w-[calc(100%-5rem)] rounded-lg border bg-background/95 px-3 py-2 text-xs shadow-sm"
+          className={`absolute left-3 ${route ? "bottom-10" : "top-14"} max-w-[calc(100%-5rem)] rounded-lg border bg-background/95 px-3 py-2 text-xs shadow-sm`}
         >
-          {isPending
+          {!route && isPending
             ? "Loading operator routes…"
-            : error
+            : !route && error
               ? "Route map is temporarily unavailable."
               : mapError
                 ? "Map tiles could not load. Timetables are available below."
                 : !bounds
                   ? "No route locations are available yet."
                   : `${missing} route${missing === 1 ? " is" : "s are"} missing some map data.`}
-          {error || missing ? (
+          {!route && (error || missing) ? (
             <button
               type="button"
               className="ml-2 underline cursor-pointer"

@@ -67,6 +67,8 @@ export type TripWithAssociations = Trip & {
 
 export type TripWithStops = Trip & {
   stop_times: StopTimeWithStop[];
+  service?: Service | null;
+  frequencies?: Frequency[];
 };
 
 type Shape = {

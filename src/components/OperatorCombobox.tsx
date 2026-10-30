@@ -24,7 +24,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { useMediaQuery } from "@uidotdev/usehooks";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { Star } from "lucide-react";
 
 type OperatorOption = {

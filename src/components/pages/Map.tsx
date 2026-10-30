@@ -20,7 +20,7 @@ import LocationMarker from "@/components/map/LocationMarker";
 
 import StopMarker from "@/components/map/StopMarker";
 import { Navbar } from "../Navbar";
-import { useMediaQuery } from "@uidotdev/usehooks";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 export default function MapPage({
   nocCode,

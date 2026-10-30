@@ -10,6 +10,7 @@ import { BackWatcher } from "@/components/Back";
 import globals from "@/styles/globals.css?url";
 import fontCss from "@/styles/fonts.css?url";
 import fontFile from "@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2?url";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   {
@@ -58,7 +59,7 @@ function RootDocument({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body className="bg-background min-h-svh! pointer-events-auto! font-sans">
-        {children}
+        <TooltipProvider>{children}</TooltipProvider>
         <Scripts />
       </body>
     </html>

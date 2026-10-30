@@ -30,7 +30,7 @@ export function Header() {
   return (
     <div className="flex w-full items-center justify-between">
       <StackedLogo />
-      <div className="flex gap-2 text-muted-foreground">
+      <div className="flex gap-2 text-muted-foreground/50">
         <p className="font-semibold text-xs">Bus info that actually works</p>
         <CircleQuestionMark size={16} />
       </div>

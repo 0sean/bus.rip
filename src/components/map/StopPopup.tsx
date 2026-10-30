@@ -6,6 +6,9 @@ import { stopTimesOptions } from "@/data/queries";
 import { FiLoader } from "react-icons/fi";
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { Card, CardContent, CardHeader } from "../ui/card";
+import { Button } from "../ui/button";
+import { IconChevronRight } from "@tabler/icons-react";
 
 export default function StopPopup({
   stop,
@@ -59,56 +62,47 @@ export default function StopPopup({
       latitude={Number(stop.lat)}
       closeOnClick={false} // This must be false or the popup doesn't show for some reason..
       onClose={togglePopup}
+      closeButton={false}
       className="pb-2 !min-w-64"
     >
-      <div className="flex gap-2 items-center justify-between">
-        <h1 className="text-md font-semibold">{stop.name}</h1>
-        {stop.platform_code && (
-          <span className="text-xs font-semibold text-muted-foreground">
-            Platform {stop.platform_code}
-          </span>
-        )}
-      </div>
-      {error && (
-        <p role="alert">Unable to load departures. Please try again.</p>
-      )}
-      {isLoading ? (
-        <div className="p-2 flex justify-center">
-          <FiLoader className="animate-spin text-lg text-muted-foreground" />
-        </div>
-      ) : (
-        <>
-          <div className="rounded overflow-hidden">
-            {upcomingTimes.map((stopTime) => (
+      <Card className="w-xs !font-sans gap-0 py-0">
+        <CardHeader className="bg-muted/50 flex justify-between items-center !py-3 border-b">
+          <p className="font-medium">{stop.name}</p>
+          <Button variant="secondary" size="sm">
+            View all
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <FiLoader className="animate-spin" />
+            </div>
+          ) : (
+            upcomingTimes.map((stopTime) => (
               <Link
                 to="/timetables/$nocCode/trip/$trip"
                 params={{ nocCode: noc, trip: stopTime.trip.id }}
                 state={{ mapView: true }}
                 key={stopTime.id}
-                className="flex gap-2 items-center p-1 border-b last:border-b-0 font-medium hover:bg-accent/50 transition-colors"
+                className="flex gap-2 items-center px-4 py-3 border-b last:border-b-0 font-medium hover:bg-accent/50 transition-colors"
               >
                 <span
-                  className={`shrink-0 size-4 bg-primary text-primary-foreground flex justify-center items-center rounded ${stopTime.trip.route.short_name.length > 1 ? (stopTime.trip.route.short_name.length > 2 ? "text-[8px]" : "text-[10px]") : "text-xs"}`}
+                  className={`shrink-0 size-6 bg-muted text-primary flex justify-center items-center rounded-md ${stopTime.trip.route.short_name.length > 1 ? (stopTime.trip.route.short_name.length > 2 ? "text-[10px]" : "text-xs") : "text-sm"}`}
                 >
                   {stopTime.trip.route.short_name}
                 </span>
                 <span>{stopTime.trip.headsign || "-"}</span>
-                <span className="shrink-0 ms-auto">
+                <span className="shrink-0 ms-auto inline-flex items-center gap-1">
                   {stopTime.departure_time.split(":").slice(0, 2).join(":")}
+                  <span className="text-muted">
+                    <IconChevronRight size={16} />
+                  </span>
                 </span>
               </Link>
-            ))}
-          </div>
-          {upcomingTimes.length == 5 && (
-            <button
-              onClick={() => setStart((prev) => prev + 5)}
-              className="grow p-1.5 outline-0 rounded-sm mt-2 w-full border bg-muted/25 hover:bg-accent/50 transition-colors border-border"
-            >
-              Show more
-            </button>
+            ))
           )}
-        </>
-      )}
+        </CardContent>
+      </Card>
     </Popup>
   );
 }

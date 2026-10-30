@@ -7,6 +7,7 @@ import { MapPin, Loader2, RouteIcon } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 import { ClientOnlyStorage } from "./ClientOnlyStorage";
 import { OperatorCombobox } from "./OperatorCombobox";
+import { IconArrowRight } from "@tabler/icons-react";
 
 export function OperatorForm({
   to,
@@ -55,9 +56,13 @@ export function OperatorForm({
             <>
               <Loader2 className="animate-spin" /> Loading...
             </>
-          ) : (
+          ) : to === "/map/$nocCode" ? (
             <>
               <RouteIcon /> Track
+            </>
+          ) : (
+            <>
+              <IconArrowRight /> Find
             </>
           )}
         </Button>

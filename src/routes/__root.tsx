@@ -57,7 +57,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="dark bg-background min-h-svh! pointer-events-auto! font-sans">
+      <body className="bg-background min-h-svh! pointer-events-auto! font-sans">
         {children}
         <Scripts />
       </body>

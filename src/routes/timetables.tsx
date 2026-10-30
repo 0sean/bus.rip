@@ -30,7 +30,7 @@ function Content() {
     <div className="flex flex-col gap-4 grow justify-end">
       <div>
         <h1 className="text-3xl font-bold">Find any bus timetable in the UK</h1>
-        <p className="text-muted font-semibold">
+        <p className="text-muted-foreground font-semibold">
           Powered by Bus Open Data Service
         </p>
       </div>

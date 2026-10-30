@@ -147,8 +147,10 @@ export function getRouteRow(route: RouteWithTrips): RouteRow {
       (t) => t.direction_id == "outbound",
     ),
     inboundTrips = route.trips?.filter((t) => t.direction_id == "inbound"),
-    allRouteVariations = outboundTrips.map((trip, i) => {
-      const oppositeTrip = inboundTrips[i];
+    allRouteVariations = (
+      outboundTrips.length ? outboundTrips : inboundTrips
+    ).map((trip, i) => {
+      const oppositeTrip = outboundTrips.length ? inboundTrips[i] : undefined;
       if (!oppositeTrip || !oppositeTrip.headsign)
         return (trip.headsign || "-").replaceAll(" - ", " ");
       if (!trip.headsign) return oppositeTrip.headsign.replaceAll(" - ", " ");
@@ -166,7 +168,7 @@ export function getRouteRow(route: RouteWithTrips): RouteRow {
   return {
     id: route.id,
     route: route.short_name,
-    mainRoute: routeVariations[0],
+    mainRoute: routeVariations[0] || route.long_name || route.short_name,
     additionalRoutes: routeVariations.slice(1),
   };
 }

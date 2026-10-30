@@ -91,7 +91,7 @@ All application data reads use validated TanStack Start server functions in `src
 - Dynamic tracking pages stay live. They are not statically prerendered, so builds do not require database or transit API access.
 - Fonts are self-hosted, and Node/Vercel builds emit compressed public assets. Map tiles remain direct renderer requests to OpenStreetMap.
 
-Timetable links opened from tracking use a drawer over the mounted map. Direct timetable URLs use a full-page layout.
+Timetables, routes, and trips open as separate pages, including links from tracking. The operator timetable page includes a route-network map with hover/tap links and searchable route cards. Lines connect ordered scheduled stops (not road-following shapes); representative journeys cover the known shapes, directions, and destinations of each route. Network requests use bounded upstream concurrency and report missing routes without hiding the timetable list.
 
 ### Verification
 

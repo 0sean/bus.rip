@@ -12,7 +12,6 @@ import { operatorOptions } from "@/data/queries";
 import InfoLayout from "@/components/InfoLayout";
 
 const MapPage = lazy(() => import("@/components/pages/Map"));
-const PageDrawer = lazy(() => import("@/components/PageDrawer"));
 export const Route = createFileRoute("/_operator")({
   component: OperatorLayout,
 });
@@ -28,8 +27,7 @@ function OperatorLayout() {
   const { data: operator } = useSuspenseQuery(operatorOptions(nocCode));
   const location = useLocation();
   const isMap = location.pathname.replace(/\/$/, "") === `/map/${nocCode}`;
-  const showMap = isMap || location.state.mapView === true;
-  if (showMap)
+  if (isMap)
     return (
       <>
         <ClientOnly>
@@ -44,24 +42,7 @@ function OperatorLayout() {
             />
           </Suspense>
         </ClientOnly>
-        {isMap ? (
-          <Outlet />
-        ) : (
-          <Suspense
-            fallback={
-              <p
-                role="status"
-                className="fixed bottom-[calc(var(--safe-area-bottom)+1rem)] left-[calc(var(--safe-area-left)+1rem)]"
-              >
-                Loading…
-              </p>
-            }
-          >
-            <PageDrawer nocCode={nocCode}>
-              <Outlet />
-            </PageDrawer>
-          </Suspense>
-        )}
+        <Outlet />
       </>
     );
   return (

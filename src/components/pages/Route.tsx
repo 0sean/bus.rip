@@ -4,7 +4,7 @@ import {
   type RouteRow,
   type TripWithStops,
 } from "@/lib/buslane";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Back } from "../Back";
 
@@ -88,12 +88,10 @@ function RouteTrips({
 }
 
 function RouteTripRow({ trip, noc }: { trip: TripWithStops; noc: string }) {
-  const mapView = useLocation({ select: (location) => location.state.mapView });
   return (
     <Link
       to="/timetables/$nocCode/trip/$trip"
       params={{ nocCode: noc, trip: trip.id }}
-      state={{ mapView }}
       key={trip.id}
       className="border rounded-sm bg-muted/25 hover:bg-accent/50 transition-colors cursor-pointer p-4"
     >

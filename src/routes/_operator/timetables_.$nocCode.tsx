@@ -17,10 +17,5 @@ export const Route = createFileRoute("/_operator/timetables_/$nocCode")({
 function TimetablesPage() {
   const { nocCode } = Route.useParams();
   const { data: routes } = useSuspenseQuery(routesOptions(nocCode));
-  return (
-    <>
-      <h1 className="text-3xl font-semibold">Timetables</h1>
-      <Timetables routes={routes} noc={nocCode} />
-    </>
-  );
+  return <Timetables key={nocCode} routes={routes} noc={nocCode} />;
 }

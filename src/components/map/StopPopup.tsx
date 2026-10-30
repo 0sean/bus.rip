@@ -82,7 +82,6 @@ export default function StopPopup({
               <Link
                 to="/timetables/$nocCode/trip/$trip"
                 params={{ nocCode: noc, trip: stopTime.trip.id }}
-                state={{ mapView: true }}
                 key={stopTime.id}
                 className="flex gap-2 items-center px-4 py-3 border-b last:border-b-0 font-medium hover:bg-accent/50 transition-colors"
               >

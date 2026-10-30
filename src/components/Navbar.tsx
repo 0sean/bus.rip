@@ -69,6 +69,8 @@ function NavbarItem({
       <TooltipTrigger>
         <Link
           to={to}
+          aria-label={title}
+          aria-current={active ? "page" : undefined}
           className={clsx(
             "relative isolate size-10 rounded-full flex justify-center items-center",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",

@@ -9,6 +9,7 @@ import {
   getRoutes,
   getRoute,
   getTrip,
+  getRouteNetwork,
 } from "@/functions/buslane";
 
 export function staticQuery<T>(query: T): T {
@@ -79,6 +80,13 @@ export const routeOptions = (routeId: string) =>
   queryOptions({
     queryKey: ["route", routeId],
     queryFn: ({ signal }) => getRoute({ data: routeId, signal }),
+    staleTime: TIMETABLE_STALE_TIME,
+  });
+
+export const routeNetworkOptions = (nocCode: string) =>
+  queryOptions({
+    queryKey: ["route-network", code(nocCode)],
+    queryFn: ({ signal }) => getRouteNetwork({ data: nocCode, signal }),
     staleTime: TIMETABLE_STALE_TIME,
   });
 

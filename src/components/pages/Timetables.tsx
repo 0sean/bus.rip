@@ -1,9 +1,16 @@
-import { getRouteRow, type RouteRow, type RouteWithTrips } from "@/lib/buslane";
-import { Link, useLocation } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { getRouteRow, type RouteWithTrips } from "@/lib/buslane";
+import { Link, ClientOnly } from "@tanstack/react-router";
+import { lazy, Suspense, useMemo, useState } from "react";
+import {
+  IconChevronRight,
+  IconClock,
+  IconCalendarMonth,
+  IconSearch,
+} from "@tabler/icons-react";
 import { Input } from "../ui/input";
-import { useDebounce } from "@uidotdev/usehooks";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { formatDistanceToNow } from "date-fns/formatDistanceToNow";
+
+const RouteMap = lazy(() => import("../map/OperatorRouteMap"));
 
 export default function Timetables({
   noc,
@@ -12,88 +19,115 @@ export default function Timetables({
   noc: string;
   routes: RouteWithTrips[];
 }) {
-  const [search, setSearch] = useState(""),
-    debouncedSearch = useDebounce(search, 150),
-    routeRows = useMemo<RouteRow[]>(
-      () => routes.map((route) => getRouteRow(route)),
-      [routes],
-    ),
-    filteredRoutes = useMemo(
-      () =>
-        routeRows.filter(
-          (route) =>
-            route.route.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-            route.mainRoute
-              .toLowerCase()
-              .includes(debouncedSearch.toLowerCase()) ||
-            route.additionalRoutes.some((additional) =>
-              additional.toLowerCase().includes(debouncedSearch.toLowerCase()),
-            ),
-        ),
-      [debouncedSearch, routeRows],
-    );
-
+  const [search, setSearch] = useState("");
+  const rows = useMemo(
+    () =>
+      routes.map((route) => ({
+        ...getRouteRow(route),
+        longName: route.long_name,
+        trips: route.trips.length,
+        updated: route.updated_at,
+      })),
+    [routes],
+  );
+  const query = search.trim().toLowerCase();
+  const filtered = rows.filter((route) =>
+    [
+      route.route,
+      route.mainRoute,
+      route.longName,
+      ...route.additionalRoutes,
+    ].some((text) => text?.toLowerCase().includes(query)),
+  );
   return (
-    <>
-      <Input
-        placeholder="Search routes"
-        className="py-2 mt-2"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-      <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-background">
-        <div className="w-full my-2 rounded-md flex flex-col gap-2">
-          {filteredRoutes.map((route) => (
-            <TimetableRow key={route.id} route={route} noc={noc} />
-          ))}
+    <main className="flex flex-col gap-6">
+      <h1 className="sr-only">Timetables</h1>
+      <div className="relative">
+        <ClientOnly fallback={<MapPlaceholder />}>
+          <Suspense fallback={<MapPlaceholder />}>
+            <RouteMap noc={noc} routes={routes} />
+          </Suspense>
+        </ClientOnly>
+        <div className="absolute top-3 left-3 w-[calc(100%-5rem)] sm:max-w-sm">
+          <IconSearch
+            aria-hidden
+            className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+          />
+          <Input
+            aria-label="Search routes"
+            placeholder="Search routes or destinations"
+            className="pl-9 rounded-xl bg-background/95 shadow-sm"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
       </div>
-    </>
+      <div
+        className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+        aria-label="Operator routes"
+      >
+        {filtered.map((route) => {
+          const updated = route.updated ? new Date(route.updated) : null;
+          return (
+            <Link
+              key={route.id}
+              to="/timetables/$nocCode/route/$route"
+              params={{ nocCode: noc, route: String(route.id) }}
+              className="group flex min-w-0 flex-col rounded-[14px] bg-card text-card-foreground ring-1 ring-foreground/10 shadow-sm hover:bg-accent/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="flex items-center gap-2 p-4 min-h-[70px]">
+                <span className="flex min-w-8 h-8 shrink-0 items-center justify-center rounded-[10px] bg-neutral-100 dark:bg-neutral-800 px-2 text-base font-semibold">
+                  {route.route}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-sm font-medium leading-5">
+                    {route.mainRoute || route.longName || route.route}
+                  </h2>
+                  {route.additionalRoutes.length > 0 ? (
+                    <p className="text-xs leading-4 text-muted-foreground">
+                      + {route.additionalRoutes.length} route
+                      {route.additionalRoutes.length === 1 ? "" : "s"}
+                    </p>
+                  ) : null}
+                </div>
+                <IconChevronRight
+                  aria-hidden
+                  className="size-4 shrink-0 text-muted-foreground group-hover:text-foreground"
+                />
+              </div>
+              <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t px-4 py-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <IconCalendarMonth aria-hidden className="size-4" />
+                  {route.trips} scheduled trip{route.trips === 1 ? "" : "s"}
+                </span>
+                {updated && !Number.isNaN(updated.getTime()) ? (
+                  <span className="flex items-center gap-1">
+                    <IconClock aria-hidden className="size-4" />
+                    Updated {formatDistanceToNow(updated, { addSuffix: true })}
+                  </span>
+                ) : null}
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+      {!filtered.length ? (
+        <p role="status" className="py-10 text-center text-muted-foreground">
+          {routes.length
+            ? "No routes match your search."
+            : "No timetables are available for this operator yet."}
+        </p>
+      ) : null}
+    </main>
   );
 }
-
-function TimetableRow({ route, noc }: { route: RouteRow; noc: string }) {
-  const mapView = useLocation({ select: (location) => location.state.mapView });
+function MapPlaceholder() {
   return (
     <div
-      key={route.id}
-      className="border rounded-sm bg-muted/25 hover:bg-accent/50 transition-colors cursor-pointer p-4"
+      role="status"
+      className="h-[352px] rounded-[14px] border bg-muted/30 flex items-center justify-center text-sm text-muted-foreground"
     >
-      <div className="flex gap-2 items-center">
-        <h2 className="text-sm font-semibold bg-primary !text-primary-foreground w-fit px-1 rounded">
-          {route.route}
-        </h2>
-        <div className="font-medium">
-          <Link
-            to="/timetables/$nocCode/route/$route"
-            params={{ nocCode: noc, route: String(route.id) }}
-            state={{ mapView }}
-          >
-            {route.mainRoute || route.route}
-          </Link>
-          {route.additionalRoutes.length > 0 && (
-            <Tooltip>
-              <TooltipTrigger>
-                <span className="italic text-muted-foreground text-sm ms-2">
-                  + {route.additionalRoutes.length} route
-                  {route.additionalRoutes.length > 1 ? "s" : ""}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-center">
-                  {route.additionalRoutes.map((route) => (
-                    <span className="block font-medium" key={route}>
-                      {route}
-                    </span>
-                  ))}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-        </div>
-      </div>
-      {/* <p className="italic text-muted-foreground text-sm w-full">every x minutes</p> */}
-      {/* TODO: route frequency? */}
+      Loading route map…
     </div>
   );
 }

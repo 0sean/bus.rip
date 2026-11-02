@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { RouteWithStops, TripWithStops } from "../src/lib/buslane";
 import {
+  adjacentTrips,
   formatTime,
   frequencySummary,
   runsOn,
@@ -47,6 +48,37 @@ function trip(
 }
 
 describe("route timetable", () => {
+  it("finds adjacent departures in the same direction and service calendar", () => {
+    const previous = trip("previous", "23:00:00");
+    const current = trip("current", "24:00:00");
+    const next = trip("next", "25:00:00");
+    for (const journey of [previous, current, next]) {
+      journey.direction_id = "outbound";
+      journey.service_id = 1;
+    }
+    const inbound = {
+      ...current,
+      id: "inbound",
+      direction_id: "inbound",
+    } as TripWithStops;
+    const otherService = { ...current, id: "sunday", service_id: 2 };
+    const trips = [next, inbound, otherService, current, previous];
+    expect(adjacentTrips(current, trips)).toMatchObject({
+      previous: { trip: { id: "previous" } },
+      next: { trip: { id: "next" } },
+    });
+    expect(adjacentTrips(previous, trips).previous).toBeUndefined();
+    expect(adjacentTrips(next, trips).next).toBeUndefined();
+    expect(adjacentTrips(current, [current])).toEqual({
+      previous: undefined,
+      next: undefined,
+    });
+    expect(adjacentTrips(current, [])).toEqual({
+      previous: undefined,
+      next: undefined,
+    });
+  });
+
   it("filters actual service days without treating unknown calendars as daily", () => {
     const monday = trip("monday", undefined, ["monday"]);
     expect(runsOn(monday, "weekdays")).toBe(true);

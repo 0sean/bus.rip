@@ -3,7 +3,12 @@ import {
   type RouteWithStops,
   type TripWithAssociations,
 } from "@/lib/buslane";
-import { formatTime, orderedStops, serviceDays } from "@/lib/route-timetable";
+import {
+  adjacentTrips,
+  formatTime,
+  orderedStops,
+  serviceDays,
+} from "@/lib/route-timetable";
 import { ClientOnly, Link } from "@tanstack/react-router";
 import { lazy, Suspense, useMemo } from "react";
 import {
@@ -12,6 +17,7 @@ import {
   IconClock,
   IconWheelchair,
 } from "@tabler/icons-react";
+import { buttonVariants } from "../ui/button";
 
 const RouteMap = lazy(() => import("../map/OperatorRouteMap"));
 
@@ -27,6 +33,10 @@ export default function Trip({
   const stops = useMemo(() => orderedStops(trip), [trip]);
   const row = useMemo(() => getRouteRow(route), [route]);
   const mapRoutes = useMemo(() => [route], [route]);
+  const { previous, next } = useMemo(
+    () => adjacentTrips(trip, route.trips),
+    [trip, route.trips],
+  );
   const first = stops[0];
   const last = stops.at(-1);
   const DirectionIcon =
@@ -102,6 +112,52 @@ export default function Trip({
               ) : null}
             </div>
           </section>
+          <nav
+            aria-label="Trip navigation"
+            className="flex gap-3 justify-between"
+          >
+            {(
+              [
+                ["Previous", previous, IconArrowLeft],
+                ["Next", next, IconArrowRight],
+              ] as const
+            ).map(([label, journey, Icon]) => {
+              const className = buttonVariants({
+                variant: "outline",
+                size: "sm",
+                className: "rounded-full! bg-card shadow-sm",
+              });
+              const content = (
+                <>
+                  {label === "Previous" ? <Icon aria-hidden /> : null}
+                  {label}
+                  {label === "Next" ? <Icon aria-hidden /> : null}
+                </>
+              );
+              return journey ? (
+                <Link
+                  key={label}
+                  to="/timetables/$nocCode/trip/$trip"
+                  params={{ nocCode: noc, trip: journey.trip.id }}
+                  preload={false}
+                  aria-label={`${label} trip, departing ${formatTime(journey.departure)}`}
+                  className={className}
+                >
+                  {content}
+                </Link>
+              ) : (
+                <button
+                  key={label}
+                  type="button"
+                  disabled
+                  aria-label={`No ${label.toLowerCase()} trip`}
+                  className={className}
+                >
+                  {content}
+                </button>
+              );
+            })}
+          </nav>
         </div>
       </div>
       <section aria-label="Trip stops" className="min-w-0">

@@ -123,3 +123,18 @@ export function scheduledTrips(trips: TripWithStops[]) {
         a.trip.id.localeCompare(b.trip.id),
     );
 }
+
+export function adjacentTrips(current: TripWithStops, trips: TripWithStops[]) {
+  const journeys = scheduledTrips(
+    trips.filter(
+      (trip) =>
+        trip.direction_id === current.direction_id &&
+        trip.service_id === current.service_id,
+    ),
+  );
+  const index = journeys.findIndex(({ trip }) => trip.id === current.id);
+  return {
+    previous: index > 0 ? journeys[index - 1] : undefined,
+    next: index >= 0 ? journeys[index + 1] : undefined,
+  };
+}

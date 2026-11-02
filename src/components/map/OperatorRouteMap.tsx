@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { FeatureCollection, Point } from "geojson";
 import { Link } from "@tanstack/react-router";
 import {
   Map,
@@ -15,6 +16,7 @@ import {
   getRouteRow,
   type RouteWithStops,
   type RouteWithTrips,
+  type StopTimeWithStop,
 } from "@/lib/buslane";
 import {
   networkBounds,
@@ -22,11 +24,13 @@ import {
   type RouteNetwork,
 } from "@/lib/route-network";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { cn } from "@/lib/utils";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Card, CardContent } from "../ui/card";
 import { IconChevronRight } from "@tabler/icons-react";
 
 const HIT_LAYER = "operator-route-hit";
+const STOP_HIT_LAYER = "trip-stop-hit";
 const COLORS = [
   "#60a5fa",
   "#fb923c",
@@ -47,10 +51,14 @@ export default function OperatorRouteMap({
   noc,
   routes,
   route,
+  variant = "overview",
+  stopTimes,
 }: {
   noc: string;
   routes: RouteWithTrips[];
   route?: RouteWithStops;
+  variant?: "overview" | "trip";
+  stopTimes?: StopTimeWithStop[];
 }) {
   const {
     data: operatorData,
@@ -84,7 +92,39 @@ export default function OperatorRouteMap({
   const [loaded, setLoaded] = useState(false);
   const [mapError, setMapError] = useState(false);
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [hoveredStop, setHoveredStop] = useState<{
+    name: string;
+    longitude: number;
+    latitude: number;
+  } | null>(null);
   const dark = useMediaQuery("(prefers-color-scheme: dark)");
+  const stops = useMemo<FeatureCollection<Point>>(() => {
+    const seen = new Set<string>();
+    const features: FeatureCollection<Point>["features"] = [];
+    for (const { stop } of stopTimes ?? []) {
+      if (!stop || seen.has(stop.id)) continue;
+      const longitude = Number(stop.lon);
+      const latitude = Number(stop.lat);
+      if (
+        stop.lon == null ||
+        stop.lat == null ||
+        String(stop.lon).trim() === "" ||
+        String(stop.lat).trim() === "" ||
+        !Number.isFinite(longitude) ||
+        !Number.isFinite(latitude) ||
+        Math.abs(longitude) > 180 ||
+        Math.abs(latitude) > 90
+      )
+        continue;
+      seen.add(stop.id);
+      features.push({
+        type: "Feature",
+        properties: { name: stop.name },
+        geometry: { type: "Point", coordinates: [longitude, latitude] },
+      });
+    }
+    return { type: "FeatureCollection", features };
+  }, [stopTimes]);
   const rows = useMemo(
     () =>
       new globalThis.Map(
@@ -116,23 +156,43 @@ export default function OperatorRouteMap({
     () => (data ? networkBounds(data.network) : null),
     [data],
   );
-  useEffect(() => {
+  const fitRoute = useCallback(() => {
     if (loaded && bounds) {
       const wide = (map.current?.getContainer().clientWidth ?? 0) > 640;
       map.current?.fitBounds(bounds, {
-        padding: route
-          ? wide
-            ? { left: 380, right: 40, top: 40, bottom: 40 }
-            : { left: 30, right: 30, top: 180, bottom: 35 }
-          : 40,
+        padding:
+          variant === "trip"
+            ? wide
+              ? { left: 380, right: 40, top: 40, bottom: 40 }
+              : { left: 30, right: 30, top: 360, bottom: 80 }
+            : route
+              ? wide
+                ? { left: 380, right: 40, top: 40, bottom: 40 }
+                : { left: 30, right: 30, top: 180, bottom: 35 }
+              : 40,
         maxZoom: 14,
         duration: 0,
       });
     }
-  }, [loaded, bounds, route]);
+  }, [loaded, bounds, route, variant]);
+  useEffect(fitRoute, [fitRoute]);
 
   function clearHover() {
     setSelection((previous) => (previous?.pinned ? previous : null));
+  }
+
+  function hoverStop(event: MapLayerMouseEvent) {
+    const feature = event.features?.find(
+      (feature) => feature.layer.id === STOP_HIT_LAYER,
+    );
+    if (feature?.geometry.type === "Point" && feature.properties.name) {
+      const [longitude, latitude] = feature.geometry.coordinates;
+      setHoveredStop({ name: feature.properties.name, longitude, latitude });
+      event.target.getCanvas().style.cursor = "pointer";
+    } else {
+      setHoveredStop(null);
+      event.target.getCanvas().style.cursor = "grab";
+    }
   }
 
   function selectRoutes(event: MapLayerMouseEvent, pinned: boolean) {
@@ -185,7 +245,10 @@ export default function OperatorRouteMap({
       aria-label={
         route ? `Route ${route.short_name} map` : "Operator route map"
       }
-      className="relative h-[352px] overflow-hidden rounded-[14px] border bg-muted/30"
+      className={cn(
+        "relative overflow-hidden rounded-[14px] border bg-muted/30",
+        variant === "trip" ? "h-[648px]" : "h-[352px]",
+      )}
     >
       <Map
         ref={map}
@@ -196,17 +259,28 @@ export default function OperatorRouteMap({
             : "https://tiles.openfreemap.org/styles/positron"
         }
         onLoad={() => setLoaded(true)}
+        onResize={fitRoute}
         onError={() => setMapError(true)}
-        interactiveLayerIds={network && !route ? [HIT_LAYER] : []}
-        onMouseMove={route ? undefined : (event) => selectRoutes(event, false)}
-        onMouseLeave={route ? undefined : clearHover}
+        interactiveLayerIds={[
+          ...(network && !route ? [HIT_LAYER] : []),
+          ...(stops.features.length ? [STOP_HIT_LAYER] : []),
+        ]}
+        onMouseMove={route ? hoverStop : (event) => selectRoutes(event, false)}
+        onMouseLeave={() => {
+          setHoveredStop(null);
+          clearHover();
+          if (map.current) map.current.getCanvas().style.cursor = "grab";
+        }}
         onClick={route ? undefined : (event) => selectRoutes(event, true)}
         scrollZoom={false}
         touchPitch={false}
         dragRotate={false}
         attributionControl={{ compact: true }}
       >
-        <NavigationControl position="top-right" showCompass={false} />
+        <NavigationControl
+          position={variant === "trip" ? "bottom-right" : "top-right"}
+          showCompass={false}
+        />
         {network ? (
           <Source id="operator-routes" type="geojson" data={network}>
             <Layer
@@ -235,6 +309,48 @@ export default function OperatorRouteMap({
               paint={{ "line-width": 18, "line-opacity": 0 }}
             />
           </Source>
+        ) : null}
+        {stops.features.length ? (
+          <Source id="trip-stops" type="geojson" data={stops}>
+            <Layer
+              id={STOP_HIT_LAYER}
+              type="circle"
+              paint={{ "circle-radius": 9, "circle-opacity": 0 }}
+            />
+            <Layer
+              id="trip-stop-dots"
+              type="circle"
+              paint={{
+                "circle-radius": 3,
+                "circle-color": dark ? "#171717" : "#ffffff",
+                "circle-stroke-width": 1.5,
+                "circle-stroke-color": route
+                  ? COLORS[Math.abs(route.id) % COLORS.length]
+                  : dark
+                    ? "#fafafa"
+                    : "#262626",
+              }}
+            />
+          </Source>
+        ) : null}
+        {hoveredStop ? (
+          <Popup
+            longitude={hoveredStop.longitude}
+            latitude={hoveredStop.latitude}
+            anchor="bottom"
+            offset={10}
+            closeButton={false}
+            closeOnClick={false}
+            maxWidth="240px"
+            className="pointer-events-none"
+          >
+            <div
+              role="tooltip"
+              className="rounded-md border bg-popover px-2.5 py-1.5 font-sans text-xs font-medium text-popover-foreground shadow-sm"
+            >
+              {hoveredStop.name}
+            </div>
+          </Popup>
         ) : null}
         {!route && selection ? (
           <Popup

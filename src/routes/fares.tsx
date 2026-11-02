@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { operatorsOptions, staticQuery } from "@/data/queries";
-import { Header } from ".";
+import { Header } from "@/components/Header";
 import { OperatorForm } from "@/components/OperatorForm";
 import { Navbar } from "@/components/Navbar";
 

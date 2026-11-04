@@ -11,19 +11,21 @@ import {
 import { Link } from "@tanstack/react-router";
 import type { FilterSpecification } from "maplibre-gl";
 import type { Stop } from "@/lib/buslane";
-import type { FareGroup } from "@/lib/fares";
+import type { FareMapArea } from "@/lib/fare-map";
 import { fareZoneFeatures, zoneColor } from "@/lib/fare-map";
 import { useMediaQuery } from "@/lib/use-media-query";
 import "maplibre-gl/dist/maplibre-gl.css";
 export default function FareMap({
   noc,
   zones,
+  generation,
   stops,
   unavailable = false,
   tall = false,
 }: {
   noc: string;
-  zones: FareGroup[];
+  zones: FareMapArea[];
+  generation: string;
   stops: Stop[];
   unavailable?: boolean;
   tall?: boolean;
@@ -31,11 +33,11 @@ export default function FareMap({
   const map = useRef<MapRef>(null);
   const [loaded, setLoaded] = useState(false),
     [failed, setFailed] = useState(false);
-  const [active, setActive] = useState<number | null>(null);
+  const [active, setActive] = useState<string | null>(null);
   const [selected, setSelected] = useState<{
     longitude: number;
     latitude: number;
-    ids: number[];
+    ids: string[];
   } | null>(null);
   const dark = useMediaQuery("(prefers-color-scheme: dark)");
   const data = useMemo(() => fareZoneFeatures(zones, stops), [zones, stops]);
@@ -73,7 +75,7 @@ export default function FareMap({
   function select(event: MapLayerMouseEvent) {
     const ids = [
       ...new Set(
-        (event.features ?? []).map((f) => Number(f.properties.zoneId)),
+        (event.features ?? []).map((f) => String(f.properties.zoneId)),
       ),
     ];
     setSelected(
@@ -87,7 +89,7 @@ export default function FareMap({
   const mapped = new Set(data.labels.features.map((f) => f.properties?.zoneId));
   return (
     <section
-      aria-label="Fare zone coverage map"
+      aria-label="Published ticket-area stop locations"
       className="overflow-hidden rounded-[14px] border bg-muted/30"
     >
       <div
@@ -182,11 +184,11 @@ export default function FareMap({
                     <Link
                       key={z.id}
                       to="/fares/$nocCode/$fare"
-                      params={{ nocCode: noc, fare: String(z.id) }}
+                      params={{ nocCode: noc, fare: z.id }}
+                      search={{ generation }}
                       className="block text-sm underline py-2"
                     >
                       {z.name}
-                      {z.lines.length ? ` · Routes ${z.lines.join(", ")}` : ""}
                     </Link>
                   ))}
               </div>
@@ -201,13 +203,13 @@ export default function FareMap({
             : unavailable
               ? "Stop locations are temporarily unavailable."
               : !mapped.size
-                ? "No locations are published for these zones."
-                : `${mapped.size} of ${zones.length} zones mapped. Shaded coverage is approximate where published boundaries are unavailable.`}
+                ? "No loaded stops have matching timetable coordinates."
+                : `${mapped.size} of ${zones.length} areas have loaded stop locations. No ticket boundaries are published.`}
         </p>
         {zones.length ? (
           <div
             className="flex gap-2 flex-wrap max-h-28 overflow-y-auto"
-            aria-label="Map fare zones"
+            aria-label="Map ticket areas"
           >
             <button
               type="button"
@@ -218,7 +220,7 @@ export default function FareMap({
               }}
               className="rounded-md border px-2 py-1 text-xs hover:bg-accent"
             >
-              All zones
+              All areas
             </button>
             {zones.map((zone) => (
               <button

@@ -93,6 +93,10 @@ All application data reads use validated TanStack Start server functions in `src
 
 Timetables, routes, and trips open as separate pages, including links from tracking. The operator timetable page includes a route-network map with hover/tap links and searchable route cards. Lines connect ordered scheduled stops (not road-following shapes); representative journeys cover the known shapes, directions, and destinations of each route. Network requests use bounded upstream concurrency and report missing routes without hiding the timetable list.
 
+### Passenger fares
+
+Fares now use Buslane’s derived passenger catalogue: paginated ticket areas and ticket families, explicit variants, optional published coverage, and bounded directional journey lookup. Deploy Buslane catalogue version 1 before this consumer. The existing Buslane URL/key settings remain server-only. See [the migration and verification guide](docs/fares-catalogue-migration.md) for deployment order, cache behaviour, legacy links, map limitations and browser-test commands.
+
 ### Verification
 
 ```sh

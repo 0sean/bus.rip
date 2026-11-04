@@ -1,437 +1,400 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { InfiniteQueryObserver, QueryClient } from "@tanstack/react-query";
 import {
-  fareAmounts,
+  FareApiError,
+  fareDate,
+  fareTerm,
+  londonDate,
   money,
-  stopCodes,
-  zonePrices,
-  groupFares,
-  type FareEntity,
-  type FareCatalogue,
+  readFareResponse,
+  ticketPrice,
+  type FareItem,
+  type FareRequest,
 } from "../src/lib/fares";
-import { fareZoneFeatures, publishedPolygons } from "../src/lib/fare-map";
+import { fareZoneFeatures, zoneColor } from "../src/lib/fare-map";
 import type { Stop } from "../src/lib/buslane";
 vi.mock("@tanstack/react-start", () => ({
   createServerFn: () => {
+    let validate: { parse: (data: unknown) => unknown };
     const builder = {
       middleware: () => builder,
-      validator: () => builder,
-      handler: (handler: unknown) => handler,
+      validator: (schema: typeof validate) => {
+        validate = schema;
+        return builder;
+      },
+      handler:
+        (handler: (args: { data: unknown }) => unknown) =>
+        (args: { data: unknown }) =>
+          handler({ data: validate.parse(args.data) }),
     };
     return builder;
   },
 }));
-vi.mock("../src/middleware/cache-control", () => ({ cacheControl: vi.fn() }));
 vi.mock("../src/middleware/rate-limit", () => ({ rateLimit: vi.fn() }));
+import { fareRequestSchema, getFareCatalogue } from "../src/functions/fares";
 import {
-  getFares,
-  getFareDetail,
-  getFarePublications,
-} from "../src/functions/fares";
-const entity = (overrides: Partial<FareEntity> = {}): FareEntity => ({
-  id: 1,
-  document_id: 10,
-  category: "zone",
-  kind: "FareZone",
-  ref: "zone:A",
-  version: "1",
-  name: "Town",
-  amount: null,
-  currency: "GBP",
-  product_ref: null,
-  profile_ref: null,
-  package_ref: null,
-  start_ref: null,
-  end_ref: null,
-  data: { name: "FareZone", attributes: {}, children: [] },
-  ...overrides,
-});
-const product = (overrides: Partial<FareEntity> = {}) =>
-  entity({
-    category: "product",
-    kind: "PreassignedFareProduct",
-    name: "Adult single",
-    ref: "ticket",
-    ...overrides,
-  });
-const zone = (id: number, stops: string[]) =>
-  entity({
-    id,
-    data: {
-      name: "FareZone",
-      attributes: {},
-      children: stops.map((ref) => ({
-        name: "ScheduledStopPointRef",
-        attributes: { ref: "atco:" + ref },
-        children: [],
-      })),
-    },
-  });
-const document = (id = 10, route = "14") => ({
-  id,
-  publication_timestamp: "2026-11-01",
-  links: [
-    { kind: "operator", code: "TEST", ref: "noc:TEST" },
-    { kind: "line", code: route, ref: route, qualifier: "noc:TEST" },
-  ],
-});
-const fetchMock = vi.fn();
-beforeEach(() => {
-  vi.stubGlobal("fetch", fetchMock);
-  vi.stubEnv("BUSLANE_ENABLED", "1");
-  vi.stubEnv("BUSLANE_BASE_URL", "https://buslane.test");
-  fetchMock.mockReset();
+  fareDetailOptions,
+  farePagesOptions,
+  journeyFaresOptions,
+} from "../src/data/queries";
+vi.mock("../src/functions/operators", () => ({}));
+vi.mock("../src/functions/locations", () => ({}));
+vi.mock("../src/functions/buslane", () => ({}));
+const id = (kind: string, n = "a") => `${kind}_${n.repeat(64)}`;
+const item = (kind: FareItem["kind"] = "ticket", n = "a"): FareItem => ({
+  id: id(kind, n),
+  kind,
+  name: "Adult ticket",
+  revision: 1,
+  ticket_count: 1,
+  price_basis: "published",
+  prices: [{ amount: "6.00", currency: "GBP" }],
 });
 const response = (body: unknown, generation = "1", status = 200, extra = {}) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { "x-fares-generation": generation, ...extra },
+    headers: {
+      "x-catalogue-generation": generation,
+      "x-catalogue-version": "1",
+      ...extra,
+    },
   });
-const listResponse = getFares as unknown as (arg: {
-  data: { noc: string };
+const fetchMock = vi.fn();
+const call = getFareCatalogue as unknown as (arg: {
+  data: FareRequest;
 }) => Promise<Response>;
-const list = async (
-  arg: Parameters<typeof listResponse>[0],
-): Promise<FareCatalogue> => (await listResponse(arg)).json();
-const detailResponse = getFareDetail as unknown as (arg: {
-  data: { noc: string; id: number; documentId?: number };
-}) => Promise<Response>;
-const detail = async (
-  arg: Parameters<typeof detailResponse>[0],
-): Promise<unknown> => (await detailResponse(arg)).json();
-const publicationsResponse = getFarePublications as unknown as (arg: {
-  data: { noc: string; ids: number[]; generation: string | null };
-}) => Promise<Response>;
-describe("published fares", () => {
-  it("keeps document-scoped zone associations, both directions, and every price version", () => {
-    const price = entity({
-      category: "price",
-      matrices: [{ start_ref: "zone:B", end_ref: "zone:A", version: "1" }],
-      referenced_prices: [
-        { amount: "2.00", currency: "GBP", version: "1" },
-        { amount: "2.50", currency: "GBP", version: "2" },
-      ],
-    });
-    expect(
-      zonePrices(entity(), [
-        price,
-        entity({ ...price, document_id: 11 }),
-        entity({ category: "price", start_ref: "other" }),
-      ]),
-    ).toEqual([price]);
-    expect(fareAmounts(price).map((p) => money(p.amount, p.currency))).toEqual([
-      "£2.00",
-      "£2.50",
-    ]);
-    expect(fareAmounts(entity({ amount: "0.00" }))).toEqual([
-      { amount: "0.00", currency: "GBP" },
-    ]);
-    expect(money("2.00", null)).toContain("currency not supplied");
-  });
-  it("groups route-specific copies of a ticket without collapsing different ticket types", () => {
-    const grouped = groupFares([
-      product(),
-      product({
-        id: 2,
-        document_id: 20,
-        name: " Adult  Single ",
-        publication: { lines: ["3"], published: null },
+const read = async <T = FareItem[]>(data: FareRequest) =>
+  readFareResponse<T>(await call({ data }));
+beforeEach(() => {
+  vi.stubGlobal("fetch", fetchMock);
+  vi.stubEnv("BUSLANE_ENABLED", "1");
+  vi.stubEnv("BUSLANE_BASE_URL", "https://buslane.test/");
+  vi.stubEnv("BUSLANE_API_KEY", "server-only-key");
+  fetchMock.mockReset();
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
+describe("derived catalogue adapter", () => {
+  it("loads one canonical page with server-only authentication and preserves equal-named variants", async () => {
+    fetchMock.mockResolvedValue(
+      response([item(), item("ticket", "b")], "6", 200, {
+        "x-next-cursor": "opaque+cursor/=",
       }),
-      product({ id: 3, name: "Child single" }),
-      product({ id: 4, name: "Single Ticket - Adult" }),
-    ]);
-    expect(grouped).toHaveLength(2);
-    expect(grouped[0].members.map((e) => e.id)).toEqual([1, 2, 4]);
-    expect(grouped[0].lines).toEqual(["3"]);
-  });
-  it("groups zones only when their published stop membership matches", () => {
-    expect(stopCodes(zone(1, ["A", "B", "A"]))).toEqual(["A", "B"]);
-    expect(
-      groupFares([
-        zone(1, ["A", "B"]),
-        zone(2, ["B", "A"]),
-        zone(3, ["C"]),
-      ]).map((g) => g.members.length),
-    ).toEqual([2, 1]);
-  });
-  it("loads all catalogue pages before returning, with no price-matrix requests", async () => {
-    fetchMock.mockImplementation(async (input: string) => {
-      const url = new URL(input);
-      if (url.pathname.includes("/documents/"))
-        return response(
-          document(
-            Number(url.pathname.split("/").at(-1)),
-            url.pathname.endsWith("20") ? "3" : "14",
-          ),
-        );
-      expect(url.searchParams.get("noc")).toBe("TEST");
-      if (url.searchParams.get("category") === "zone")
-        return url.searchParams.has("cursor")
-          ? response([zone(2, ["LAST"])])
-          : response([zone(1, ["FIRST"])], "1", 200, {
-              "x-next-cursor": "opaque+cursor",
-            });
-      expect(url.searchParams.get("category")).toBe("product");
-      return response([
-        product({ id: 3 }),
-        product({ id: 4, document_id: 20 }),
-      ]);
-    });
-    const result = await list({ data: { noc: "TEST" } });
-    expect(result.zones).toHaveLength(2);
-    expect(result.zones.flatMap((g) => g.stops)).toContain("LAST");
-    expect(result.tickets).toHaveLength(1);
-    expect(result.tickets[0].lines).toEqual(["3", "14"]);
-    expect(
-      fetchMock.mock.calls.some(
-        ([input]) =>
-          new URL(input).searchParams.get("cursor") === "opaque+cursor",
-      ),
-    ).toBe(true);
-  });
-  it("returns a large complete catalogue as plain JSON instead of an RPC object graph", async () => {
-    const zones = Array.from({ length: 3000 }, (_, index) =>
-      zone(index + 1, [`STOP${index}`]),
     );
-    fetchMock.mockImplementation(async (input: string) => {
-      const url = new URL(input);
-      if (url.pathname.includes("/documents/")) return response(document());
-      if (url.searchParams.get("category") === "product") return response([]);
-      const offset = Number(url.searchParams.get("cursor") || "0");
-      return response(
-        zones.slice(offset, offset + 1000),
-        "1",
-        200,
-        offset + 1000 < zones.length
-          ? { "x-next-cursor": String(offset + 1000) }
-          : {},
+    const result = await read({ noc: "anea", action: "tickets", q: "ad" });
+    expect(result).toMatchObject({
+      generation: "6",
+      version: "1",
+      nextCursor: "opaque+cursor/=",
+      data: [item(), item("ticket", "b")],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(new URL(url).pathname).toBe("/api/fares/operators/ANEA/tickets");
+    expect(new URL(url).searchParams.get("limit")).toBe("50");
+    expect(new URL(url).searchParams.get("q")).toBe("ad");
+    expect(options.headers.Authorization).toBe("Bearer server-only-key");
+    expect(JSON.stringify(result)).not.toContain("server-only-key");
+    expect(
+      (await call({ data: { noc: "ANEA", action: "areas" } })).headers.get(
+        "cache-control",
+      ),
+    ).toBe("no-store");
+  });
+  it("root pagination waits for Show more and never changes the cursor's filter binding", async () => {
+    const first = item("area"),
+      second = item("area", "b");
+    fetchMock
+      .mockResolvedValueOnce(
+        response([first], "6", 200, { "x-next-cursor": "opaque+cursor/=" }),
+      )
+      .mockResolvedValueOnce(response([second], "6"));
+    const client = new QueryClient();
+    const options = farePagesOptions({ noc: "ANEA", action: "areas", q: "ad" });
+    const initial = await client.fetchInfiniteQuery(options);
+    expect(initial.pages[0].data).toEqual([first]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const observer = new InfiniteQueryObserver(client, options);
+    const next = await observer.fetchNextPage();
+    expect(next.data?.pages.flatMap((p) => p.data)).toEqual([first, second]);
+    const url = new URL(fetchMock.mock.calls[1][0]);
+    expect(url.searchParams.get("cursor")).toBe("opaque+cursor/=");
+    expect(url.searchParams.has("generation")).toBe(false);
+    expect(url.searchParams.get("q")).toBe("ad");
+    observer.destroy();
+    client.clear();
+  });
+  it("keeps generation, operator, resource and filter scopes in query keys", () => {
+    const base = {
+      noc: "ANEA",
+      action: "areaTickets" as const,
+      id: id("area"),
+      generation: "6",
+    };
+    const requests = [
+      base,
+      { ...base, generation: "7" },
+      { ...base, noc: "OTHER" },
+      { ...base, id: id("area", "b") },
+      { ...base, q: "ad" },
+      { ...base, familyId: id("family") },
+    ];
+    expect(
+      new Set(requests.map((q) => JSON.stringify(farePagesOptions(q).queryKey)))
+        .size,
+    ).toBe(requests.length);
+    expect(fareDetailOptions("ANEA", id("ticket"), "6").queryKey).not.toEqual(
+      fareDetailOptions("ANEA", id("ticket"), "7").queryKey,
+    );
+  });
+  it.each([
+    ["areaTickets", "area", "areas", "tickets"],
+    ["areaFamilies", "area", "areas", "families"],
+    ["familyTickets", "family", "families", "tickets"],
+    ["ticketAreas", "ticket", "tickets", "areas"],
+    ["ticketRoutes", "ticket", "tickets", "routes"],
+    ["stops", "area", "areas", "stops"],
+    ["sources", "ticket", "tickets", "sources"],
+  ] as const)(
+    "uses bounded direct associations for %s",
+    async (action, kind, resource, child) => {
+      fetchMock.mockResolvedValue(response([], "6"));
+      await read({ noc: "ANEA", action, id: id(kind), generation: "6" });
+      const url = new URL(fetchMock.mock.calls[0][0]);
+      expect(url.pathname).toBe(
+        `/api/fares/operators/ANEA/${resource}/${id(kind)}/${child}`,
       );
+      expect(url.searchParams.get("generation")).toBe("6");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    },
+  );
+  it("preserves an explicit generation and area-family filter across pages", async () => {
+    fetchMock.mockResolvedValue(response([], "6"));
+    await read({
+      noc: "ANEA",
+      action: "areaTickets",
+      id: id("area"),
+      familyId: id("family"),
+      generation: "6",
+      cursor: "signed",
+      expectedGeneration: "6",
     });
-    const result = await listResponse({ data: { noc: "TEST" } });
-    expect(result).toBeInstanceOf(Response);
-    expect(result.headers.get("content-type")).toContain("application/json");
-    const catalogue = await result.json();
-    expect(catalogue.zones).toHaveLength(3000);
-    expect(
-      catalogue.zones.flatMap(
-        (group: FareCatalogue["zones"][number]) => group.stops,
-      ),
-    ).toContain("STOP2999");
+    const url = new URL(fetchMock.mock.calls[0][0]);
+    expect(url.searchParams.get("family_id")).toBe(id("family"));
+    expect(url.searchParams.get("generation")).toBe("6");
+    expect(url.searchParams.has("expectedGeneration")).toBe(false);
   });
-  it("keeps a large operator within the subrequest budget and sends only one geometry copy per group", async () => {
-    const products = Array.from({ length: 1054 }, (_, i) =>
-      product({ id: i + 1, document_id: i + 1 }),
+  it("loads ticket detail with one scoped request and no operator scan", async () => {
+    fetchMock.mockResolvedValue(response(item(), "6"));
+    const detail = await read<FareItem>({
+      noc: "ANEA",
+      action: "detail",
+      id: id("ticket"),
+      generation: "6",
+    });
+    expect(detail.data.id).toBe(id("ticket"));
+    expect(new URL(fetchMock.mock.calls[0][0]).pathname).toBe(
+      `/api/fares/operators/ANEA/tickets/${id("ticket")}`,
     );
-    fetchMock.mockImplementation(async (input: string) => {
-      const url = new URL(input);
-      expect(url.pathname).toBe("/api/fares/entities");
-      if (url.searchParams.get("category") === "zone") return response([]);
-      return url.searchParams.has("cursor")
-        ? response(products.slice(1000))
-        : response(products.slice(0, 1000), "1", 200, {
-            "x-next-cursor": "next",
-          });
-    });
-    const result = await list({ data: { noc: "TEST" } });
-    expect(result.pendingDocumentIds).toHaveLength(1054);
-    expect(result.generation).toBe("1");
-    expect(result.tickets).toHaveLength(1);
-    expect(result.tickets[0].documentIds).toHaveLength(1054);
-    expect(result.tickets[0].members).toHaveLength(1);
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
-  it("returns compact publication metadata and rejects generation changes across catalogue batches", async () => {
-    fetchMock.mockResolvedValueOnce(response(document()));
-    const result = await publicationsResponse({
-      data: { noc: "TEST", ids: [10], generation: "1" },
-    });
-    expect(await result.json()).toEqual([
-      { id: 10, lines: ["14"], published: "2026-11-01" },
-    ]);
-    fetchMock.mockResolvedValueOnce(response(document(), "2"));
+  it("preserves exact route, direction, date, decimal price and candidate validity", async () => {
+    const candidate = {
+      ...item(),
+      amount: "2.40",
+      currency: "GBP",
+      status: "outside_published_validity",
+      date: "2026-11-04",
+      unresolved_count: 1,
+    };
+    const body = {
+      status: "published_candidates",
+      candidates: [candidate],
+      conditions_evaluated: false,
+      unsupported_patterns_possible: true,
+    };
+    fetchMock.mockResolvedValue(response(body, "6"));
+    const req = {
+      noc: "ANEA",
+      action: "journey" as const,
+      id: id("route"),
+      origin: id("point", "b"),
+      destination: id("point", "c"),
+      date: "2026-11-04",
+      generation: "6",
+    };
+    expect((await read(req)).data).toEqual(body);
+    const url = new URL(fetchMock.mock.calls[0][0]);
+    expect(url.pathname).toBe("/api/fares/operators/ANEA/journey-fares");
+    expect(url.searchParams.get("origin")).toBe(req.origin);
+    expect(url.searchParams.get("destination")).toBe(req.destination);
+    expect(url.searchParams.get("route_id")).toBe(req.id);
+    expect(url.searchParams.get("date")).toBe("2026-11-04");
+    expect(journeyFaresOptions(req).queryKey).not.toEqual(
+      journeyFaresOptions({
+        ...req,
+        origin: req.destination,
+        destination: req.origin,
+      }).queryKey,
+    );
+  });
+  it("preserves an unsupported empty journey result without inventing a fare", async () => {
+    const body = {
+      status: "no_supported_published_fare",
+      candidates: [],
+      conditions_evaluated: false,
+      unsupported_patterns_possible: true,
+    };
+    fetchMock.mockResolvedValue(response(body));
+    expect(
+      (
+        await read({
+          noc: "ANEA",
+          action: "journey",
+          id: id("route"),
+          origin: id("point", "b"),
+          destination: id("point", "c"),
+          date: "2026-11-04",
+        })
+      ).data,
+    ).toEqual(body);
+  });
+  it.each([404, 409, 410, 503])(
+    "propagates actionable status %i without caching failures",
+    async (status) => {
+      fetchMock.mockResolvedValue(
+        response({ error: "sensitive upstream details" }, "6", status),
+      );
+      const result = await call({
+        data: { noc: "ANEA", action: "detail", id: id("ticket") },
+      });
+      expect(result.status).toBe(status);
+      expect(result.headers.get("cache-control")).toBe("no-store");
+      const body = await result.clone().json();
+      expect(body.error).not.toContain("sensitive");
+      await expect(readFareResponse(result)).rejects.toBeInstanceOf(
+        FareApiError,
+      );
+    },
+  );
+  it("rejects changed generations even if an upstream response is incorrectly successful", async () => {
+    fetchMock.mockResolvedValue(response([], "7"));
     await expect(
-      publicationsResponse({
-        data: { noc: "TEST", ids: [10], generation: "1" },
+      read({
+        noc: "ANEA",
+        action: "areas",
+        cursor: "signed",
+        expectedGeneration: "6",
       }),
-    ).rejects.toThrow("Fares have changed");
+    ).rejects.toMatchObject({ status: 409 });
   });
-  it("rejects an incomplete catalogue when a later page fails", async () => {
-    fetchMock.mockImplementation(async (input: string) => {
-      const url = new URL(input);
-      if (url.searchParams.get("category") === "product") return response([]);
-      return url.searchParams.has("cursor")
-        ? response({}, "1", 503)
-        : response([zone(1, ["A"])], "1", 200, { "x-next-cursor": "next" });
-    });
-    await expect(list({ data: { noc: "TEST" } })).rejects.toThrow(
-      "temporarily unavailable",
-    );
-  });
-  it("rejects details belonging to another operator before fetching any prices", async () => {
-    fetchMock
-      .mockResolvedValueOnce(response(product()))
-      .mockResolvedValueOnce(response([]));
-    expect(await detail({ data: { noc: "TEST", id: 1 } })).toBeNull();
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-  });
-  it("returns not found for unknown IDs", async () => {
-    fetchMock.mockResolvedValueOnce(response({}, "1", 404));
-    expect(await detail({ data: { noc: "TEST", id: 999 } })).toBeNull();
-  });
-  it("rejects a dataset change between independent requests", async () => {
-    fetchMock
-      .mockResolvedValueOnce(response(product(), "1"))
-      .mockResolvedValueOnce(response([product()], "2"));
-    await expect(detail({ data: { noc: "TEST", id: 1 } })).rejects.toThrow(
-      "Fares have changed",
-    );
-  });
-  it("finds grouped route variants but reads prices only for the chosen route, across every price page", async () => {
-    fetchMock.mockImplementation(async (input: string) => {
-      const url = new URL(input);
-      if (url.pathname.endsWith("/entities/1")) return response(product());
-      if (url.pathname.includes("/documents/")) {
-        const id = Number(url.pathname.split("/").at(-1));
-        return response(document(id, id === 10 ? "14" : "3"));
-      }
-      if (!url.searchParams.has("document_id"))
-        return response([product(), product({ id: 2, document_id: 20 })]);
-      expect(url.searchParams.get("document_id")).toBe("20");
-      if (url.searchParams.get("category") === "price") {
-        expect(url.searchParams.get("product_ref")).toBe("ticket");
-        return url.searchParams.has("cursor")
-          ? response([entity({ id: 4, document_id: 20 })])
-          : response([entity({ id: 3, document_id: 20 })], "1", 200, {
-              "x-next-cursor": "page2",
-            });
-      }
-      return response([]);
-    });
-    expect(
-      await detail({ data: { noc: "TEST", id: 1, documentId: 20 } }),
-    ).toMatchObject({
-      document: { id: 20 },
-      variants: [
-        { documentId: 20, lines: ["3"] },
-        { documentId: 10, lines: ["14"] },
-      ],
-      prices: [
-        { id: 3, document_id: 20 },
-        { id: 4, document_id: 20 },
-      ],
+  it.each([
+    new Response("bad json", {
+      headers: { "x-catalogue-generation": "6", "x-catalogue-version": "1" },
+    }),
+    response({ not: "an array" }),
+    response([], "6", 200, { "x-catalogue-version": "2" }),
+    response([], "6", 200, { "x-catalogue-generation": "" }),
+  ])("rejects incomplete or incompatible responses", async (upstream) => {
+    fetchMock.mockResolvedValue(upstream);
+    await expect(read({ noc: "ANEA", action: "areas" })).rejects.toMatchObject({
+      status: 503,
     });
   });
-  it("combines files for the same route and dated edition without joining references across documents", async () => {
-    fetchMock.mockImplementation(async (input: string) => {
-      const url = new URL(input);
-      if (url.pathname.endsWith("/entities/1")) return response(product());
-      if (url.pathname.includes("/documents/"))
-        return response(document(Number(url.pathname.split("/").at(-1)), "14"));
-      if (!url.searchParams.has("document_id"))
-        return response([product(), product({ id: 2, document_id: 20 })]);
-      const documentId = Number(url.searchParams.get("document_id"));
-      if (url.searchParams.get("category") === "price")
-        return response([
-          entity({
-            id: documentId + 100,
-            document_id: documentId,
-            amount: documentId === 10 ? "2.00" : "3.00",
-          }),
-        ]);
-      return response([
-        entity({
-          id: documentId + 200,
-          document_id: documentId,
-          ref: "same-ref",
-          name: documentId === 10 ? "First name" : "Second name",
-        }),
-      ]);
+  it("handles timeout/network failure and disabled integration", async () => {
+    fetchMock.mockRejectedValue(new Error("network"));
+    await expect(read({ noc: "ANEA", action: "areas" })).rejects.toMatchObject({
+      status: 503,
     });
-    expect(await detail({ data: { noc: "TEST", id: 1 } })).toMatchObject({
-      variants: [{ documentId: 10, documentIds: [10, 20], lines: ["14"] }],
-      prices: [
-        { document_id: 10, amount: "2.00" },
-        { document_id: 20, amount: "3.00" },
-      ],
-      labels: expect.arrayContaining([
-        expect.objectContaining({ document_id: 10, name: "First name" }),
-        expect.objectContaining({ document_id: 20, name: "Second name" }),
-      ]),
+    vi.stubEnv("BUSLANE_ENABLED", "0");
+    fetchMock.mockClear();
+    await expect(read({ noc: "ANEA", action: "areas" })).rejects.toMatchObject({
+      status: 503,
     });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
-  it("does not allow selecting a publication outside the ticket group", async () => {
-    fetchMock.mockImplementation(async (input: string) => {
-      const url = new URL(input);
-      if (url.pathname.endsWith("/entities/1")) return response(product());
-      if (url.pathname.includes("/documents/")) return response(document());
-      return response([product()]);
-    });
-    expect(
-      await detail({ data: { noc: "TEST", id: 1, documentId: 999 } }),
-    ).toBeNull();
+  it.each([
+    { noc: "../TEST", action: "areas" },
+    { noc: "TEST", action: "detail", id: 123 },
+    { noc: "TEST", action: "detail", id: "123" },
+    { noc: "TEST", action: "areaTickets", id: id("ticket") },
+    { noc: "TEST", action: "origins", id: id("area") },
+    { noc: "TEST", action: "areas", q: "x".repeat(121) },
+    { noc: "TEST", action: "areas", generation: "0" },
+    {
+      noc: "TEST",
+      action: "journey",
+      id: id("route"),
+      origin: id("point"),
+      destination: id("point", "b"),
+      date: "2026-02-30",
+    },
+    {
+      noc: "TEST",
+      action: "journey",
+      id: id("route"),
+      origin: id("point"),
+      destination: id("point", "b"),
+    },
+  ])("validates public resources before fetching: %j", (data) => {
+    expect(fareRequestSchema.safeParse(data).success).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
-describe("zone coverage geometry", () => {
-  const stop = (id: string, lon: number, lat: number) =>
-    ({ id, lon: String(lon), lat: String(lat) }) as Stop;
-  it("draws separate coloured approximate coverage and labels for each zone, preserving sparse zones", () => {
-    const features = fareZoneFeatures(
-      groupFares([
-        zone(1, ["A", "B", "C"]),
-        { ...zone(2, ["D"]), name: "Other" },
-      ]),
-      [
-        stop("A", -1, 51),
-        stop("B", -1.1, 51),
-        stop("C", -1.1, 51.1),
-        stop("D", 0, 52),
-      ],
-    );
-    expect(features.areas.features).toHaveLength(1);
-    expect(features.areas.features[0].properties?.approximate).toBe(true);
-    expect(features.points.features).toHaveLength(4);
-    expect(features.labels.features).toHaveLength(2);
-    expect(features.labels.features[0].properties?.color).not.toBe(
-      features.labels.features[1].properties?.color,
-    );
+describe("passenger-facing evidence and coverage", () => {
+  it("formats passenger-facing evidence without changing its meaning", () => {
+    expect(fareDate("2026-11-03T00:00:00Z")).toBe("3 Nov 2026");
+    expect(fareDate("unknown")).toBe("unknown");
+    expect(fareTerm("onBoard")).toBe("On Board");
+    expect(fareTerm("youngPerson")).toBe("Young Person");
+    expect(fareTerm("P1D")).toBe("1 day");
+    expect(fareTerm("P2W")).toBe("2 weeks");
   });
-  it("uses published GML outlines in their stated coordinate system", () => {
-    const polygon = {
-      name: "Polygon",
-      attributes: { srsName: "urn:ogc:def:crs:EPSG::4326" },
-      children: [
-        {
-          name: "LinearRing",
-          attributes: {},
-          children: [
-            {
-              name: "posList",
-              attributes: {},
-              children: ["51 -1 51 -2 52 -2 51 -1"],
-            },
-          ],
-        },
-      ],
-    };
-    expect(publishedPolygons(polygon)).toEqual([
-      [
-        [
-          [-1, 51],
-          [-2, 51],
-          [-2, 52],
-          [-1, 51],
-        ],
-      ],
-    ]);
+  it("never presents journey bands or conditional price evidence as a flat price", () => {
     expect(
-      publishedPolygons({ ...polygon, attributes: { srsName: "unknown" } }),
-    ).toEqual([]);
-  });
-  it("does not create polygons from collinear stops or invalid coordinates", () => {
-    const features = fareZoneFeatures(
-      groupFares([zone(1, ["A", "B", "C", "D"])]),
-      [stop("A", 0, 50), stop("B", 1, 50), stop("C", 2, 50), stop("D", 0, 100)],
+      ticketPrice({
+        ...item(),
+        price_basis: "journey",
+        prices: [
+          { amount: "1.80", currency: "GBP" },
+          { amount: "5.20", currency: "GBP" },
+        ],
+      }),
+    ).toBe("Choose a journey");
+    expect(ticketPrice({ ...item(), price_basis: "conditional" })).toBe(
+      "Check ticket conditions",
     );
-    expect(features.areas.features).toHaveLength(0);
-    expect(features.points.features).toHaveLength(3);
+    expect(ticketPrice(item())).toBe("£6.00");
+    expect(money("0.00", "GBP")).toBe("£0.00");
+    expect(money("2.00", null)).toContain("currency not supplied");
+  });
+  it("uses the UK calendar date across UTC midnight and daylight saving", () => {
+    expect(londonDate(new Date("2026-06-30T23:30:00Z"))).toBe("2026-07-01");
+    expect(londonDate(new Date("2026-11-04T23:30:00Z"))).toBe("2026-11-04");
+  });
+  it("plots only loaded membership with valid coordinates and never invents a boundary", () => {
+    const stops = [
+      { id: "atco:A", lon: "-1", lat: "51" },
+      { id: "B", lon: "-2", lat: "51" },
+      { id: "C", lon: "-2", lat: "52" },
+      { id: "D", lon: "0", lat: "100" },
+      { id: "OUTSIDE", lon: "0", lat: "51" },
+    ] as Stop[];
+    const zone = {
+      id: id("area"),
+      name: "Town",
+      stops: ["A", "B", "C", "D", "A"],
+    };
+    const result = fareZoneFeatures([zone], stops);
+    expect(result.areas.features).toHaveLength(0);
+    expect(result.points.features).toHaveLength(3);
+    expect(result.labels.features).toHaveLength(1);
+    expect(result.labels.features[0].properties?.zoneId).toBe(id("area"));
+    expect(zoneColor(id("area"))).toBe(zoneColor(id("area")));
+    expect(
+      fareZoneFeatures([{ ...zone, stops: [] }], stops).points.features,
+    ).toHaveLength(0);
   });
 });

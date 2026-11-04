@@ -1,14 +1,12 @@
+import { getFareCatalogue } from "@/functions/fares";
 import {
-  applyFarePublications,
-  type FareCatalogue,
-  type FareDetailData,
-  type FarePublication,
+  readFareResponse,
+  type FareRequest,
+  type FareItem,
+  type FarePage,
+  type JourneyFares,
 } from "@/lib/fares";
-import {
-  getFares,
-  getFareDetail,
-  getFarePublications,
-} from "@/functions/fares";
+import { infiniteQueryOptions } from "@tanstack/react-query";
 import { queryOptions, skipToken } from "@tanstack/react-query";
 import type { BoundingBox } from "@/lib/bods";
 import { getOperators, getOperator } from "@/functions/operators";
@@ -108,63 +106,50 @@ export const tripOptions = (tripId: string) =>
     staleTime: TIMETABLE_STALE_TIME,
   });
 
-export const fareCatalogueOptions = (noc: string) =>
-  queryOptions({
-    queryKey: ["fare-catalogue", code(noc)],
-    queryFn: async ({ signal }): Promise<FareCatalogue> => {
-      const response = await getFares({ data: { noc }, signal });
-      if (!response.ok)
-        throw new Error("Fares data is temporarily unavailable");
-      const catalogue: FareCatalogue = await response.json();
-      if (!catalogue.pendingDocumentIds?.length) return catalogue;
-      const ids = catalogue.pendingDocumentIds;
-      const batches = Array.from(
-        { length: Math.ceil(ids.length / 250) },
-        (_, i) => ids.slice(i * 250, (i + 1) * 250),
-      );
-      const publications: FarePublication[] = [];
-      let next = 0;
-      await Promise.all(
-        Array.from({ length: Math.min(2, batches.length) }, async () => {
-          while (next < batches.length) {
-            const batch = batches[next++];
-            const response = await getFarePublications({
-              data: {
-                noc,
-                ids: batch,
-                generation: catalogue.generation ?? null,
-              },
-              signal,
-            });
-            if (!response.ok)
-              throw new Error("Fares data is temporarily unavailable");
-            publications.push(
-              ...((await response.json()) as FarePublication[]),
-            );
-          }
+// Every scope/filter and the interpretation version participate in cache keys.
+// Root cursors already bind their generation; adding a generation query parameter
+// halfway through pagination would change the cursor's filter binding.
+export const farePagesOptions = <T = FareItem[]>(request: FareRequest) =>
+  infiniteQueryOptions({
+    queryKey: ["fares-v1", code(request.noc), "pages", request],
+    initialPageParam: undefined as
+      { cursor: string; generation: string } | undefined,
+    queryFn: async ({ signal, pageParam }): Promise<FarePage<T>> =>
+      readFareResponse<T>(
+        await getFareCatalogue({
+          data: {
+            ...request,
+            cursor: pageParam?.cursor,
+            expectedGeneration: pageParam?.generation,
+          },
+          signal,
         }),
-      );
-      return applyFarePublications(catalogue, publications);
-    },
-    staleTime: 3_600_000,
+      ),
+    getNextPageParam: (lastPage: FarePage<T>) =>
+      lastPage.nextCursor
+        ? { cursor: lastPage.nextCursor, generation: lastPage.generation }
+        : undefined,
+    staleTime: 60_000,
     retry: false,
+    refetchOnWindowFocus: false,
   });
-
 export const fareDetailOptions = (
   noc: string,
-  id: number,
-  documentId?: number,
+  id: string,
+  generation?: string,
 ) =>
   queryOptions({
-    queryKey: ["fare-detail", code(noc), id, documentId],
-    queryFn: async ({ signal }): Promise<FareDetailData | null> => {
-      const response = await getFareDetail({
-        data: { noc, id, documentId },
-        signal,
-      });
-      if (!response.ok)
-        throw new Error("Fares data is temporarily unavailable");
-      return response.json();
-    },
-    staleTime: 3_600_000,
+    queryKey: ["fares-v1", code(noc), "detail", id, generation],
+    queryFn: async ({ signal }) =>
+      readFareResponse<FareItem>(
+        await getFareCatalogue({
+          data: { noc, action: "detail", id, generation },
+          signal,
+        }),
+      ),
+    staleTime: 60_000,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
+export const journeyFaresOptions = (request: FareRequest) =>
+  farePagesOptions<JourneyFares>(request);

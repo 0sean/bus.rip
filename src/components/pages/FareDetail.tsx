@@ -1,114 +1,329 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { ClientOnly, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { IconArrowLeft } from "@tabler/icons-react";
+import { farePagesOptions, stopsOptions } from "@/data/queries";
 import {
-  fareAmounts,
-  fareText,
-  money,
-  fareKey,
-  groupFares,
-  type FareEntity,
-  type FareDetailData,
+  FareApiError,
+  ticketPrice,
+  fareDate,
+  fareTerm,
+  type FareItem,
+  type FarePage,
+  type FareSource,
+  type FareStop,
 } from "@/lib/fares";
-import { fareDetailOptions, stopsOptions } from "@/data/queries";
+import { FareCatalogueList, FareError } from "./FareCatalogueList";
+import FareJourney from "./FareJourney";
 import { FareMapPlaceholder } from "../map/FareMapPlaceholder";
-import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 const FareMap = lazy(() => import("../map/FareMap"));
-type Detail = FareDetailData;
+function Coverage({
+  noc,
+  item,
+  generation,
+}: {
+  noc: string;
+  item: FareItem;
+  generation: string;
+}) {
+  const membership = useInfiniteQuery(
+    farePagesOptions<FareStop[]>({
+      noc,
+      action: "stops",
+      id: item.id,
+      generation,
+    }),
+  );
+  const [showLocations, setShowLocations] = useState(false);
+  // Coordinate data is an optional timetable request, never a prerequisite for
+  // browsing fares. Membership itself always comes from this catalogue snapshot.
+  const locations = useQuery({ ...stopsOptions(noc), enabled: showLocations });
+  const expired =
+    membership.error instanceof FareApiError &&
+    [404, 409, 410].includes(membership.error.status);
+  const stops = expired
+    ? []
+    : (membership.data?.pages.flatMap((p) => p.data) ?? []);
+  return (
+    <section
+      className="flex flex-col gap-4 min-w-0"
+      aria-label="Published coverage"
+    >
+      <h2 className="font-semibold">Published stops</h2>
+      <p className="text-sm text-muted-foreground">
+        {item.membership === "incomplete"
+          ? "Published membership is incomplete. "
+          : ""}
+        Stop membership is not a ticket boundary. No boundary polygon is
+        available.
+      </p>
+      {membership.isPending ? (
+        <p role="status">Loading published stops…</p>
+      ) : null}
+      {membership.error ? (
+        <FareError
+          error={membership.error}
+          noc={noc}
+          retry={() => {
+            void (membership.isFetchNextPageError
+              ? membership.fetchNextPage()
+              : membership.refetch());
+          }}
+        />
+      ) : null}
+      {showLocations && !expired ? (
+        <>
+          {locations.isPending ? (
+            <FareMapPlaceholder />
+          ) : (
+            <ClientOnly fallback={<FareMapPlaceholder />}>
+              <Suspense fallback={<FareMapPlaceholder />}>
+                <FareMap
+                  noc={noc}
+                  generation={generation}
+                  zones={[
+                    {
+                      id: item.id,
+                      name: item.name,
+                      stops: stops.map((s) => s.code),
+                    },
+                  ]}
+                  stops={locations.data ?? []}
+                  unavailable={!!locations.error}
+                />
+              </Suspense>
+            </ClientOnly>
+          )}
+          <p className="text-xs text-muted-foreground">
+            The map shows only loaded published stops with matching timetable
+            coordinates. Load more stops below to extend it.
+          </p>
+        </>
+      ) : stops.length ? (
+        <Button
+          className="self-start"
+          variant="outline"
+          onClick={() => setShowLocations(true)}
+        >
+          Show stop locations on map
+        </Button>
+      ) : null}
+      {stops.length ? (
+        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+          {stops.map((stop) => (
+            <li key={stop.code} className="rounded-md border p-2">
+              {stop.name || stop.code}
+              <span className="block text-xs text-muted-foreground">
+                {stop.code}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : !membership.isPending && !membership.error ? (
+        <p className="text-sm text-muted-foreground">
+          No stop membership is published.
+        </p>
+      ) : null}
+      {!expired && membership.hasNextPage ? (
+        <Button
+          variant="outline"
+          disabled={membership.isFetchingNextPage}
+          onClick={() => void membership.fetchNextPage()}
+        >
+          Load more published stops
+        </Button>
+      ) : null}
+    </section>
+  );
+}
+function Sources({
+  noc,
+  item,
+  generation,
+}: {
+  noc: string;
+  item: FareItem;
+  generation: string;
+}) {
+  const query = useInfiniteQuery(
+    farePagesOptions<FareSource[]>({
+      noc,
+      action: "sources",
+      id: item.id,
+      generation,
+    }),
+  );
+  const expired =
+    query.error instanceof FareApiError &&
+    [404, 409, 410].includes(query.error.status);
+  return (
+    <section
+      className="flex flex-col gap-3 text-sm"
+      aria-label="Fare provenance"
+    >
+      <h2 className="font-semibold">Published sources</h2>
+      {query.isPending ? <p role="status">Loading sources…</p> : null}
+      {query.error ? (
+        <FareError
+          error={query.error}
+          noc={noc}
+          retry={() => {
+            void (query.isFetchNextPageError
+              ? query.fetchNextPage()
+              : query.refetch());
+          }}
+        />
+      ) : null}
+      {!expired
+        ? query.data?.pages
+            .flatMap((p) => p.data)
+            .map((source) => (
+              <div
+                key={`${source.document_id}:${source.anchor}`}
+                className="rounded-md border p-3 wrap-anywhere"
+              >
+                <p>{source.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  Document {source.document_id} · {source.source_ref} · Version{" "}
+                  {source.source_version || "unspecified"}
+                </p>
+                {source.context ? (
+                  <pre className="mt-2 text-xs whitespace-pre-wrap">
+                    {JSON.stringify(source.context, null, 2)}
+                  </pre>
+                ) : null}
+              </div>
+            ))
+        : null}
+      {!expired && query.hasNextPage ? (
+        <Button
+          variant="outline"
+          disabled={query.isFetchingNextPage}
+          onClick={() => void query.fetchNextPage()}
+        >
+          Show more sources
+        </Button>
+      ) : null}
+    </section>
+  );
+}
+function TicketConditions({ item }: { item: FareItem }) {
+  const fields = [
+    ["Passengers", item.eligibility],
+    ["Sales channels", item.sales_channels],
+    ["Duration", item.duration],
+    ["Valid from", [...new Set(item.valid_from?.map(fareDate))]],
+    ["Valid until", [...new Set(item.valid_until?.map(fareDate))]],
+    ["Line restrictions", item.line_refs],
+    ["Direction restrictions", item.direction_refs],
+  ] as const;
+  return (
+    <section className="flex flex-col gap-3 text-sm">
+      <h2 className="font-semibold">Published ticket conditions</h2>
+      <p className="text-lg font-semibold">{ticketPrice(item)}</p>
+      {item.price_basis === "conditional" && item.prices?.length ? (
+        <p className="text-muted-foreground">
+          Price amounts depend on unresolved conditions. Confirm the applicable
+          price with the operator.
+        </p>
+      ) : null}
+      {item.prices_truncated ? (
+        <p>
+          Only some price evidence is shown. Check the full published
+          conditions.
+        </p>
+      ) : null}
+      <dl className="space-y-2">
+        {fields
+          .filter(([, values]) => values?.length)
+          .map(([label, values]) => (
+            <div key={label}>
+              <dt className="font-medium">{label}</dt>
+              <dd className="text-muted-foreground wrap-anywhere">
+                {values!.map(fareTerm).join(" · ")}
+              </dd>
+            </div>
+          ))}
+      </dl>
+      {item.duration_rules?.length ? (
+        <div>
+          <h3 className="font-medium">Duration rules</h3>
+          {item.duration_rules.map((rule, i) => (
+            <p key={i} className="text-muted-foreground">
+              {[
+                rule.name,
+                rule.duration && rule.duration !== item.duration?.[0]
+                  ? fareTerm(rule.duration)
+                  : undefined,
+                rule.start_time,
+                rule.end_time,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          ))}
+        </div>
+      ) : null}
+      {item.resolution === "unresolved" || item.detail?.unresolved_count ? (
+        <p role="status" className="rounded-md border p-3">
+          Some published conditions could not be resolved. Check with the
+          operator before using this ticket.
+        </p>
+      ) : null}
+      {item.journey_support?.status === "partial_or_unresolved" ? (
+        <p className="text-muted-foreground">
+          Journey lookup covers only part of this ticket's published matrix.
+        </p>
+      ) : null}
+      <details>
+        <summary className="cursor-pointer underline">
+          More published conditions
+        </summary>
+        <dl className="mt-3 space-y-2">
+          {Object.entries(item.detail?.conditions ?? {}).map(
+            ([name, values]) => (
+              <div key={name}>
+                <dt className="font-medium wrap-anywhere">{name}</dt>
+                <dd className="text-muted-foreground wrap-anywhere">
+                  {values.join(" · ")}
+                </dd>
+              </div>
+            ),
+          )}
+        </dl>
+        {item.detail?.conditions_truncated ? (
+          <p>
+            Condition evidence is abbreviated. Consult the original publication.
+          </p>
+        ) : null}
+        {item.detail?.lookup_issues?.length ? (
+          <p className="mt-3 text-muted-foreground wrap-anywhere">
+            Lookup limitations: {item.detail.lookup_issues.join(", ")}
+          </p>
+        ) : null}
+      </details>
+      <p className="text-xs text-muted-foreground">
+        Dates above are published validity evidence, not publication timestamps.
+        Passenger, time, sales and other rules are not fully evaluated; this is
+        not a guaranteed payable fare.
+      </p>
+    </section>
+  );
+}
 export default function FareDetail({
   noc,
   detail,
 }: {
   noc: string;
-  detail: Detail;
+  detail: FarePage<FareItem>;
 }) {
-  const [documentId, setDocumentId] = useState(detail.document.id);
-  const [origin, setOrigin] = useState("");
-  const [destination, setDestination] = useState("");
-  const selectedDetail = useQuery({
-    ...fareDetailOptions(noc, detail.entity.id, documentId),
-    enabled: documentId !== detail.document.id,
-  });
-  const current =
-    documentId === detail.document.id ? detail : selectedDetail.data;
-  const { entity, labels, prices } = current ?? detail;
-  const [search, setSearch] = useState("");
-  const [limit, setLimit] = useState(60);
-  const stops = useQuery(stopsOptions(noc));
-  const zones = useMemo(
-    () =>
-      entity.category === "zone"
-        ? groupFares([entity])
-        : groupFares(labels.filter((e) => e.category === "zone")),
-    [entity, labels],
-  );
-  const points = useMemo(() => {
-    const codes = new Set(zones.flatMap((zone) => zone.stops));
-    return (stops.data ?? []).filter((stop) => codes.has(stop.id));
-  }, [zones, stops.data]);
-  const names = new Map(
-    labels.map((e) => [fareKey(e.document_id, e.ref), e.name || e.ref]),
-  );
-  const zoneName = (ref: string) =>
-    [
-      ...new Set(
-        labels
-          .filter((label) => label.category === "zone" && label.ref === ref)
-          .map((label) => label.name || ref),
-      ),
-    ].join(" / ") || ref;
-  const published = prices;
-  const pairs = (price: FareEntity) =>
-    price.matrices?.length
-      ? price.matrices
-      : [{ start_ref: price.start_ref, end_ref: price.end_ref }];
-  const availableOrigins = [
-    ...new Set(
-      published
-        .flatMap((p) => pairs(p).map((m) => m.start_ref))
-        .filter((s): s is string => !!s),
-    ),
-  ];
-  const availableDestinations = [
-    ...new Set(
-      published
-        .flatMap((p) =>
-          pairs(p)
-            .filter((m) => !origin || m.start_ref === origin)
-            .map((m) => m.end_ref),
-        )
-        .filter((s): s is string => !!s),
-    ),
-  ];
-  const variant =
-    detail.variants.find((variant) => variant.documentId === documentId) ??
-    detail.variants[0];
-  const lines = variant.lines;
-  const rows = (current ? published : []).filter(
-    (p) =>
-      ((!origin && !destination) ||
-        pairs(p).some(
-          (m) =>
-            (!origin || m.start_ref === origin) &&
-            (!destination || m.end_ref === destination),
-        )) &&
-      ([
-        names.get(fareKey(p.document_id, p.product_ref || "")),
-        names.get(fareKey(p.document_id, p.profile_ref || "")),
-        ...lines,
-        ...(p.matrices ?? []).flatMap((m) => [
-          names.get(fareKey(p.document_id, m.start_ref || "")),
-          names.get(fareKey(p.document_id, m.end_ref || "")),
-        ]),
-      ].some((s) => s?.toLowerCase().includes(search.trim().toLowerCase())) ||
-        !search.trim()),
-  );
-  const selectClass =
-    "w-full min-w-0 rounded-md border bg-background px-3 py-2 text-sm";
+  const { data: item, generation } = detail;
+  const [coverage, setCoverage] = useState(false);
+  const [sources, setSources] = useState(false);
+  const [routes, setRoutes] = useState(false);
   return (
-    <main className="flex flex-col gap-4">
+    <main className="flex flex-col gap-6">
       <Link
         to="/fares/$nocCode"
         params={{ nocCode: noc }}
@@ -117,254 +332,115 @@ export default function FareDetail({
         <IconArrowLeft aria-hidden className="size-4" />
         All fares
       </Link>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">
-            {entity.name || "Fare details"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {lines.length
-              ? `Route${lines.length === 1 ? "" : "s"} ${[...new Set(lines)].join(", ")} · `
-              : ""}
-            Published fares
-            {variant.published
-              ? ` · Published ${variant.published.slice(0, 10)}`
-              : ""}
-          </p>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-        {!current ? (
-          <FareMapPlaceholder tall />
-        ) : (
-          <ClientOnly fallback={<FareMapPlaceholder tall />}>
-            <Suspense fallback={<FareMapPlaceholder tall />}>
-              <FareMap
-                noc={noc}
-                zones={zones}
-                stops={points}
-                unavailable={!!stops.error}
-                tall
-              />
-            </Suspense>
-          </ClientOnly>
-        )}
-        <div className="flex flex-col gap-4 min-w-0">
-          <div>
-            <h2 className="font-semibold">
-              {entity.category === "zone"
-                ? "Fares to and from this zone"
-                : "Published ticket prices"}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              {entity.category === "zone"
-                ? "Prices below are linked to this zone. Area tickets can also be found under Tickets."
-                : "Choose a route, then select your origin and destination to see the published journey prices."}
-            </p>
-          </div>
-          <label className="flex flex-col gap-1.5 text-sm font-medium">
-            Route / fare publication
-            <select
-              aria-label="Choose route"
-              className={selectClass}
-              value={documentId}
-              onChange={(e) => {
-                setDocumentId(Number(e.target.value));
-                setOrigin("");
-                setDestination("");
-                setSearch("");
-                setLimit(60);
-              }}
-            >
-              {detail.variants.map((variant) => (
-                <option key={variant.documentId} value={variant.documentId}>
-                  {variant.lines.length
-                    ? `Route${variant.lines.length === 1 ? "" : "s"} ${variant.lines.join(", ")}`
-                    : "Area ticket"}
-                  {variant.published
-                    ? ` · Published ${variant.published.slice(0, 10)}`
-                    : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-          {current && availableOrigins.length ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1.5 text-sm font-medium">
-                From
-                <select
-                  aria-label="From zone"
-                  className={selectClass}
-                  value={origin}
-                  onChange={(e) => {
-                    setOrigin(e.target.value);
-                    setDestination("");
-                    setLimit(60);
-                  }}
-                >
-                  <option value="">All origins</option>
-                  {availableOrigins.map((ref) => (
-                    <option key={ref} value={ref}>
-                      {zoneName(ref)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm font-medium">
-                To
-                <select
-                  aria-label="To zone"
-                  className={selectClass}
-                  value={destination}
-                  onChange={(e) => {
-                    setDestination(e.target.value);
-                    setLimit(60);
-                  }}
-                >
-                  <option value="">All destinations</option>
-                  {availableDestinations.map((ref) => (
-                    <option key={ref} value={ref}>
-                      {zoneName(ref)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          ) : null}
-          {!current && selectedDetail.isPending ? (
-            <p role="status" className="text-sm text-muted-foreground">
-              Loading fares for this route…
-            </p>
-          ) : null}
-          {!current &&
-          (selectedDetail.error || selectedDetail.data === null) ? (
-            <div role="alert" className="text-sm">
-              <p>Fares for this route could not load.</p>
-              <Button
-                variant="outline"
-                onClick={() => void selectedDetail.refetch()}
-              >
-                Retry
-              </Button>
-            </div>
-          ) : null}
-          <Input
-            aria-label="Filter published prices"
-            placeholder="Filter tickets, passengers or destinations"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setLimit(60);
-            }}
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {rows.slice(0, limit).map((price) => (
-              <PriceCard
-                key={price.id}
-                price={price}
-                names={names}
-                fallbackName={
-                  entity.category === "product" ? entity.name : null
-                }
-              />
-            ))}
-          </div>
-          {current && !rows.length ? (
-            <p role="status" className="text-muted-foreground py-8 text-sm">
-              {search
-                ? "No prices match your search."
-                : "No directly linked prices are published for this fare. Check the operator for journey prices and ticket coverage."}
-            </p>
-          ) : null}
-          {rows.length > limit ? (
-            <Button variant="outline" onClick={() => setLimit((n) => n + 60)}>
-              Show more prices ({rows.length - limit} remaining)
-            </Button>
-          ) : null}
-          {fareText(entity, "Description") ? (
-            <p className="text-sm text-muted-foreground">
-              {fareText(entity, "Description")}
-            </p>
-          ) : null}
-          <p className="text-xs text-muted-foreground">
-            Fares are supplied through Bus Open Data Service. Check the
-            publication date and ticket conditions before travelling.
-          </p>
-        </div>
-      </div>
-    </main>
-  );
-}
-function PriceCard({
-  price,
-  names,
-  fallbackName,
-}: {
-  price: FareEntity;
-  names: Map<string, string>;
-  fallbackName: string | null;
-}) {
-  const amounts = fareAmounts(price);
-  const routes = price.matrices?.length
-    ? price.matrices
-    : [{ start_ref: price.start_ref, end_ref: price.end_ref }];
-  const title =
-    names.get(fareKey(price.document_id, price.product_ref || "")) ||
-    fallbackName ||
-    price.name ||
-    "Published fare";
-  const profile = names.get(
-    fareKey(price.document_id, price.profile_ref || ""),
-  );
-  const offer = names.get(fareKey(price.document_id, price.package_ref || ""));
-  return (
-    <details className="rounded-[14px] bg-card text-card-foreground ring-1 ring-foreground/10 shadow-sm group">
-      <summary className="cursor-pointer list-none flex items-center gap-3 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-[14px]">
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium wrap-anywhere">{title}</h3>
-          {profile ? (
-            <p className="text-xs text-muted-foreground mt-1">{profile}</p>
-          ) : null}
-          {routes.map((r, i) =>
-            r.start_ref || r.end_ref ? (
-              <p
-                key={i}
-                className="text-xs text-muted-foreground mt-1 wrap-anywhere"
-              >
-                {names.get(fareKey(price.document_id, r.start_ref || "")) ||
-                  r.start_ref ||
-                  "Unspecified origin"}{" "}
-                →{" "}
-                {names.get(fareKey(price.document_id, r.end_ref || "")) ||
-                  r.end_ref ||
-                  "Unspecified destination"}
-              </p>
-            ) : null,
-          )}
-        </div>
-        <span className="text-sm font-medium text-right shrink-0 max-w-[45%] wrap-anywhere">
-          {amounts.length
-            ? [
-                ...new Set(amounts.map((a) => money(a.amount, a.currency))),
-              ].join(" / ")
-            : "Price unavailable"}
-          <span aria-hidden className="ml-2 inline-block group-open:rotate-90">
-            ›
-          </span>
-        </span>
-      </summary>
-      <div className="border-t px-4 py-3 text-xs text-muted-foreground flex flex-col gap-2 wrap-anywhere">
-        {offer ? <p>Sales option: {offer}</p> : null}
-        <p>
-          {amounts.length > 1
-            ? "Several published price versions are available. Confirm the applicable price with the operator."
-            : "Price applies to the published journey and passenger conditions."}
+      <div>
+        <h1 className="text-2xl font-semibold">{item.name}</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {item.kind === "area"
+            ? `${item.stop_count ?? 0} published stops · ${item.ticket_count} ticket variants`
+            : item.kind === "family"
+              ? "Choose a variant to check passenger, duration and sales conditions"
+              : item.kind === "route"
+                ? `Journey fares${item.directions?.length ? ` · ${item.directions.join(" / ")}` : ""}`
+                : "Published ticket"}
         </p>
-        <p>Version {price.version || "unspecified"}</p>
-        {fareText(price, "Description") ? (
-          <p>{fareText(price, "Description")}</p>
-        ) : null}
       </div>
-    </details>
+      {item.kind === "area" ? (
+        <>
+          <div className="rounded-[14px] border bg-muted/30 p-6">
+            <h2 className="font-semibold">Ticket area coverage</h2>
+            <p className="text-sm text-muted-foreground mt-2">
+              Browse tickets below. Published stops and map locations load
+              separately.
+            </p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => setCoverage((v) => !v)}
+              aria-expanded={coverage}
+            >
+              {coverage ? "Hide coverage" : "Show published coverage"}
+            </Button>
+          </div>
+          {coverage ? (
+            <Coverage noc={noc} item={item} generation={generation} />
+          ) : null}
+          <h2 className="font-semibold">Tickets in this area</h2>
+          <FareCatalogueList
+            request={{ noc, action: "areaTickets", id: item.id, generation }}
+          />
+        </>
+      ) : item.kind === "family" ? (
+        <FareCatalogueList
+          request={{ noc, action: "familyTickets", id: item.id, generation }}
+        />
+      ) : item.kind === "route" ? (
+        <FareJourney noc={noc} route={item} generation={generation} />
+      ) : item.kind === "ticket" ? (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <TicketConditions item={item} />
+            <div className="flex flex-col gap-4 min-w-0">
+              <h2 className="font-semibold">Ticket areas</h2>
+              <FareCatalogueList
+                compact
+                request={{
+                  noc,
+                  action: "ticketAreas",
+                  id: item.id,
+                  generation,
+                }}
+              />
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            className="self-start"
+            aria-expanded={routes}
+            onClick={() => setRoutes((v) => !v)}
+          >
+            {routes
+              ? "Hide routes and journey prices"
+              : "Show routes and journey prices"}
+          </Button>
+          {routes ? (
+            <section className="space-y-4">
+              <h2 className="font-semibold">Routes and journey prices</h2>
+              <p className="text-sm text-muted-foreground">
+                Choose a route to look up a directional journey. Results can
+                include other ticket variants; compare the passenger and sales
+                conditions.
+              </p>
+              <FareCatalogueList
+                request={{
+                  noc,
+                  action: "ticketRoutes",
+                  id: item.id,
+                  generation,
+                }}
+              />
+            </section>
+          ) : null}
+        </>
+      ) : (
+        <Coverage noc={noc} item={item} generation={generation} />
+      )}
+      <Button
+        className="self-start"
+        variant="outline"
+        aria-expanded={sources}
+        onClick={() => setSources((v) => !v)}
+      >
+        {sources
+          ? "Hide published sources"
+          : `View published sources${item.source_count ? ` (${item.source_count})` : ""}`}
+      </Button>
+      {sources ? (
+        <Sources noc={noc} item={item} generation={generation} />
+      ) : null}
+      <p className="text-xs text-muted-foreground">
+        Fares supplied through Bus Open Data Service. Confirm ticket conditions
+        with the operator before travelling.
+      </p>
+    </main>
   );
 }

@@ -1,3 +1,14 @@
+import {
+  applyFarePublications,
+  type FareCatalogue,
+  type FareDetailData,
+  type FarePublication,
+} from "@/lib/fares";
+import {
+  getFares,
+  getFareDetail,
+  getFarePublications,
+} from "@/functions/fares";
 import { queryOptions, skipToken } from "@tanstack/react-query";
 import type { BoundingBox } from "@/lib/bods";
 import { getOperators, getOperator } from "@/functions/operators";
@@ -95,4 +106,65 @@ export const tripOptions = (tripId: string) =>
     queryKey: ["trip", tripId],
     queryFn: ({ signal }) => getTrip({ data: tripId, signal }),
     staleTime: TIMETABLE_STALE_TIME,
+  });
+
+export const fareCatalogueOptions = (noc: string) =>
+  queryOptions({
+    queryKey: ["fare-catalogue", code(noc)],
+    queryFn: async ({ signal }): Promise<FareCatalogue> => {
+      const response = await getFares({ data: { noc }, signal });
+      if (!response.ok)
+        throw new Error("Fares data is temporarily unavailable");
+      const catalogue: FareCatalogue = await response.json();
+      if (!catalogue.pendingDocumentIds?.length) return catalogue;
+      const ids = catalogue.pendingDocumentIds;
+      const batches = Array.from(
+        { length: Math.ceil(ids.length / 250) },
+        (_, i) => ids.slice(i * 250, (i + 1) * 250),
+      );
+      const publications: FarePublication[] = [];
+      let next = 0;
+      await Promise.all(
+        Array.from({ length: Math.min(2, batches.length) }, async () => {
+          while (next < batches.length) {
+            const batch = batches[next++];
+            const response = await getFarePublications({
+              data: {
+                noc,
+                ids: batch,
+                generation: catalogue.generation ?? null,
+              },
+              signal,
+            });
+            if (!response.ok)
+              throw new Error("Fares data is temporarily unavailable");
+            publications.push(
+              ...((await response.json()) as FarePublication[]),
+            );
+          }
+        }),
+      );
+      return applyFarePublications(catalogue, publications);
+    },
+    staleTime: 3_600_000,
+    retry: false,
+  });
+
+export const fareDetailOptions = (
+  noc: string,
+  id: number,
+  documentId?: number,
+) =>
+  queryOptions({
+    queryKey: ["fare-detail", code(noc), id, documentId],
+    queryFn: async ({ signal }): Promise<FareDetailData | null> => {
+      const response = await getFareDetail({
+        data: { noc, id, documentId },
+        signal,
+      });
+      if (!response.ok)
+        throw new Error("Fares data is temporarily unavailable");
+      return response.json();
+    },
+    staleTime: 3_600_000,
   });

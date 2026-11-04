@@ -18,6 +18,7 @@ import { Route as TimetablesRouteImport } from './routes/timetables'
 import { Route as OperatorFaresNocCodeRouteImport } from './routes/_operator/fares_.$nocCode'
 import { Route as OperatorMapNocCodeRouteImport } from './routes/_operator/map.$nocCode'
 import { Route as OperatorTimetablesNocCodeRouteImport } from './routes/_operator/timetables_.$nocCode'
+import { Route as OperatorFaresNocCodeFareRouteImport } from './routes/_operator/fares_.$nocCode_.$fare'
 import { Route as OperatorTimetablesNocCodeRouteRouteRouteImport } from './routes/_operator/timetables_.$nocCode_.route.$route'
 import { Route as OperatorTimetablesNocCodeTripTripRouteImport } from './routes/_operator/timetables_.$nocCode_.trip.$trip'
 
@@ -66,6 +67,12 @@ const OperatorTimetablesNocCodeRoute =
     path: '/timetables/$nocCode',
     getParentRoute: () => OperatorRouteRoute,
   } as any)
+const OperatorFaresNocCodeFareRoute =
+  OperatorFaresNocCodeFareRouteImport.update({
+    id: '/fares_/$nocCode_/$fare',
+    path: '/fares/$nocCode/$fare',
+    getParentRoute: () => OperatorRouteRoute,
+  } as any)
 const OperatorTimetablesNocCodeRouteRouteRoute =
   OperatorTimetablesNocCodeRouteRouteRouteImport.update({
     id: '/timetables_/$nocCode_/route/$route',
@@ -88,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/fares/$nocCode': typeof OperatorFaresNocCodeRoute
   '/map/$nocCode': typeof OperatorMapNocCodeRoute
   '/timetables/$nocCode': typeof OperatorTimetablesNocCodeRoute
+  '/fares/$nocCode/$fare': typeof OperatorFaresNocCodeFareRoute
   '/timetables/$nocCode/route/$route': typeof OperatorTimetablesNocCodeRouteRouteRoute
   '/timetables/$nocCode/trip/$trip': typeof OperatorTimetablesNocCodeTripTripRoute
 }
@@ -100,6 +108,7 @@ export interface FileRoutesByTo {
   '/fares/$nocCode': typeof OperatorFaresNocCodeRoute
   '/map/$nocCode': typeof OperatorMapNocCodeRoute
   '/timetables/$nocCode': typeof OperatorTimetablesNocCodeRoute
+  '/fares/$nocCode/$fare': typeof OperatorFaresNocCodeFareRoute
   '/timetables/$nocCode/route/$route': typeof OperatorTimetablesNocCodeRouteRouteRoute
   '/timetables/$nocCode/trip/$trip': typeof OperatorTimetablesNocCodeTripTripRoute
 }
@@ -114,6 +123,7 @@ export interface FileRoutesById {
   '/_operator/fares_/$nocCode': typeof OperatorFaresNocCodeRoute
   '/_operator/map/$nocCode': typeof OperatorMapNocCodeRoute
   '/_operator/timetables_/$nocCode': typeof OperatorTimetablesNocCodeRoute
+  '/_operator/fares_/$nocCode_/$fare': typeof OperatorFaresNocCodeFareRoute
   '/_operator/timetables_/$nocCode_/route/$route': typeof OperatorTimetablesNocCodeRouteRouteRoute
   '/_operator/timetables_/$nocCode_/trip/$trip': typeof OperatorTimetablesNocCodeTripTripRoute
 }
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/fares/$nocCode'
     | '/map/$nocCode'
     | '/timetables/$nocCode'
+    | '/fares/$nocCode/$fare'
     | '/timetables/$nocCode/route/$route'
     | '/timetables/$nocCode/trip/$trip'
   fileRoutesByTo: FileRoutesByTo
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/fares/$nocCode'
     | '/map/$nocCode'
     | '/timetables/$nocCode'
+    | '/fares/$nocCode/$fare'
     | '/timetables/$nocCode/route/$route'
     | '/timetables/$nocCode/trip/$trip'
   id:
@@ -153,6 +165,7 @@ export interface FileRouteTypes {
     | '/_operator/fares_/$nocCode'
     | '/_operator/map/$nocCode'
     | '/_operator/timetables_/$nocCode'
+    | '/_operator/fares_/$nocCode_/$fare'
     | '/_operator/timetables_/$nocCode_/route/$route'
     | '/_operator/timetables_/$nocCode_/trip/$trip'
   fileRoutesById: FileRoutesById
@@ -231,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OperatorTimetablesNocCodeRouteImport
       parentRoute: typeof OperatorRouteRoute
     }
+    '/_operator/fares_/$nocCode_/$fare': {
+      id: '/_operator/fares_/$nocCode_/$fare'
+      path: '/fares/$nocCode/$fare'
+      fullPath: '/fares/$nocCode/$fare'
+      preLoaderRoute: typeof OperatorFaresNocCodeFareRouteImport
+      parentRoute: typeof OperatorRouteRoute
+    }
     '/_operator/timetables_/$nocCode_/route/$route': {
       id: '/_operator/timetables_/$nocCode_/route/$route'
       path: '/timetables/$nocCode/route/$route'
@@ -252,6 +272,7 @@ interface OperatorRouteRouteChildren {
   OperatorFaresNocCodeRoute: typeof OperatorFaresNocCodeRoute
   OperatorMapNocCodeRoute: typeof OperatorMapNocCodeRoute
   OperatorTimetablesNocCodeRoute: typeof OperatorTimetablesNocCodeRoute
+  OperatorFaresNocCodeFareRoute: typeof OperatorFaresNocCodeFareRoute
   OperatorTimetablesNocCodeRouteRouteRoute: typeof OperatorTimetablesNocCodeRouteRouteRoute
   OperatorTimetablesNocCodeTripTripRoute: typeof OperatorTimetablesNocCodeTripTripRoute
 }
@@ -260,6 +281,7 @@ const OperatorRouteRouteChildren: OperatorRouteRouteChildren = {
   OperatorFaresNocCodeRoute: OperatorFaresNocCodeRoute,
   OperatorMapNocCodeRoute: OperatorMapNocCodeRoute,
   OperatorTimetablesNocCodeRoute: OperatorTimetablesNocCodeRoute,
+  OperatorFaresNocCodeFareRoute: OperatorFaresNocCodeFareRoute,
   OperatorTimetablesNocCodeRouteRouteRoute:
     OperatorTimetablesNocCodeRouteRouteRoute,
   OperatorTimetablesNocCodeTripTripRoute:

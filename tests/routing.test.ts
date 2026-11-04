@@ -24,6 +24,11 @@ describe("public routes", () => {
     ["/map/TEST", "/_operator/map/$nocCode", { nocCode: "TEST" }],
     ["/fares/TEST", "/_operator/fares_/$nocCode", { nocCode: "TEST" }],
     [
+      "/fares/TEST/123",
+      "/_operator/fares_/$nocCode_/$fare",
+      { nocCode: "TEST", fare: "123" },
+    ],
+    [
       "/timetables/TEST",
       "/_operator/timetables_/$nocCode",
       { nocCode: "TEST" },
@@ -47,7 +52,7 @@ describe("public routes", () => {
     }
     // Detail pages must render directly in the shared layout, rather than
     // nesting inside the timetable list (which has no Outlet).
-    if ("route" in params || "trip" in params) {
+    if ("route" in params || "trip" in params || "fare" in params) {
       expect(matches).toHaveLength(3);
     }
   });

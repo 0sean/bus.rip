@@ -35,20 +35,42 @@ test.afterAll(() => {
     JSON.stringify(measurements, null, 2) + "\n",
   );
 });
-test("area browsing is paginated, prefix searchable and independent of coverage", async ({
+test("operator map shows all areas while catalogue cards remain paginated", async ({
   page,
   request,
 }) => {
   await page.goto(`/fares/${noc}`);
-  const cards = page.locator(`main a[href*="/fares/${noc}/area_"]`);
+  const cards = page
+    .locator(`main a[href*="/fares/${noc}/area_"]`)
+    .filter({ has: page.locator("h3") });
   await expect(cards).toHaveCount(50);
-  const first = await record(request, "first area page");
-  expect(first.filter((r) => r.path.includes("/api/fares/"))).toHaveLength(1);
-  expect(first.some((r) => r.path.includes("/stops"))).toBeFalsy();
+  await expect(
+    page.getByRole("region", { name: "Published ticket-area stop locations" }),
+  ).toBeVisible({ timeout: 35_000 });
+  const first = await record(request, "first area page and all-zone map");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Approximate zone coverage" }),
+  ).toBeVisible();
+  const coveredAreas = new Set(
+    first.flatMap((r) => {
+      const match = /\/areas\/(area_[a-f0-9]+)\/stops\?/.exec(r.path);
+      return match ? [match[1]] : [];
+    }),
+  );
+  expect(coveredAreas.size).toBeGreaterThan(50);
+  expect(first.filter((r) => r.path.includes("/timetables/"))).toHaveLength(1);
+  expect(
+    first.some((r) => /\/areas\/area_.*\/stops\?/.test(r.path)),
+  ).toBeTruthy();
+  await expect(
+    page.getByRole("combobox", { name: "Explore ticket areas" }),
+  ).toHaveCount(0);
   await page.getByRole("button", { name: "Show more", exact: true }).click();
   await expect(cards).toHaveCount(100);
-  const next = await record(request, "second area page");
-  expect(next.filter((r) => r.path.includes("/api/fares/"))).toHaveLength(2);
+  const next = await record(request, "second area card page");
+  expect(next.filter((r) => r.path.includes("/api/fares/")).length).toBe(
+    first.filter((r) => r.path.includes("/api/fares/")).length + 1,
+  );
   await page
     .getByRole("textbox", { name: "Search fares by name prefix" })
     .fill("Durham");
@@ -62,7 +84,7 @@ test("area browsing is paginated, prefix searchable and independent of coverage"
   ).toBeTruthy();
   await record(request, "prefix search");
 });
-test("direct area access finds day/week tickets and defers membership and provenance", async ({
+test("direct area access shows coverage and opens useful ticket information", async ({
   page,
   request,
 }) => {
@@ -75,20 +97,25 @@ test("direct area access finds day/week tickets and defers membership and proven
   ).toBeVisible();
   await expect(page.getByText("£6.00", { exact: true })).toBeVisible();
   await expect(page.getByText("£29.00", { exact: true })).toBeVisible();
-  const before = await record(request, "area detail and tickets");
-  expect(before.filter((r) => r.path.includes("/api/fares/"))).toHaveLength(2);
-  expect(
-    before.some(
-      (r) => r.path.includes("/stops") || r.path.includes("/sources"),
-    ),
-  ).toBeFalsy();
-  await page.getByRole("button", { name: "Show published coverage" }).click();
   await expect(
-    page.getByRole("region", { name: "Published coverage" }).locator("li"),
-  ).toHaveCount(40);
-  const coverage = await record(request, "area with optional membership");
-  expect(coverage.filter((r) => r.path.includes("/stops"))).toHaveLength(1);
-  expect(coverage.some((r) => r.path.includes("/timetables/"))).toBeFalsy();
+    page.getByRole("region", { name: "Published ticket-area stop locations" }),
+  ).toBeVisible();
+  const before = await record(
+    request,
+    "area detail, tickets and automatic coverage",
+  );
+  expect(before.filter((r) => r.path.includes("/api/fares/"))).toHaveLength(3);
+  expect(before.some((r) => r.path.includes("/sources"))).toBeFalsy();
+  expect(before.filter((r) => r.path.includes("/timetables/"))).toHaveLength(1);
+  await expect(
+    page
+      .locator("main summary")
+      .filter({ hasText: /Published (stops|sources)/ }),
+  ).toHaveCount(0);
+  await expect(page.locator("main li")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Load more published stops" }),
+  ).toHaveCount(0);
   await page
     .getByRole("link")
     .filter({
@@ -100,20 +127,51 @@ test("direct area access finds day/week tickets and defers membership and proven
     .click();
   await expect(
     page.getByRole("heading", {
-      name: "Published ticket conditions",
+      level: 1,
+      name: "AD Durham Day Pass",
       exact: true,
     }),
   ).toBeVisible();
   await expect(page.getByText("£6.00", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: /View published sources/ }).click();
-  await expect(
-    page.getByRole("region", { name: "Fare provenance" }),
-  ).toContainText("Document");
-  await record(request, "ticket detail and optional provenance");
+  await page.getByRole("button", { name: "More info", exact: true }).click();
+  const info = page.getByRole("dialog", { name: "Ticket information" });
+  await expect(info.getByText("Who can travel", { exact: true })).toBeVisible();
+  await expect(info.getByText("Valid for", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(info).toHaveCount(0);
+  await record(request, "ticket detail and passenger information popup");
   await page.screenshot({
     path: "test-results/fares-ticket-desktop.png",
     fullPage: true,
   });
+});
+test("coverage failure leaves tickets usable and can be retried", async ({
+  page,
+  request,
+}) => {
+  const id =
+    process.env.FARES_TEST_AREA_ID ||
+    "area_cb6be998fb32646d1eab12769df35d9dc187c7f5e27c535af9edb54a7202a98f";
+  await request.post(proxy + "/__test/fault", {
+    data: { status: 503, path: `/areas/${id}/stops?` },
+  });
+  await page.goto(`/fares/${noc}/${id}`);
+  await expect(page.getByText("£6.00", { exact: true })).toBeVisible();
+  const coverage = page.getByRole("region", {
+    name: "Published coverage",
+    exact: true,
+  });
+  await expect(coverage.getByRole("alert")).toContainText(
+    "Fares could not load",
+  );
+  await coverage.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect(coverage.getByRole("alert")).toHaveCount(0);
+  await expect(coverage).toContainText("40 published stops");
+  await expect(
+    coverage.getByRole("region", {
+      name: "Published ticket-area stop locations",
+    }),
+  ).toBeVisible();
 });
 test("journey discovery sends an exact directed pair and date to the server", async ({
   page,
@@ -143,12 +201,22 @@ test("journey discovery sends an exact directed pair and date to the server", as
   }
   expect(route).toBeTruthy();
   await page.goto(`/fares/${noc}/${route.id}`);
+  await page.getByLabel("From", { exact: true }).click();
   await page
-    .getByRole("combobox", { name: "From", exact: true })
-    .selectOption(origin.id);
+    .getByRole("combobox", { name: "Search origins" })
+    .fill(origin.name);
   await page
-    .getByRole("combobox", { name: "To", exact: true })
-    .selectOption(destination.id);
+    .getByRole("option", { name: origin.name, exact: true })
+    .first()
+    .click();
+  await page.getByLabel("To", { exact: true }).click();
+  await page
+    .getByRole("combobox", { name: "Search destinations" })
+    .fill(destination.name);
+  await page
+    .getByRole("option", { name: destination.name, exact: true })
+    .first()
+    .click();
   await page.getByLabel("Travel date").fill("2026-11-04");
   await expect(
     page
@@ -168,9 +236,7 @@ test("journey discovery sends an exact directed pair and date to the server", as
   expect(url.searchParams.get("date")).toBe("2026-11-04");
   expect(records.some((r) => r.path.includes("/stops"))).toBeFalsy();
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(
-    page.getByRole("combobox", { name: "From", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByLabel("From", { exact: true })).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -186,7 +252,9 @@ test("a generation change hides stale pages and provides a working restart", asy
   request,
 }) => {
   await page.goto(`/fares/${noc}`);
-  const cards = page.locator(`main a[href*="/fares/${noc}/area_"]`);
+  const cards = page
+    .locator(`main a[href*="/fares/${noc}/area_"]`)
+    .filter({ has: page.locator("h3") });
   await expect(cards).toHaveCount(50);
   await request.post(proxy + "/__test/fault", {
     data: { status: 409, path: "/areas?" },

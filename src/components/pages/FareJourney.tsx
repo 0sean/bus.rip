@@ -1,6 +1,13 @@
-import { useState } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { farePagesOptions, journeyFaresOptions } from "@/data/queries";
+import { lazy, Suspense, useState } from "react";
+import { IconArrowLeft, IconArrowRight } from "@tabler/icons-react";
+import { fareRouteDirections } from "@/lib/fare-route";
+import { FareMapPlaceholder } from "../map/FareMapPlaceholder";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import {
+  fareJourneyPointsOptions,
+  fareRouteNetworkOptions,
+  journeyFaresOptions,
+} from "@/data/queries";
 import {
   FareApiError,
   londonDate,
@@ -11,68 +18,96 @@ import {
 import { FareCard, FareError } from "./FareCatalogueList";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-const selectClass =
-  "w-full min-w-0 rounded-md border bg-background px-3 py-2 text-sm";
+import {
+  Combobox,
+  ComboboxTrigger,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxEmpty,
+  ComboboxList,
+  ComboboxItem,
+} from "../ui/combobox";
+const OperatorRouteMap = lazy(() => import("../map/OperatorRouteMap"));
+
 function PointPicker({
   request,
   label,
   value,
   onChange,
+  enabled = true,
 }: {
+  enabled?: boolean;
   request: FareRequest;
   label: string;
   value: string;
   onChange: (id: string) => void;
 }) {
-  const query = useInfiniteQuery(farePagesOptions(request));
-  const points = query.data?.pages.flatMap((p) => p.data) ?? [];
+  const query = useQuery({ ...fareJourneyPointsOptions(request), enabled });
+  const points = query.data?.data ?? [];
   const expired =
     query.error instanceof FareApiError &&
     [404, 409, 410].includes(query.error.status);
+  const selected = expired
+    ? null
+    : (points.find((point) => point.id === value) ?? null);
   return (
     <div className="flex flex-col gap-2 min-w-0">
-      <label className="flex flex-col gap-1.5 text-sm font-medium">
-        {label}
-        <select
-          className={selectClass}
+      <Combobox<FareItem>
+        items={expired ? [] : points}
+        value={selected}
+        onValueChange={(point) => onChange(point?.id ?? "")}
+        itemToStringLabel={(point) => point.name}
+        itemToStringValue={(point) => point.id}
+        isItemEqualToValue={(point, selected) => point.id === selected.id}
+        disabled={!enabled || query.isPending || expired}
+        autoHighlight
+      >
+        <ComboboxTrigger
           aria-label={label}
-          value={expired ? "" : value}
-          disabled={query.isPending || expired}
-          onChange={(e) => onChange(e.target.value)}
+          render={
+            <Button
+              variant="outline"
+              className="h-9 w-full min-w-0 justify-between bg-background px-3 font-normal [&>svg]:shrink-0"
+            />
+          }
         >
-          <option value="">
-            {query.isPending ? "Loading…" : `Choose ${label.toLowerCase()}`}
-          </option>
-          {!expired
-            ? points.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))
-            : null}
-        </select>
-      </label>
+          <span className="truncate">
+            {selected?.name ||
+              (!enabled
+                ? "Choose destination"
+                : query.isPending
+                  ? "Loading…"
+                  : `Choose ${label === "From" ? "origin" : "destination"}`)}
+          </span>
+        </ComboboxTrigger>
+        <ComboboxContent className="min-w-0">
+          <ComboboxInput
+            aria-label={
+              label === "From" ? "Search origins" : "Search destinations"
+            }
+            placeholder="Search stops…"
+            showTrigger={false}
+          />
+          <ComboboxEmpty>No stops found.</ComboboxEmpty>
+          <ComboboxList>
+            {(point: FareItem) => (
+              <ComboboxItem key={point.id} value={point}>
+                {point.name}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
       {query.error ? (
         <FareError
           error={query.error}
           noc={request.noc}
           retry={() => {
-            void (query.isFetchNextPageError
-              ? query.fetchNextPage()
-              : query.refetch());
+            void query.refetch();
           }}
         />
       ) : null}
-      {query.hasNextPage && !expired ? (
-        <Button
-          variant="outline"
-          disabled={query.isFetchingNextPage}
-          onClick={() => void query.fetchNextPage()}
-        >
-          Show more {label === "From" ? "origins" : "destinations"}
-        </Button>
-      ) : null}
-      {!query.isPending && !query.error && !points.length ? (
+      {enabled && !query.isPending && !query.error && !points.length ? (
         <p className="text-sm text-muted-foreground">
           No supported {label === "From" ? "origins" : "destinations"} are
           available for this direction.
@@ -90,6 +125,17 @@ export default function FareJourney({
   route: FareItem;
   generation: string;
 }) {
+  const directions = fareRouteDirections(route);
+  const mapQuery = useQuery({
+    ...fareRouteNetworkOptions(noc, route.line ?? "", directions),
+    enabled: !!route.line,
+  });
+  const routeTitle =
+    [
+      ...new Set(
+        mapQuery.data?.routes.map((item) => item.long_name).filter(Boolean),
+      ),
+    ].join(" / ") || route.name.replace(/\s+(inbound|outbound)\s*$/i, "");
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
   const [date, setDate] = useState(() => londonDate());
@@ -116,108 +162,159 @@ export default function FareJourney({
     ? []
     : (query.data?.pages.flatMap((p) => p.data.candidates) ?? []);
   return (
-    <section className="flex flex-col gap-4 min-w-0" aria-label="Journey fares">
-      <h2 className="font-semibold">Find a journey fare</h2>
-      <p className="text-sm text-muted-foreground">
-        Choose the exact direction and travel date. Reverse journeys can have
-        different fares. Only supported published journeys are listed.
-      </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <PointPicker
-          request={{ noc, action: "origins", id: route.id, generation }}
-          label="From"
-          value={origin}
-          onChange={(value) => {
-            setOrigin(value);
-            setDestination("");
-          }}
-        />
-        {origin ? (
-          <PointPicker
-            key={origin}
-            request={{
-              noc,
-              action: "destinations",
-              id: route.id,
-              origin,
-              generation,
-            }}
-            label="To"
-            value={destination}
-            onChange={setDestination}
-          />
-        ) : null}
-      </div>
-      <label className="flex flex-col gap-1.5 text-sm font-medium sm:max-w-64">
-        Travel date
-        <Input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
-      </label>
-      {origin && destination && validDate && query.isPending ? (
-        <p role="status" className="text-sm text-muted-foreground">
-          Looking up published fares…
-        </p>
-      ) : null}
-      {query.error ? (
-        <FareError
-          error={query.error}
-          noc={noc}
-          retry={() => {
-            void (query.isFetchNextPageError
-              ? query.fetchNextPage()
-              : query.refetch());
-          }}
-        />
-      ) : null}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {candidates.map((candidate) => (
-          <div
-            key={`${candidate.id}:${candidate.amount}:${candidate.currency}`}
-            className="flex flex-col gap-2"
-          >
-            <FareCard
-              item={candidate}
-              noc={noc}
-              generation={generation}
-              priceLabel={money(candidate.amount, candidate.currency)}
-            />
-            <p className="px-4 text-sm font-semibold">
-              {candidate.status === "outside_published_validity"
-                ? "Outside published validity — do not use for this date"
-                : "Published candidate — conditions apply"}
-            </p>
-            {candidate.unresolved_count ? (
-              <p className="px-4 text-xs text-muted-foreground">
-                Some conditions could not be resolved. Confirm with the
-                operator.
+    <main className="fare-zone-page">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,1fr)] gap-4 items-start">
+        <div className="relative min-w-0">
+          {mapQuery.data ? (
+            <Suspense fallback={<FareMapPlaceholder tall />}>
+              <OperatorRouteMap
+                noc={noc}
+                routes={mapQuery.data.routes}
+                networkData={mapQuery.data}
+                variant="fare"
+              />
+            </Suspense>
+          ) : (
+            <div className="relative h-[var(--fare-zone-map-height,648px)] rounded-[14px] border bg-muted/30 flex items-center justify-center p-6">
+              <p role="status" className="text-sm text-muted-foreground">
+                {mapQuery.isPending && route.line
+                  ? "Loading route map…"
+                  : "Route map is unavailable."}
               </p>
-            ) : null}
+              {mapQuery.error ? (
+                <Button
+                  className="absolute bottom-4"
+                  variant="outline"
+                  onClick={() => void mapQuery.refetch()}
+                >
+                  Retry map
+                </Button>
+              ) : null}
+            </div>
+          )}
+          <div className="absolute left-3 top-3 right-3 sm:right-auto sm:max-w-[min(348px,calc(100%-24px))] rounded-[14px] bg-card p-4 shadow-sm ring-1 ring-foreground/10 flex items-start gap-3">
+            <span className="rounded-sm bg-muted px-2 h-8 min-w-8 flex items-center justify-center text-sm font-medium shrink-0">
+              {route.line || "Bus"}
+            </span>
+            <div className="min-w-0">
+              <h1 className="text-sm font-medium leading-5">{routeTitle}</h1>
+              {directions.length ? (
+                <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1.5">
+                  {directions[0] === "inbound" ? (
+                    <IconArrowLeft className="size-3.5 shrink-0" />
+                  ) : (
+                    <IconArrowRight className="size-3.5 shrink-0" />
+                  )}
+                  <span className="capitalize">{directions.join(" / ")}</span>
+                </p>
+              ) : null}
+            </div>
           </div>
-        ))}
-      </div>
-      {query.data && !expired && !candidates.length ? (
-        <p role="status" className="text-sm text-muted-foreground">
-          No supported published fare was found for this direction and date.
-          Other ticket patterns may exist; check with the operator.
-        </p>
-      ) : null}
-      {!expired && query.hasNextPage ? (
-        <Button
-          variant="outline"
-          disabled={query.isFetchingNextPage}
-          onClick={() => void query.fetchNextPage()}
+        </div>
+        <section
+          aria-label="Journey fares"
+          className="min-w-0 flex flex-col gap-4 p-px lg:max-h-[var(--fare-zone-map-height)] lg:overflow-y-auto overscroll-contain scrollbar-thin scrollbar-thumb-muted-foreground/30"
         >
-          Show more fare candidates
-        </Button>
-      ) : null}
-      <p className="text-xs text-muted-foreground">
-        Passenger eligibility, sales channels, time restrictions and other rules
-        are not fully evaluated. These are published candidates, not a
-        guaranteed payable or cheapest fare.
-      </p>
-    </section>
+          <h2 className="sr-only">Find a journey fare</h2>
+          <div className="rounded-[14px] bg-card p-4 ring-1 ring-foreground/10 flex flex-col gap-4">
+            <div className="grid grid-cols-[minmax(0,1fr)_16px_minmax(0,1fr)] gap-3 items-start">
+              <PointPicker
+                request={{ noc, action: "origins", id: route.id, generation }}
+                label="From"
+                value={origin}
+                onChange={(value) => {
+                  setOrigin(value);
+                  setDestination("");
+                }}
+              />
+              <IconArrowRight
+                aria-hidden
+                className="size-4 mt-2.5 text-muted-foreground"
+              />
+              <PointPicker
+                enabled={!!origin}
+                key={origin}
+                request={{
+                  noc,
+                  action: "destinations",
+                  id: route.id,
+                  origin,
+                  generation,
+                }}
+                label="To"
+                value={destination}
+                onChange={setDestination}
+              />
+            </div>
+            <label className="flex flex-col gap-1.5 text-sm font-medium">
+              <span className="sr-only">Travel date</span>
+              <Input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </label>
+          </div>
+          {!origin || !destination ? (
+            <p className="text-sm text-muted-foreground">
+              Choose your origin, destination and travel date to see published
+              tickets.
+            </p>
+          ) : null}
+          {origin && destination && validDate && query.isPending ? (
+            <p role="status" className="text-sm text-muted-foreground">
+              Looking up published fares…
+            </p>
+          ) : null}
+          {query.error ? (
+            <FareError
+              error={query.error}
+              noc={noc}
+              retry={() => {
+                void (query.isFetchNextPageError
+                  ? query.fetchNextPage()
+                  : query.refetch());
+              }}
+            />
+          ) : null}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {candidates.map((candidate) => (
+              <div
+                key={`${candidate.id}:${candidate.amount}:${candidate.currency}`}
+                className="flex flex-col gap-2"
+              >
+                <FareCard
+                  item={candidate}
+                  noc={noc}
+                  generation={generation}
+                  presentation="zone"
+                  priceLabel={money(candidate.amount, candidate.currency)}
+                />
+              </div>
+            ))}
+          </div>
+          {query.data && !expired && !candidates.length ? (
+            <p role="status" className="text-sm text-muted-foreground">
+              No supported published fare was found for this direction and date.
+              Other ticket patterns may exist; check with the operator.
+            </p>
+          ) : null}
+          {!expired && query.hasNextPage ? (
+            <Button
+              variant="outline"
+              disabled={query.isFetchingNextPage}
+              onClick={() => void query.fetchNextPage()}
+            >
+              Show more fare candidates
+            </Button>
+          ) : null}
+          <p className="text-xs text-muted-foreground">
+            Passenger eligibility, sales channels, time restrictions and other
+            rules are not fully evaluated. These are published candidates, not a
+            guaranteed payable or cheapest fare.
+          </p>
+        </section>
+      </div>
+    </main>
   );
 }

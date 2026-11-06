@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Map,
   Source,
@@ -15,6 +15,8 @@ import type { FareMapArea } from "@/lib/fare-map";
 import { fareZoneFeatures, zoneColor } from "@/lib/fare-map";
 import { useMediaQuery } from "@/lib/use-media-query";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { Card, CardContent } from "../ui/card";
+import { IconChevronRight } from "@tabler/icons-react";
 export default function FareMap({
   noc,
   zones,
@@ -22,6 +24,8 @@ export default function FareMap({
   stops,
   unavailable = false,
   tall = false,
+  overview = false,
+  topInset = 115,
 }: {
   noc: string;
   zones: FareMapArea[];
@@ -29,19 +33,22 @@ export default function FareMap({
   stops: Stop[];
   unavailable?: boolean;
   tall?: boolean;
+  overview?: boolean;
+  topInset?: number;
 }) {
   const map = useRef<MapRef>(null);
   const [loaded, setLoaded] = useState(false),
     [failed, setFailed] = useState(false);
   const [active, setActive] = useState<string | null>(null);
-  const [selected, setSelected] = useState<{
+  const [selection, setSelection] = useState<{
     longitude: number;
     latitude: number;
     ids: string[];
+    pinned: boolean;
   } | null>(null);
   const dark = useMediaQuery("(prefers-color-scheme: dark)");
   const data = useMemo(() => fareZoneFeatures(zones, stops), [zones, stops]);
-  useEffect(() => {
+  const fitCoverage = useCallback(() => {
     if (!map.current) return;
     const features = data.labels.features.filter(
       (f) => active === null || f.properties?.zoneId === active,
@@ -67,22 +74,46 @@ export default function FareMap({
       ],
     );
     map.current?.fitBounds(bounds as [[number, number], [number, number]], {
-      padding: 45,
+      padding: tall ? { top: topInset, bottom: 45, left: 45, right: 45 } : 45,
       maxZoom: 14,
       duration: 0,
     });
-  }, [loaded, data, active]);
-  function select(event: MapLayerMouseEvent) {
-    const ids = [
-      ...new Set(
-        (event.features ?? []).map((f) => String(f.properties.zoneId)),
-      ),
-    ];
-    setSelected(
-      ids.length
-        ? { longitude: event.lngLat.lng, latitude: event.lngLat.lat, ids }
-        : null,
+  }, [data, active, tall, topInset]);
+  useEffect(() => {
+    if (loaded) fitCoverage();
+  }, [loaded, fitCoverage]);
+  function hitZones(event: MapLayerMouseEvent) {
+    // A named label is an unambiguous target even when stop coverage overlaps.
+    const label = event.features?.find(
+      (feature) => feature.layer.id === "fare-zone-names",
     );
+    return label
+      ? [String(label.properties.zoneId)]
+      : [
+          ...new Set(
+            (event.features ?? []).map((f) => String(f.properties.zoneId)),
+          ),
+        ];
+  }
+  function clearHover() {
+    setSelection((previous) => (previous?.pinned ? previous : null));
+  }
+  function selectZones(event: MapLayerMouseEvent, pinned: boolean) {
+    if (
+      (event.originalEvent.target as HTMLElement)?.closest?.(
+        ".maplibregl-popup, .maplibregl-ctrl",
+      )
+    ) {
+      if (!pinned) clearHover();
+      return;
+    }
+    const ids = hitZones(event).filter((id) =>
+      zones.some((zone) => zone.id === id),
+    );
+    const next = ids.length
+      ? { longitude: event.lngLat.lng, latitude: event.lngLat.lat, ids, pinned }
+      : null;
+    setSelection((previous) => (!pinned && previous?.pinned ? previous : next));
   }
   const filter: FilterSpecification =
     active === null ? ["has", "zoneId"] : ["==", ["get", "zoneId"], active];
@@ -90,10 +121,10 @@ export default function FareMap({
   return (
     <section
       aria-label="Published ticket-area stop locations"
-      className="overflow-hidden rounded-[14px] border bg-muted/30"
+      className="relative overflow-hidden rounded-[14px] border bg-muted/30"
     >
       <div
-        className={`relative ${tall ? "h-[352px] lg:h-[648px]" : "h-[352px]"}`}
+        className={`relative ${overview ? "h-[352px] lg:h-[565px]" : tall ? "h-[var(--fare-zone-map-height,648px)]" : "h-[352px]"}`}
       >
         <Map
           ref={map}
@@ -104,6 +135,7 @@ export default function FareMap({
               : "https://tiles.openfreemap.org/styles/positron"
           }
           onLoad={() => setLoaded(true)}
+          onResize={fitCoverage}
           onError={() => {
             queueMicrotask(() => setFailed(true));
           }}
@@ -112,7 +144,11 @@ export default function FareMap({
             "fare-zone-points",
             "fare-zone-names",
           ]}
-          onClick={select}
+          onClick={(event) => selectZones(event, true)}
+          onMouseMove={(event) => selectZones(event, false)}
+          onMouseLeave={clearHover}
+          onMoveStart={() => setSelection(null)}
+          cursor={selection ? "pointer" : "grab"}
           scrollZoom={false}
           dragRotate={false}
           touchPitch={false}
@@ -124,7 +160,15 @@ export default function FareMap({
               id="fare-zone-fill"
               type="fill"
               filter={filter}
-              paint={{ "fill-color": ["get", "color"], "fill-opacity": 0.18 }}
+              paint={{
+                "fill-color": ["get", "color"],
+                "fill-opacity": [
+                  "case",
+                  ["==", ["get", "zoneId"], selection?.ids[0] ?? ""],
+                  0.24,
+                  0.08,
+                ],
+              }}
             />
             <Layer
               id="fare-zone-outline"
@@ -143,7 +187,25 @@ export default function FareMap({
               type="circle"
               filter={filter}
               paint={{
-                "circle-radius": 4,
+                "circle-radius": overview ? 3 : 4,
+                "circle-opacity": overview
+                  ? [
+                      "step",
+                      ["zoom"],
+                      ["case", ["get", "approximate"], 0, 1],
+                      12,
+                      1,
+                    ]
+                  : 1,
+                "circle-stroke-opacity": overview
+                  ? [
+                      "step",
+                      ["zoom"],
+                      ["case", ["get", "approximate"], 0, 1],
+                      12,
+                      1,
+                    ]
+                  : 1,
                 "circle-color": ["get", "color"],
                 "circle-stroke-width": 1,
                 "circle-stroke-color": dark ? "#171717" : "#ffffff",
@@ -170,33 +232,60 @@ export default function FareMap({
               }}
             />
           </Source>
-          {selected ? (
+          {selection ? (
             <Popup
-              longitude={selected.longitude}
-              latitude={selected.latitude}
-              onClose={() => setSelected(null)}
+              longitude={selection.longitude}
+              latitude={selection.latitude}
+              onClose={() => setSelection(null)}
               closeOnClick={false}
+              closeButton={false}
+              className="pb-2 !min-w-64"
+              maxWidth="calc(100vw - 2rem)"
             >
-              <div className="bg-popover text-popover-foreground rounded-lg border p-3 font-sans max-h-60 overflow-y-auto">
-                {zones
-                  .filter((z) => selected.ids.includes(z.id))
-                  .map((z) => (
-                    <Link
-                      key={z.id}
-                      to="/fares/$nocCode/$fare"
-                      params={{ nocCode: noc, fare: z.id }}
-                      search={{ generation }}
-                      className="block text-sm underline py-2"
-                    >
-                      {z.name}
-                    </Link>
-                  ))}
-              </div>
+              <Card className="w-xs max-w-[calc(100vw-2rem)] !font-sans gap-0 py-0">
+                <CardContent className="p-0 max-h-48 overflow-y-auto overscroll-contain scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/30 hover:scrollbar-thumb-muted-foreground/50">
+                  {selection.ids.map((id) => {
+                    const zone = zones.find((zone) => zone.id === id);
+                    if (!zone) return null;
+                    return (
+                      <Link
+                        key={zone.id}
+                        to="/fares/$nocCode/$fare"
+                        params={{ nocCode: noc, fare: zone.id }}
+                        search={{ generation }}
+                        className="flex gap-2 items-center px-4 py-3 border-b last:border-b-0 font-medium hover:bg-accent/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                      >
+                        <span
+                          className="shrink-0 size-6 bg-muted flex justify-center items-center rounded-md"
+                          aria-hidden
+                        >
+                          <span
+                            className="size-2.5 rounded-full"
+                            style={{ backgroundColor: zoneColor(zone.id) }}
+                          />
+                        </span>
+                        <span className="min-w-0 wrap-anywhere">
+                          {zone.name}
+                        </span>
+                        <span className="shrink-0 ms-auto inline-flex items-center text-muted-foreground">
+                          <IconChevronRight aria-hidden size={16} />
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </CardContent>
+              </Card>
             </Popup>
           ) : null}
         </Map>
       </div>
-      <div className="border-t p-3 flex flex-col gap-2">
+      <div
+        className={
+          overview || tall
+            ? `absolute ${overview ? "top-3" : "bottom-24 sm:bottom-10"} left-3 max-w-[calc(100%-6rem)] rounded-md bg-background/90 px-2 py-1 pointer-events-none`
+            : "border-t p-3 flex flex-col gap-2"
+        }
+      >
         <p role="status" className="text-xs text-muted-foreground">
           {failed
             ? "Map could not load. Fare details remain available."
@@ -204,9 +293,15 @@ export default function FareMap({
               ? "Stop locations are temporarily unavailable."
               : !mapped.size
                 ? "No loaded stops have matching timetable coordinates."
-                : `${mapped.size} of ${zones.length} areas have loaded stop locations. No ticket boundaries are published.`}
+                : overview
+                  ? "Approximate zone coverage · ticket conditions apply"
+                  : data.areas.features.length
+                    ? "Shaded coverage is approximate, not an official fare boundary."
+                    : zones.length === 1
+                      ? `${data.points.features.length} stop locations shown.`
+                      : `${mapped.size} of ${zones.length} areas have loaded stop locations. No ticket boundaries are published.`}
         </p>
-        {zones.length ? (
+        {zones.length > 1 && !overview && !tall ? (
           <div
             className="flex gap-2 flex-wrap max-h-28 overflow-y-auto"
             aria-label="Map ticket areas"
@@ -216,7 +311,7 @@ export default function FareMap({
               aria-pressed={active === null}
               onClick={() => {
                 setActive(null);
-                setSelected(null);
+                setSelection(null);
               }}
               className="rounded-md border px-2 py-1 text-xs hover:bg-accent"
             >
@@ -230,7 +325,7 @@ export default function FareMap({
                 disabled={!mapped.has(zone.id)}
                 onClick={() => {
                   setActive(active === zone.id ? null : zone.id);
-                  setSelected(null);
+                  setSelection(null);
                 }}
                 className="flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs hover:bg-accent aria-pressed:bg-accent disabled:opacity-50"
               >

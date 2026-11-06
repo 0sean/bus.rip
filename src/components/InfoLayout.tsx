@@ -10,7 +10,7 @@ export default function InfoLayout({
   operator: NocLine;
 }) {
   return (
-    <div className="safe-area-page min-h-svh pb-[calc(6rem+var(--safe-area-bottom))]!">
+    <div className="safe-area-page min-h-svh pb-[calc(6rem+var(--safe-area-bottom))]! lg:has-[.fare-zone-page]:pb-[calc(1.5rem+var(--safe-area-bottom))]!">
       <Header operatorName={operator.publicName} className="mb-6" />
       {children}
       <nav

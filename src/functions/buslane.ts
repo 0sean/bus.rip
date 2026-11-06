@@ -1,3 +1,4 @@
+import { getRouteRow } from "@/lib/buslane";
 import type {
   ApiError,
   Stop,
@@ -17,7 +18,10 @@ import { cacheControl } from "@/middleware/cache-control";
 import { rateLimit } from "@/middleware/rate-limit";
 import { operatorCode, resourceId } from "./validation";
 
-async function get<T>(url: string): Promise<T | ApiError> {
+async function get<T>(
+  url: string,
+  signal?: AbortSignal,
+): Promise<T | ApiError> {
   if (process.env.BUSLANE_ENABLED === "0")
     return { error: "Buslane is not enabled." };
   const response = await fetch(
@@ -27,7 +31,9 @@ async function get<T>(url: string): Promise<T | ApiError> {
         "Content-Type": "application/json",
         Authorization: `Bearer ${process.env.BUSLANE_API_KEY}`,
       },
-      signal: AbortSignal.timeout(15_000),
+      signal: signal
+        ? AbortSignal.any([signal, AbortSignal.timeout(15_000)])
+        : AbortSignal.timeout(15_000),
     },
   );
   if (!response.ok)
@@ -167,4 +173,85 @@ export const getRouteNetwork = createServerFn({ method: "GET" })
       });
     }
     return { network, missingRouteIds: [...missing] };
+  });
+
+// Fetch geometry only for the selected line and published direction, rather
+// than downloading every route in the operator's network.
+export const getFareRouteNetwork = createServerFn({ method: "GET" })
+  .middleware([cacheControl(43_200), rateLimit("fare-route-network")])
+  .validator(
+    z.object({
+      noc: operatorCode,
+      line: z.string().trim().min(1).max(100),
+      directions: z.array(z.enum(["inbound", "outbound"])).max(2),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const signal = AbortSignal.timeout(30_000);
+    const all = await get<RouteWithTrips[]>(
+      `/timetables/agencies/noc:${encodeURIComponent(data.noc)}/routes`,
+      signal,
+    );
+    if (!Array.isArray(all))
+      throw new Error("Timetable data is temporarily unavailable");
+    const routes = all.filter(
+      (route) =>
+        route.short_name?.trim().toLowerCase() === data.line.toLowerCase(),
+    );
+    const tasks = routes.flatMap((route) =>
+      representativeTrips(
+        route.trips.filter(
+          (trip) =>
+            !data.directions.length ||
+            data.directions.includes(
+              trip.direction_id as "inbound" | "outbound",
+            ),
+        ),
+      ).map((trip) => ({ routeId: route.id, trip })),
+    );
+    if (tasks.length > 200)
+      throw new Error("Route map is temporarily unavailable");
+    const lines = new Map<number, number[][][]>();
+    const missing = new Set<number>();
+    let index = 0;
+    await Promise.all(
+      Array.from({ length: Math.min(4, tasks.length) }, async () => {
+        while (index < tasks.length) {
+          signal.throwIfAborted();
+          const { routeId, trip } = tasks[index++];
+          try {
+            const detail = await get<TripWithStops>(
+              `/timetables/trips/${encodeURIComponent(trip.id)}`,
+              signal,
+            );
+            if ("error" in detail) throw new Error("Unavailable trip");
+            const coordinates = routeLines([detail]);
+            if (!coordinates.length) missing.add(routeId);
+            lines.set(routeId, [...(lines.get(routeId) ?? []), ...coordinates]);
+          } catch {
+            missing.add(routeId);
+          }
+        }
+      }),
+    );
+    const network: RouteNetwork = {
+      type: "FeatureCollection",
+      features: [...lines]
+        .filter(([, coordinates]) => coordinates.length)
+        .map(([routeId, coordinates]) => ({
+          type: "Feature",
+          id: routeId,
+          properties: { routeId },
+          geometry: { type: "MultiLineString", coordinates },
+        })),
+    };
+    return {
+      network,
+      missingRouteIds: [...missing],
+      routes: routes.map((route) => ({
+        ...route,
+        long_name: getRouteRow(route).mainRoute,
+        trips: [],
+      })),
+    };
   });

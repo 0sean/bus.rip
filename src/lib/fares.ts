@@ -2,6 +2,12 @@ export const CATALOGUE_VERSION = "1";
 export const fareIdPattern = /^(area|family|ticket|route|point)_[a-f0-9]{64}$/;
 export type FareKind = "area" | "family" | "ticket" | "route" | "point";
 export type FarePrice = { amount: string; currency: string | null };
+export type FarePriceSummary = {
+  prices: FarePrice[];
+  journeyDependent: boolean;
+  conditional: boolean;
+  incomplete: boolean;
+};
 export type FareItem = {
   id: string;
   kind: FareKind;
@@ -9,11 +15,13 @@ export type FareItem = {
   revision: number;
   ticket_count: number;
   family_id?: string;
+  single_ticket_id?: string;
   variant_count?: number;
   stop_count?: number;
   membership?: string;
   prices?: FarePrice[];
   prices_truncated?: boolean;
+  price_summary?: FarePriceSummary;
   price_basis?: string;
   product_type?: string;
   eligibility?: string[];
@@ -138,6 +146,75 @@ export function ticketPrice(item: FareItem) {
   return item.prices?.length
     ? item.prices.map((p) => money(p.amount, p.currency)).join(" / ")
     : "Price unavailable";
+}
+
+export function summariseFarePrices(tickets: FareItem[]): FarePriceSummary {
+  const currencies = new Map<
+    string | null,
+    { min: FarePrice; max: FarePrice }
+  >();
+  let incomplete = tickets.length === 0;
+  for (const ticket of tickets) {
+    incomplete ||= !!ticket.prices_truncated || !ticket.prices?.length;
+    for (const price of ticket.prices ?? []) {
+      if (
+        !/^\d+(?:\.\d+)?$/.test(price.amount) ||
+        !Number.isFinite(Number(price.amount))
+      ) {
+        incomplete = true;
+        continue;
+      }
+      const range = currencies.get(price.currency);
+      if (!range) currencies.set(price.currency, { min: price, max: price });
+      else {
+        if (Number(price.amount) < Number(range.min.amount)) range.min = price;
+        if (Number(price.amount) > Number(range.max.amount)) range.max = price;
+      }
+    }
+  }
+  return {
+    prices: [...currencies.values()].flatMap(({ min, max }) =>
+      Number(min.amount) === Number(max.amount) ? [min] : [min, max],
+    ),
+    journeyDependent: tickets.some(
+      (ticket) => ticket.price_basis === "journey",
+    ),
+    conditional: tickets.some(
+      (ticket) => !["published", "journey"].includes(ticket.price_basis ?? ""),
+    ),
+    incomplete,
+  };
+}
+
+export function familyPrice(item: FareItem) {
+  const summary = item.price_summary;
+  if (!summary) return "Price unavailable";
+  if (summary.incomplete) return "Prices vary · Check ticket conditions";
+  const currencies = new Map<string | null, FarePrice[]>();
+  for (const price of summary.prices) {
+    const prices = currencies.get(price.currency) ?? [];
+    prices.push(price);
+    currencies.set(price.currency, prices);
+  }
+  const label = [...currencies.values()]
+    .map((prices) => {
+      const sorted = [...prices].sort(
+        (a, b) => Number(a.amount) - Number(b.amount),
+      );
+      const min = sorted[0],
+        max = sorted.at(-1)!;
+      return Number(min.amount) === Number(max.amount)
+        ? money(min.amount, min.currency)
+        : `${money(min.amount, min.currency)}–${money(max.amount, max.currency)}`;
+    })
+    .join(" / ");
+  return [
+    label || "Price unavailable",
+    summary.journeyDependent ? "Depends on journey" : undefined,
+    summary.conditional ? "Check ticket conditions" : undefined,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 export function londonDate(now = new Date()) {
   const parts = new Intl.DateTimeFormat("en-GB", {

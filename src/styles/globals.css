@@ -300,3 +300,11 @@
     --animate-spin: spin 2s linear infinite;
   }
 }
+
+/* Header (35px), three 24px insets/gaps, and the map’s 2px border. */
+.fare-zone-page {
+  --fare-zone-map-height: max(
+    352px,
+    calc(100dvh - 109px - var(--safe-area-top) - var(--safe-area-bottom))
+  );
+}

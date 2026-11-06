@@ -31,7 +31,11 @@ vi.mock("@tanstack/react-start", () => ({
   },
 }));
 vi.mock("../src/middleware/rate-limit", () => ({ rateLimit: vi.fn() }));
-import { fareRequestSchema, getFareCatalogue } from "../src/functions/fares";
+import {
+  fareRequestSchema,
+  getFareCatalogue,
+  getFareMapCatalogue,
+} from "../src/functions/fares";
 import {
   fareDetailOptions,
   farePagesOptions,
@@ -396,5 +400,89 @@ describe("passenger-facing evidence and coverage", () => {
     expect(
       fareZoneFeatures([{ ...zone, stops: [] }], stops).points.features,
     ).toHaveLength(0);
+  });
+});
+
+describe("priced family query adapter", () => {
+  it("loads family prices server-side while retaining search, pagination and authentication", async () => {
+    fetchMock.mockImplementation(async (url: string) => {
+      const path = new URL(url);
+      if (path.pathname.endsWith("/families")) {
+        expect(path.searchParams.get("q")).toBe("Day");
+        return response([item("family")], "6", 200, {
+          "x-next-cursor": "next-family-page",
+        });
+      }
+      expect(path.pathname).toBe(
+        `/api/fares/operators/ANEA/families/${id("family")}/tickets`,
+      );
+      expect(path.searchParams.get("generation")).toBe("6");
+      return response(
+        [
+          item(),
+          {
+            ...item("ticket", "b"),
+            prices: [{ amount: "12.00", currency: "GBP" }],
+          },
+        ],
+        "6",
+      );
+    });
+    const client = new QueryClient();
+    const result = await client.fetchInfiniteQuery(
+      farePagesOptions({ noc: "ANEA", action: "families", q: "Day" }),
+    );
+    expect(result.pages[0].nextCursor).toBe("next-family-page");
+    expect(result.pages[0].data[0].price_summary).toMatchObject({
+      prices: [
+        { amount: "6.00", currency: "GBP" },
+        { amount: "12.00", currency: "GBP" },
+      ],
+      incomplete: false,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(result)).not.toContain("server-only-key");
+    client.clear();
+  });
+});
+
+describe("operator map server adapter", () => {
+  const callMap = getFareMapCatalogue as unknown as (args: {
+    data: string;
+  }) => Promise<Response>;
+  it("returns every membership page as map data with server-only authentication", async () => {
+    fetchMock.mockImplementation(async (url: string) => {
+      const path = new URL(url);
+      if (path.pathname.endsWith("/areas"))
+        return response([item("area")], "6");
+      expect(path.searchParams.get("generation")).toBe("6");
+      return path.searchParams.has("cursor")
+        ? response([{ code: "B", name: "Second stop" }], "6")
+        : response([{ code: "A", name: "First stop" }], "6", 200, {
+            "x-next-cursor": "next-stops",
+          });
+    });
+    const result = await callMap({ data: "anea" });
+    expect(result.headers.get("cache-control")).toBe("no-store");
+    expect(await readFareResponse(result)).toMatchObject({
+      generation: "6",
+      data: [{ id: id("area"), name: "Adult ticket", stops: ["A", "B"] }],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    for (const [url, options] of fetchMock.mock.calls) {
+      expect(new URL(url).pathname).toContain("/operators/ANEA/areas");
+      expect(new URL(url).searchParams.get("limit")).toBe("50");
+      expect(options.headers.Authorization).toBe("Bearer server-only-key");
+    }
+  });
+  it("returns a generation conflict without partial map data", async () => {
+    fetchMock
+      .mockResolvedValueOnce(response([item("area")], "6"))
+      .mockResolvedValueOnce(response([], "7"));
+    const result = await callMap({ data: "ANEA" });
+    expect(result.status).toBe(409);
+    expect(await result.json()).toEqual({
+      error: "Fares have changed. Load the latest fares to continue.",
+    });
   });
 });

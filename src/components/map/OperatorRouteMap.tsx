@@ -53,11 +53,13 @@ export default function OperatorRouteMap({
   route,
   variant = "overview",
   stopTimes,
+  networkData,
 }: {
   noc: string;
   routes: RouteWithTrips[];
   route?: RouteWithStops;
-  variant?: "overview" | "trip";
+  variant?: "overview" | "trip" | "fare";
+  networkData?: { network: RouteNetwork; missingRouteIds: number[] };
   stopTimes?: StopTimeWithStop[];
 }) {
   const {
@@ -68,9 +70,10 @@ export default function OperatorRouteMap({
     isFetching,
   } = useQuery({
     ...routeNetworkOptions(noc),
-    enabled: !route,
+    enabled: !route && !networkData,
   });
   const data = useMemo(() => {
+    if (networkData) return networkData;
     if (!route) return operatorData;
     const coordinates = routeLines(route.trips);
     const network: RouteNetwork = {
@@ -87,7 +90,7 @@ export default function OperatorRouteMap({
         : [],
     };
     return { network, missingRouteIds: [] };
-  }, [route, operatorData]);
+  }, [route, operatorData, networkData]);
   const map = useRef<MapRef>(null);
   const [loaded, setLoaded] = useState(false);
   const [mapError, setMapError] = useState(false);
@@ -161,15 +164,17 @@ export default function OperatorRouteMap({
       const wide = (map.current?.getContainer().clientWidth ?? 0) > 640;
       map.current?.fitBounds(bounds, {
         padding:
-          variant === "trip"
-            ? wide
-              ? { left: 380, right: 40, top: 40, bottom: 40 }
-              : { left: 30, right: 30, top: 360, bottom: 80 }
-            : route
+          variant === "fare"
+            ? { left: 35, right: 35, top: 135, bottom: 45 }
+            : variant === "trip"
               ? wide
                 ? { left: 380, right: 40, top: 40, bottom: 40 }
-                : { left: 30, right: 30, top: 180, bottom: 35 }
-              : 40,
+                : { left: 30, right: 30, top: 360, bottom: 80 }
+              : route
+                ? wide
+                  ? { left: 380, right: 40, top: 40, bottom: 40 }
+                  : { left: 30, right: 30, top: 180, bottom: 35 }
+                : 40,
         maxZoom: 14,
         duration: 0,
       });
@@ -243,11 +248,19 @@ export default function OperatorRouteMap({
   return (
     <section
       aria-label={
-        route ? `Route ${route.short_name} map` : "Operator route map"
+        variant === "fare"
+          ? "Journey route map"
+          : route
+            ? `Route ${route.short_name} map`
+            : "Operator route map"
       }
       className={cn(
         "relative overflow-hidden rounded-[14px] border bg-muted/30",
-        variant === "trip" ? "h-[648px]" : "h-[352px]",
+        variant === "fare"
+          ? "h-[var(--fare-zone-map-height,648px)]"
+          : variant === "trip"
+            ? "h-[648px]"
+            : "h-[352px]",
       )}
     >
       <Map
@@ -278,7 +291,11 @@ export default function OperatorRouteMap({
         attributionControl={{ compact: true }}
       >
         <NavigationControl
-          position={variant === "trip" ? "bottom-right" : "top-right"}
+          position={
+            variant === "trip" || variant === "fare"
+              ? "bottom-right"
+              : "top-right"
+          }
           showCompass={false}
         />
         {network ? (
@@ -392,21 +409,24 @@ export default function OperatorRouteMap({
           </Popup>
         ) : null}
       </Map>
-      {(!route && (isPending || error)) || !bounds || mapError || missing ? (
+      {(!route && !networkData && (isPending || error)) ||
+      !bounds ||
+      mapError ||
+      missing ? (
         <div
-          role={error ? "alert" : "status"}
-          className={`absolute left-3 ${route ? "bottom-10" : "top-14"} max-w-[calc(100%-5rem)] rounded-lg border bg-background/95 px-3 py-2 text-xs shadow-sm`}
+          role={!networkData && error ? "alert" : "status"}
+          className={`absolute left-3 ${route || variant === "fare" ? "bottom-10" : "top-14"} max-w-[calc(100%-5rem)] rounded-lg border bg-background/95 px-3 py-2 text-xs shadow-sm`}
         >
-          {!route && isPending
+          {!route && !networkData && isPending
             ? "Loading operator routes…"
-            : !route && error
+            : !route && !networkData && error
               ? "Route map is temporarily unavailable."
               : mapError
                 ? "Map tiles could not load. Timetables are available below."
                 : !bounds
                   ? "No route locations are available yet."
                   : `${missing} route${missing === 1 ? " is" : "s are"} missing some map data.`}
-          {!route && (error || missing) ? (
+          {!route && !networkData && (error || missing) ? (
             <button
               type="button"
               className="ml-2 underline cursor-pointer"

@@ -1,9 +1,18 @@
-import { getFareCatalogue } from "@/functions/fares";
+import type { FareMapArea, TicketCoverage } from "@/lib/fare-map";
+import {
+  getFareCatalogue,
+  getFareJourneyPoints,
+  getFareCoverage,
+  getTicketCoverage,
+  getFareMapCatalogue,
+  getPricedFareFamilies,
+} from "@/functions/fares";
 import {
   readFareResponse,
   type FareRequest,
   type FareItem,
   type FarePage,
+  type FareStop,
   type JourneyFares,
 } from "@/lib/fares";
 import { infiniteQueryOptions } from "@tanstack/react-query";
@@ -19,6 +28,7 @@ import {
   getRoute,
   getTrip,
   getRouteNetwork,
+  getFareRouteNetwork,
 } from "@/functions/buslane";
 
 export function staticQuery<T>(query: T): T {
@@ -116,7 +126,11 @@ export const farePagesOptions = <T = FareItem[]>(request: FareRequest) =>
       { cursor: string; generation: string } | undefined,
     queryFn: async ({ signal, pageParam }): Promise<FarePage<T>> =>
       readFareResponse<T>(
-        await getFareCatalogue({
+        await (
+          request.action === "families"
+            ? getPricedFareFamilies
+            : getFareCatalogue
+        )({
           data: {
             ...request,
             cursor: pageParam?.cursor,
@@ -153,3 +167,71 @@ export const fareDetailOptions = (
   });
 export const journeyFaresOptions = (request: FareRequest) =>
   farePagesOptions<JourneyFares>(request);
+
+export const fareMapOptions = (noc: string) =>
+  queryOptions({
+    queryKey: ["fares-v1", code(noc), "map"],
+    queryFn: async ({ signal }) =>
+      readFareResponse<FareMapArea[]>(
+        await getFareMapCatalogue({ data: noc, signal }),
+      ),
+    staleTime: 60_000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+export const fareCoverageOptions = (
+  noc: string,
+  id: string,
+  generation?: string,
+) =>
+  queryOptions({
+    queryKey: ["fares-v1", code(noc), "coverage", id, generation],
+    queryFn: async ({ signal }) =>
+      readFareResponse<FareStop[]>(
+        await getFareCoverage({ data: { noc, id, generation }, signal }),
+      ),
+    staleTime: 60_000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+export const ticketCoverageOptions = (
+  noc: string,
+  id: string,
+  generation: string,
+) =>
+  queryOptions({
+    queryKey: ["fares-v1", code(noc), "ticket-coverage", id, generation],
+    queryFn: async ({ signal }) =>
+      readFareResponse<TicketCoverage>(
+        await getTicketCoverage({ data: { noc, id, generation }, signal }),
+      ),
+    staleTime: 60_000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+export const fareJourneyPointsOptions = (request: FareRequest) =>
+  queryOptions({
+    queryKey: ["fares-v1", code(request.noc), "journey-points", request],
+    queryFn: async ({ signal }) =>
+      readFareResponse<FareItem[]>(
+        await getFareJourneyPoints({ data: request, signal }),
+      ),
+    staleTime: 60_000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+export const fareRouteNetworkOptions = (
+  noc: string,
+  line: string,
+  directions: ("inbound" | "outbound")[],
+) =>
+  queryOptions({
+    queryKey: ["fare-route-network", code(noc), line, directions],
+    queryFn: ({ signal }) =>
+      getFareRouteNetwork({ data: { noc, line, directions }, signal }),
+    staleTime: TIMETABLE_STALE_TIME,
+    retry: false,
+  });

@@ -8,6 +8,7 @@ import { useMemo, useState, useTransition } from "react";
 import { ClientOnlyStorage } from "./ClientOnlyStorage";
 import { OperatorCombobox } from "./OperatorCombobox";
 import { IconArrowRight } from "@tabler/icons-react";
+import { NearbyOperatorsButton } from "./NearbyOperatorsButton";
 
 export function OperatorForm({
   to,
@@ -35,14 +36,18 @@ export function OperatorForm({
         )}
       </ClientOnlyStorage>
       <div className="grid gap-2 grid-cols-2">
-        <Button
-          variant="secondary"
-          size="lg"
-          render={<Link to="/map" />}
-          nativeButton={false}
-        >
-          <MapPin /> Find nearby
-        </Button>
+        {to === "/map/$nocCode" ? (
+          <Button
+            variant="secondary"
+            size="lg"
+            render={<Link to="/map" />}
+            nativeButton={false}
+          >
+            <MapPin /> Find nearby
+          </Button>
+        ) : (
+          <NearbyOperatorsButton to={to} operators={operators} />
+        )}
         <Button
           size="lg"
           disabled={isLoading || !operator || isPending}

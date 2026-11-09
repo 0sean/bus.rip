@@ -44,6 +44,7 @@ export function parseDatafeed(xml: string): Vehicle[] | null {
     const bearing = optionalText(journey, "Bearing");
     const validUntil = text(required(activity.children, "ValidUntilTime"));
     return {
+      operatorRef: optionalText(journey, "OperatorRef")?.trim().toUpperCase(),
       lineName: text(required(journey.children, "PublishedLineName")),
       ref: text(required(journey.children, "VehicleRef")),
       longitude: Number(text(required(location.children, "Longitude"))),
@@ -51,12 +52,11 @@ export function parseDatafeed(xml: string): Vehicle[] | null {
       bearing: bearing === undefined ? null : Number(bearing),
       arrivalTime: optionalText(journey, "DestinationAimedArrivalTime"),
       departureTime: optionalText(journey, "OriginAimedDepartureTime"),
-      originName: text(required(journey.children, "OriginName")).replaceAll(
-        "_",
-        " ",
-      ),
-      destinationName: text(
-        required(journey.children, "DestinationName"),
+      originName: (
+        optionalText(journey, "OriginName") || "Unknown origin"
+      ).replaceAll("_", " "),
+      destinationName: (
+        optionalText(journey, "DestinationName") || "Unknown destination"
       ).replaceAll("_", " "),
       validUntil: /(?:Z|[+-]\d{2}:\d{2})$/.test(validUntil)
         ? validUntil

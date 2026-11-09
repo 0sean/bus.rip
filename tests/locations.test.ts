@@ -58,6 +58,7 @@ describe("vehicle feed parsing", () => {
     expect(parseDatafeed(feed(activity()))).toEqual([
       {
         lineName: "A & B é 🚌",
+        operatorRef: undefined,
         ref: "bus-1",
         longitude: -0.12,
         latitude: 51.5,
@@ -88,6 +89,24 @@ describe("vehicle feed parsing", () => {
       arrivalTime: "2026-10-23T13:00:00Z",
     });
     expect(vehicles?.[1].ref).toBe("bus-2");
+  });
+
+  it("preserves and normalizes the operator reference for nearby discovery", () => {
+    expect(
+      parseDatafeed(feed(activity("<OperatorRef> abcd </OperatorRef>")))?.[0]
+        .operatorRef,
+    ).toBe("ABCD");
+  });
+
+  it("keeps vehicles without origin or destination names in nearby feeds", () => {
+    const xml = feed(activity("<OperatorRef>ABCD</OperatorRef>"))
+      .replace(/<OriginName>.*?<\/OriginName>/, "")
+      .replace(/<DestinationName>.*?<\/DestinationName>/, "");
+    expect(parseDatafeed(xml)?.[0]).toMatchObject({
+      operatorRef: "ABCD",
+      originName: "Unknown origin",
+      destinationName: "Unknown destination",
+    });
   });
 
   it.each(["Z", "+01:00", "-05:30"])("preserves the %s timezone", (zone) => {

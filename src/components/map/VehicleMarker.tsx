@@ -11,12 +11,14 @@ function VehicleMarker({
   togglePopup,
   setFollowing,
   following,
+  nearby = false,
 }: {
   vehicle: Vehicle;
   popupOpen: boolean;
   togglePopup: () => void;
   setFollowing: Dispatch<SetStateAction<string | null>>;
   following: boolean;
+  nearby?: boolean;
 }) {
   const bearing = useMemo(() => Number(vehicle.bearing), [vehicle.bearing]);
 
@@ -38,6 +40,7 @@ function VehicleMarker({
           togglePopup={togglePopup}
           setFollowing={setFollowing}
           following={following}
+          nearby={nearby}
         />
       )}
     </>

@@ -2,8 +2,10 @@ import { Popup } from "react-map-gl/maplibre";
 import { FaArrowRight, FaArrowUpFromBracket } from "react-icons/fa6";
 import { formatDistanceToNow } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import type { Vehicle } from "@/lib/bods";
+import { operatorsOptions } from "@/data/queries";
 import { renderTime } from "@/lib/map";
 import type { Dispatch, SetStateAction } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
@@ -20,12 +22,23 @@ export default function VehiclePopup({
   togglePopup,
   setFollowing,
   following,
+  nearby = false,
 }: {
   vehicle: Vehicle;
   togglePopup: () => void;
   setFollowing: Dispatch<SetStateAction<string | null>>;
   following: boolean;
+  nearby?: boolean;
 }) {
+  const { data: operators } = useQuery({
+    ...operatorsOptions(),
+    enabled: nearby,
+  });
+  const operatorCode = vehicle.operatorRef?.trim().toUpperCase();
+  const operatorName = operators?.find(
+    (operator) => operator.nocCode.trim().toUpperCase() === operatorCode,
+  )?.publicName;
+
   const departureTime = useMemo(
       () => renderTime(vehicle.departureTime),
       [vehicle.departureTime],
@@ -62,6 +75,11 @@ export default function VehiclePopup({
     >
       <Card className="w-xs !font-sans gap-0">
         <CardHeader className="border-b">
+          {nearby && operatorCode && (
+            <p className="text-muted-foreground text-xs">
+              {operatorName || operatorCode}
+            </p>
+          )}
           <div className="flex justify-between items-center">
             <p className="font-medium text-2xl">{departureTime}</p>
             <IconArrowRight size={16} />

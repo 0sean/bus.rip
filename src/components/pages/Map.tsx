@@ -271,6 +271,7 @@ export default function MapPage({
                 togglePopup={() => togglePopup(`vehicle:${vehicle.ref}`)}
                 setFollowing={setFollowing}
                 following={vehicle.ref === following}
+                nearby={!nocCode}
               />
             ))}
           {userLocation && <LocationMarker location={userLocation} />}

@@ -113,66 +113,20 @@ export const getRoute = createServerFn({ method: "GET" })
     return { ...route, trips };
   });
 
+type OperatorGeometry = {
+  network: RouteNetwork;
+  missingRouteIds: number[];
+};
+
 export const getRouteNetwork = createServerFn({ method: "GET" })
-  .middleware([cacheControl(43_200), rateLimit("route-network")])
+  .middleware([rateLimit("route-network")])
   .validator(operatorCode)
   .handler(async ({ data: nocCode }) => {
-    const routes = await get<RouteWithTrips[]>(
-      `/timetables/agencies/noc:${encodeURIComponent(nocCode)}/routes`,
+    const result = await get<OperatorGeometry>(
+      `/timetables/agencies/noc:${encodeURIComponent(nocCode)}/geometry`,
     );
-    if (!Array.isArray(routes)) throw new Error(routes.error);
-    const network: RouteNetwork = { type: "FeatureCollection", features: [] };
-    const missing = new Set<number>();
-    const lines = new Map<number, Map<string, number[][]>>();
-    const tasks = routes.flatMap((route) => {
-      if (!route.trips.length) missing.add(route.id);
-      return representativeTrips(route.trips).map((trip) => ({
-        routeId: route.id,
-        tripId: trip.id,
-      }));
-    });
-    // Bound upstream concurrency. Repeated departures share geometry, so fetch
-    // representative journeys and return only deduplicated coordinates.
-    let next = 0;
-    await Promise.all(
-      Array.from({ length: Math.min(4, tasks.length) }, async () => {
-        while (next < tasks.length) {
-          const { routeId, tripId } = tasks[next++];
-          try {
-            const trip = await get<TripWithStops>(
-              `/timetables/trips/${encodeURIComponent(tripId)}`,
-            );
-            if ("error" in trip) throw new Error(trip.error);
-            const coordinates = routeLines([trip]);
-            if (!coordinates.length) {
-              missing.add(routeId);
-              continue;
-            }
-            const patterns =
-              lines.get(routeId) ?? new Map<string, number[][]>();
-            for (const line of coordinates)
-              patterns.set(JSON.stringify(line), line);
-            lines.set(routeId, patterns);
-          } catch {
-            missing.add(routeId);
-          }
-        }
-      }),
-    );
-    for (const route of routes) {
-      const patterns = lines.get(route.id);
-      if (!patterns) continue;
-      network.features.push({
-        type: "Feature",
-        id: route.id,
-        properties: { routeId: route.id },
-        geometry: {
-          type: "MultiLineString",
-          coordinates: [...patterns.values()],
-        },
-      });
-    }
-    return { network, missingRouteIds: [...missing] };
+    if ("error" in result) throw new Error(result.error);
+    return result;
   });
 
 // Fetch geometry only for the selected line and published direction, rather

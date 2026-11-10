@@ -1,16 +1,22 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import { ClientOnly } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { fareMapOptions, stopsOptions } from "@/data/queries";
+import { fareMapOptions } from "@/data/queries";
 import { FareError } from "./FareCatalogueList";
 import { FareMapPlaceholder } from "../map/FareMapPlaceholder";
-import { Button } from "../ui/button";
+import type { Stop } from "@/lib/buslane";
+
+const NO_STOPS: Stop[] = [];
 
 const FareMap = lazy(() => import("../map/FareMap"));
 
 export function FareOverviewMap({ noc }: { noc: string }) {
   const areas = useQuery(fareMapOptions(noc));
-  const locations = useQuery(stopsOptions(noc));
+  const geometry = areas.data?.data;
+  const zones = useMemo(
+    () => geometry?.zones.map((zone) => ({ ...zone, stops: [] })) ?? [],
+    [geometry],
+  );
   return (
     <section aria-label="All ticket areas" className="min-w-0">
       {areas.error ? (
@@ -19,7 +25,7 @@ export function FareOverviewMap({ noc }: { noc: string }) {
           noc={noc}
           retry={() => void areas.refetch()}
         />
-      ) : areas.isPending || locations.isPending ? (
+      ) : areas.isPending ? (
         <FareMapPlaceholder overview />
       ) : areas.data ? (
         <ClientOnly fallback={<FareMapPlaceholder overview />}>
@@ -27,18 +33,13 @@ export function FareOverviewMap({ noc }: { noc: string }) {
             <FareMap
               noc={noc}
               generation={areas.data.generation}
-              zones={areas.data.data}
-              stops={locations.data ?? []}
-              unavailable={!!locations.error}
+              zones={zones}
+              stops={NO_STOPS}
+              precomputed={geometry}
               overview
             />
           </Suspense>
         </ClientOnly>
-      ) : null}
-      {locations.error ? (
-        <Button variant="outline" onClick={() => void locations.refetch()}>
-          Retry stop locations
-        </Button>
       ) : null}
     </section>
   );

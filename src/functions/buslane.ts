@@ -119,7 +119,7 @@ type OperatorGeometry = {
 };
 
 export const getRouteNetwork = createServerFn({ method: "GET" })
-  .middleware([rateLimit("route-network")])
+  .middleware([cacheControl(43_200), rateLimit("route-network")])
   .validator(operatorCode)
   .handler(async ({ data: nocCode }) => {
     const result = await get<OperatorGeometry>(
@@ -129,8 +129,6 @@ export const getRouteNetwork = createServerFn({ method: "GET" })
     return result;
   });
 
-// Fetch geometry only for the selected line and published direction, rather
-// than downloading every route in the operator's network.
 export const getFareRouteNetwork = createServerFn({ method: "GET" })
   .middleware([cacheControl(43_200), rateLimit("fare-route-network")])
   .validator(

@@ -12,6 +12,7 @@ import {
   type FareStop,
 } from "@/lib/fares";
 
+import { isFareMapGeometry } from "@/lib/fare-map";
 import { collectFareMap } from "@/lib/fare-map-catalogue";
 import { priceFareFamilies } from "@/lib/fare-family-prices";
 import { collectFareCoverage, collectFarePages } from "@/lib/fare-coverage";
@@ -222,41 +223,56 @@ async function requestCatalogue(data: FareRequest, signal?: AbortSignal) {
   }
 }
 
-// One rate-limited map request aggregates catalogue pages server-side, with four
-// upstream reads at most in flight. Individual fare browsing keeps its own budget.
+// The complete operator map is precomputed by Buslane; one upstream request.
 export const getFareMapCatalogue = createServerFn({ method: "GET" })
   .middleware([rateLimit("fare-map")])
   .validator(operatorCode)
   .handler(async ({ data: noc }) => {
-    const controller = new AbortController();
-    const signal = AbortSignal.any([
-      controller.signal,
-      AbortSignal.timeout(30_000),
-    ]);
+    if (process.env.BUSLANE_ENABLED === "0")
+      return failure(503, "Fares are temporarily unavailable.");
     try {
-      const result = await collectFareMap(noc, async (request) => {
-        signal.throwIfAborted();
-        return readFareResponse<FareItem[] | FareStop[]>(
-          await requestCatalogue(request, signal),
+      const response = await fetch(
+        `${(process.env.BUSLANE_BASE_URL || "http://localhost:3000").replace(/\/$/, "")}/api/fares/operators/${encodeURIComponent(noc)}/geometry`,
+        {
+          headers: { Authorization: `Bearer ${process.env.BUSLANE_API_KEY}` },
+          signal: AbortSignal.timeout(15_000),
+        },
+      );
+      if (!response.ok)
+        return failure(
+          503,
+          "The fare map is temporarily unavailable. Please try again.",
         );
-      });
+      const generation = response.headers.get("x-catalogue-generation");
+      if (
+        !generation ||
+        !/^[1-9]\d*$/.test(generation) ||
+        response.headers.get("x-catalogue-version") !== CATALOGUE_VERSION
+      )
+        return failure(
+          503,
+          "The fares catalogue is not ready. Please try again later.",
+        );
+      const geometry: unknown = await response.json();
+      if (!isFareMapGeometry(geometry))
+        return failure(
+          503,
+          "The fare map is temporarily unavailable. Please try again.",
+        );
       return Response.json(
         {
-          data: result.zones,
-          generation: result.generation,
+          data: geometry,
+          generation,
           version: CATALOGUE_VERSION,
           nextCursor: null,
         },
         { headers: { "Cache-Control": "no-store" } },
       );
-    } catch (error) {
-      controller.abort();
-      return error instanceof FareApiError
-        ? failure(error.status, error.message)
-        : failure(
-            503,
-            "The fare map is temporarily unavailable. Please try again.",
-          );
+    } catch {
+      return failure(
+        503,
+        "The fare map is temporarily unavailable. Please try again.",
+      );
     }
   });
 

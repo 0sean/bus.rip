@@ -37,6 +37,7 @@ import {
   getFareMapCatalogue,
 } from "../src/functions/fares";
 import {
+  fareMapOptions,
   fareDetailOptions,
   farePagesOptions,
   journeyFaresOptions,
@@ -450,39 +451,140 @@ describe("operator map server adapter", () => {
   const callMap = getFareMapCatalogue as unknown as (args: {
     data: string;
   }) => Promise<Response>;
-  it("returns every membership page as map data with server-only authentication", async () => {
-    fetchMock.mockImplementation(async (url: string) => {
-      const path = new URL(url);
-      if (path.pathname.endsWith("/areas"))
-        return response([item("area")], "6");
-      expect(path.searchParams.get("generation")).toBe("6");
-      return path.searchParams.has("cursor")
-        ? response([{ code: "B", name: "Second stop" }], "6")
-        : response([{ code: "A", name: "First stop" }], "6", 200, {
-            "x-next-cursor": "next-stops",
-          });
-    });
+  const geometry = {
+    ...fareZoneFeatures(
+      [
+        {
+          id: id("area"),
+          name: "Town",
+          stops: ["A", "B"],
+          membershipComplete: true,
+        },
+      ],
+      [
+        { id: "A", lon: "-2", lat: "54" },
+        { id: "B", lon: "-1", lat: "54" },
+      ] as Stop[],
+    ),
+    zones: [
+      {
+        id: id("area"),
+        name: "Town",
+        membershipComplete: true,
+        stopCount: 2,
+        mappedStopCount: 2,
+      },
+    ],
+    missingAreaIds: [],
+    unmatchedStopCodes: [],
+    timetableGeneration: 3,
+    approximate: true,
+  };
+  it("returns precomputed geometry unchanged through one authenticated upstream request", async () => {
+    fetchMock.mockResolvedValue(response(geometry, "6"));
     const result = await callMap({ data: "anea" });
     expect(result.headers.get("cache-control")).toBe("no-store");
-    expect(await readFareResponse(result)).toMatchObject({
+    const payload = await readFareResponse(result);
+    expect(payload).toEqual({
       generation: "6",
-      data: [{ id: id("area"), name: "Adult ticket", stops: ["A", "B"] }],
+      version: "1",
+      nextCursor: null,
+      data: geometry,
     });
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    for (const [url, options] of fetchMock.mock.calls) {
-      expect(new URL(url).pathname).toContain("/operators/ANEA/areas");
-      expect(new URL(url).searchParams.get("limit")).toBe("50");
-      expect(options.headers.Authorization).toBe("Bearer server-only-key");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://buslane.test/api/fares/operators/ANEA/geometry");
+    expect(options.headers.Authorization).toBe("Bearer server-only-key");
+    expect(options.signal).toBeInstanceOf(AbortSignal);
+    expect(JSON.stringify(payload)).not.toContain("server-only-key");
+  });
+  it("loads more than 50 zones through the query adapter without membership or stop requests", async () => {
+    const large = {
+      ...geometry,
+      zones: Array.from({ length: 61 }, (_, i) => ({
+        ...geometry.zones[0],
+        id: `area_${i.toString(16).padStart(64, "0")}`,
+      })),
+    };
+    fetchMock.mockResolvedValue(response(large, "6"));
+    const client = new QueryClient();
+    try {
+      const result = await client.fetchQuery(fareMapOptions("ANEA"));
+      expect(result.data.zones).toHaveLength(61);
+      expect(result.data.points).toEqual(large.points);
+      expect(result.generation).toBe("6");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fareMapOptions("ANEA").queryKey).toContain("map-geometry-v1");
+    } finally {
+      client.clear();
     }
   });
-  it("returns a generation conflict without partial map data", async () => {
-    fetchMock
-      .mockResolvedValueOnce(response([item("area")], "6"))
-      .mockResolvedValueOnce(response([], "7"));
-    const result = await callMap({ data: "ANEA" });
-    expect(result.status).toBe(409);
-    expect(await result.json()).toEqual({
-      error: "Fares have changed. Load the latest fares to continue.",
-    });
+  it.each([404, 409, 500, 503])(
+    "returns upstream %i as an uncached error without partial map data",
+    async (status) => {
+      fetchMock.mockResolvedValue(
+        response({ error: "internal upstream error" }, "6", status),
+      );
+      const result = await callMap({ data: "ANEA" });
+      expect(result.status).toBe(503);
+      expect(result.headers.get("cache-control")).toBe("no-store");
+      expect(await result.json()).toEqual({
+        error: "The fare map is temporarily unavailable. Please try again.",
+      });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    },
+  );
+  it("rejects stale catalogue versions, missing generation headers and malformed map documents", async () => {
+    for (const upstream of [
+      response(geometry, "6", 200, { "x-catalogue-version": "2" }),
+      response(geometry, ""),
+      response([], "6"),
+      response({ ...geometry, points: null }, "6"),
+      response(
+        { ...geometry, zones: [{ ...geometry.zones[0], mappedStopCount: 3 }] },
+        "6",
+      ),
+      new Response("not JSON", {
+        headers: { "x-catalogue-generation": "6", "x-catalogue-version": "1" },
+      }),
+    ]) {
+      fetchMock.mockResolvedValue(upstream);
+      const result = await callMap({ data: "ANEA" });
+      expect(result.status).toBe(503);
+      expect(await result.json()).not.toHaveProperty("data");
+    }
+  });
+  it("keeps valid empty maps and missing-coordinate diagnostics", async () => {
+    const empty = {
+      ...geometry,
+      areas: { type: "FeatureCollection", features: [] },
+      points: { type: "FeatureCollection", features: [] },
+      labels: { type: "FeatureCollection", features: [] },
+      zones: [],
+      missingAreaIds: [],
+      unmatchedStopCodes: [],
+    };
+    for (const data of [
+      empty,
+      {
+        ...geometry,
+        missingAreaIds: [id("area")],
+        unmatchedStopCodes: ["MISSING"],
+      },
+    ]) {
+      fetchMock.mockResolvedValue(response(data, "6"));
+      expect(
+        (await readFareResponse(await callMap({ data: "ANEA" }))).data,
+      ).toEqual(data);
+    }
+  });
+  it("handles network errors and disabled Buslane without a legacy fallback", async () => {
+    fetchMock.mockRejectedValue(new Error("network"));
+    expect((await callMap({ data: "ANEA" })).status).toBe(503);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    fetchMock.mockClear();
+    vi.stubEnv("BUSLANE_ENABLED", "0");
+    expect((await callMap({ data: "ANEA" })).status).toBe(503);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

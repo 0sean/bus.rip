@@ -8,6 +8,70 @@ export type FareMapArea = {
   stops: string[];
   membershipComplete?: boolean;
 };
+export type FareMapGeometry = {
+  areas: FeatureCollection<Polygon>;
+  points: FeatureCollection<Point>;
+  labels: FeatureCollection<Point>;
+  zones: {
+    id: string;
+    name: string;
+    membershipComplete: boolean;
+    stopCount: number;
+    mappedStopCount: number;
+  }[];
+  missingAreaIds: string[];
+  unmatchedStopCodes: string[];
+  timetableGeneration: number;
+  approximate: true;
+};
+
+export function isFareMapGeometry(value: unknown): value is FareMapGeometry {
+  if (!value || typeof value !== "object") return false;
+  const data = value as Record<string, unknown>;
+  const collection = (value: unknown) => {
+    if (!value || typeof value !== "object") return false;
+    const row = value as Record<string, unknown>;
+    return row.type === "FeatureCollection" && Array.isArray(row.features);
+  };
+  const strings = (value: unknown) =>
+    Array.isArray(value) && value.every((item) => typeof item === "string");
+  return (
+    collection(data.areas) &&
+    collection(data.points) &&
+    collection(data.labels) &&
+    Array.isArray(data.zones) &&
+    data.zones.every(
+      (zone) =>
+        zone &&
+        typeof zone.id === "string" &&
+        typeof zone.name === "string" &&
+        typeof zone.membershipComplete === "boolean" &&
+        Number.isSafeInteger(zone.stopCount) &&
+        zone.stopCount >= 0 &&
+        Number.isSafeInteger(zone.mappedStopCount) &&
+        zone.mappedStopCount >= 0 &&
+        zone.mappedStopCount <= zone.stopCount,
+    ) &&
+    strings(data.missingAreaIds) &&
+    strings(data.unmatchedStopCodes) &&
+    Number.isSafeInteger(data.timetableGeneration) &&
+    Number(data.timetableGeneration) > 0 &&
+    data.approximate === true
+  );
+}
+
+export function fareMapCoverageNote(map: FareMapGeometry): string {
+  if (!map.zones.length) return "No ticket areas are published.";
+  if (!map.labels.features.length)
+    return "No published stops have matching timetable coordinates.";
+  const missing = map.missingAreaIds.length;
+  if (missing)
+    return `Approximate zone coverage · ${missing} of ${map.zones.length} areas have no matching stop locations · ticket conditions apply`;
+  if (map.zones.some((zone) => zone.mappedStopCount < zone.stopCount))
+    return "Approximate zone coverage · some stop locations are unavailable · ticket conditions apply";
+  return "Approximate zone coverage · ticket conditions apply";
+}
+
 const COLORS = [
   "#2563eb",
   "#dc2626",

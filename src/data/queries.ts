@@ -1,4 +1,4 @@
-import type { FareMapArea, TicketCoverage } from "@/lib/fare-map";
+import type { FareMapGeometry, TicketCoverage } from "@/lib/fare-map";
 import {
   getFareCatalogue,
   getFareJourneyPoints,
@@ -170,9 +170,9 @@ export const journeyFaresOptions = (request: FareRequest) =>
 
 export const fareMapOptions = (noc: string) =>
   queryOptions({
-    queryKey: ["fares-v1", code(noc), "map"],
+    queryKey: ["fares-v1", code(noc), "map-geometry-v1"],
     queryFn: async ({ signal }) =>
-      readFareResponse<FareMapArea[]>(
+      readFareResponse<FareMapGeometry>(
         await getFareMapCatalogue({ data: noc, signal }),
       ),
     staleTime: 60_000,

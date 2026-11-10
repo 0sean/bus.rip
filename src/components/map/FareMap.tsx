@@ -11,8 +11,12 @@ import {
 import { Link } from "@tanstack/react-router";
 import type { FilterSpecification } from "maplibre-gl";
 import type { Stop } from "@/lib/buslane";
-import type { FareMapArea } from "@/lib/fare-map";
-import { fareZoneFeatures, zoneColor } from "@/lib/fare-map";
+import type { FareMapArea, FareMapGeometry } from "@/lib/fare-map";
+import {
+  fareZoneFeatures,
+  zoneColor,
+  fareMapCoverageNote,
+} from "@/lib/fare-map";
 import { useMediaQuery } from "@/lib/use-media-query";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Card, CardContent } from "../ui/card";
@@ -23,6 +27,7 @@ export default function FareMap({
   generation,
   stops,
   unavailable = false,
+  precomputed,
   tall = false,
   overview = false,
   topInset = 115,
@@ -32,6 +37,7 @@ export default function FareMap({
   generation: string;
   stops: Stop[];
   unavailable?: boolean;
+  precomputed?: FareMapGeometry;
   tall?: boolean;
   overview?: boolean;
   topInset?: number;
@@ -47,7 +53,10 @@ export default function FareMap({
     pinned: boolean;
   } | null>(null);
   const dark = useMediaQuery("(prefers-color-scheme: dark)");
-  const data = useMemo(() => fareZoneFeatures(zones, stops), [zones, stops]);
+  const data = useMemo(
+    () => precomputed ?? fareZoneFeatures(zones, stops),
+    [precomputed, zones, stops],
+  );
   const fitCoverage = useCallback(() => {
     if (!map.current) return;
     const features = data.labels.features.filter(
@@ -291,15 +300,17 @@ export default function FareMap({
             ? "Map could not load. Fare details remain available."
             : unavailable
               ? "Stop locations are temporarily unavailable."
-              : !mapped.size
-                ? "No loaded stops have matching timetable coordinates."
-                : overview
-                  ? "Approximate zone coverage · ticket conditions apply"
-                  : data.areas.features.length
-                    ? "Shaded coverage is approximate, not an official fare boundary."
-                    : zones.length === 1
-                      ? `${data.points.features.length} stop locations shown.`
-                      : `${mapped.size} of ${zones.length} areas have loaded stop locations. No ticket boundaries are published.`}
+              : precomputed
+                ? fareMapCoverageNote(precomputed)
+                : !mapped.size
+                  ? "No loaded stops have matching timetable coordinates."
+                  : overview
+                    ? "Approximate zone coverage · ticket conditions apply"
+                    : data.areas.features.length
+                      ? "Shaded coverage is approximate, not an official fare boundary."
+                      : zones.length === 1
+                        ? `${data.points.features.length} stop locations shown.`
+                        : `${mapped.size} of ${zones.length} areas have loaded stop locations. No ticket boundaries are published.`}
         </p>
         {zones.length > 1 && !overview && !tall ? (
           <div

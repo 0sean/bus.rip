@@ -36,7 +36,11 @@ if (command === "generate") {
           "migrations",
           "apply",
           "DB",
-          ...(args.includes("--remote") ? [] : ["--local"]),
+          "--config",
+          ".output/server/wrangler.json",
+          ...(args.includes("--remote")
+            ? []
+            : ["--local", "--persist-to", ".wrangler/state"]),
           ...args,
         ]
       : [command, ...args];

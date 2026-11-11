@@ -21,7 +21,7 @@ Since ~2021, all UK bus operators are legally required to publish timetable, far
 
 ## Self-hosting/running locally
 
-bus.rip works anywhere you can run a TanStack Start app (in production, it runs on Cloudflare). You’ll also need to pick a database to store the operator list - either Postgres or Cloudflare D1.
+bus.rip works anywhere you can run a TanStack Start app (in production, it runs on Cloudflare) - it uses <a href="https://nitro.build/deploy">Nitro</a>, which can be deployed to many different providers, such as Vercel, often with no extra config needed. You’ll also need to pick a database to store the operator list - either Postgres or Cloudflare D1.
 
 bus.rip also has a companion service called <a href="https://github.com/0sean/buslane">Buslane</a> for accessing timetables and fares data - instead of having a proper API, these use individual XML files, which are not easy to consume in a web app. Buslane ingests this data and turns it into an API which bus.rip can use easily.
 
@@ -39,21 +39,21 @@ pnpm build
 pnpm start
 ```
 
-This uses <a href="https://nitro.build/deploy">Nitro</a>, which can be deployed to many different providers, such as Vercel, often with no extra config needed.
-
 ### Cloudflare D1 (Workers)
 
-Create a Wrangler config from the `wrangler.jsonc.example` file - this is set up to use D1 by default. Then, run database migrations:
+Set `DATABASE_PROVIDER=d1` in `.env` (or in the Cloudflare Workers Builds environment). Nitro generates its own Wrangler config during the build. Manage environment variables, domains, etc in the Cloudflare dashboard.
+
+Build before running migrations or previewing the Worker so those commands can use the generated config:
 
 ```bash
+pnpm build
 pnpm db:migrate:d1
 pnpm dev
-# Build and run the production Worker locally:
-yarn build
-yarn start
+# Run the production Worker locally:
+pnpm start
 # To deploy to production:
-yarn db:migrate:d1:remote
-yarn wrangler deploy
+pnpm db:migrate:d1:remote
+pnpm run deploy
 ```
 
 ### Configuration options

@@ -9,10 +9,21 @@ if (!["postgres", "d1"].includes(provider)) {
 const args = process.argv.slice(2);
 const child =
   provider === "d1"
-    ? spawn("vite", ["preview", ...args], {
-        stdio: "inherit",
-        shell: process.platform === "win32",
-      })
+    ? spawn(
+        "wrangler",
+        [
+          "dev",
+          "--config",
+          ".output/server/wrangler.json",
+          "--persist-to",
+          ".wrangler/state",
+          ...args,
+        ],
+        {
+          stdio: "inherit",
+          shell: process.platform === "win32",
+        },
+      )
     : spawn(process.execPath, [".output/server/index.mjs", ...args], {
         stdio: "inherit",
       });

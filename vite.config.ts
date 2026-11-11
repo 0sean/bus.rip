@@ -4,7 +4,6 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
-import { cloudflare } from "@cloudflare/vite-plugin";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 
 export default defineConfig(({ mode }) => {
@@ -34,16 +33,52 @@ export default defineConfig(({ mode }) => {
       },
     },
     define: { "import.meta.env.VITE_SENTRY_DSN": JSON.stringify(sentryDsn) },
+    environments: {
+      ssr: {
+        // Workers supplies this module; keep it external in the SSR bundle.
+        build: { rolldownOptions: { external: ["cloudflare:workers"] } },
+        // Convert CommonJS dependencies for Nitro's Worker dev runner.
+        optimizeDeps:
+          provider === "d1"
+            ? { noDiscovery: false, exclude: ["cloudflare:workers"] }
+            : undefined,
+      },
+    },
+    optimizeDeps: { exclude: ["cloudflare:workers"] },
     nitro: {
       preset:
-        process.env.NITRO_PRESET ||
-        (process.env.VERCEL ? "vercel" : "node-server"),
+        env.NITRO_PRESET ||
+        (provider === "d1"
+          ? "cloudflare-module"
+          : process.env.VERCEL
+            ? "vercel"
+            : "node-server"),
       compressPublicAssets: true,
+      compatibilityDate: "2026-10-14",
+      cloudflare: {
+        wrangler: {
+          name: "busrip",
+          // Runtime variables are managed in the Cloudflare dashboard.
+          keep_vars: true,
+          ...(provider === "d1"
+            ? {
+                d1_databases: [
+                  {
+                    binding: "DB",
+                    database_name: "busrip",
+                    migrations_dir: fileURLToPath(
+                      new URL("./drizzle/d1", import.meta.url),
+                    ),
+                  },
+                ],
+              }
+            : {}),
+        },
+      },
     },
     plugins: [
-      ...(provider === "d1"
-        ? [cloudflare({ viteEnvironment: { name: "ssr" } }), tanstackStart()]
-        : [tanstackStart(), nitro()]),
+      tanstackStart(),
+      nitro(),
       react(),
       tailwindcss(),
       ...(env.SENTRY_AUTH_TOKEN && env.SENTRY_ORG && env.SENTRY_PROJECT

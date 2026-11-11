@@ -17,13 +17,13 @@
 
 ## How it works
 
-Since ~2021, all UK bus operators are legally required to publish timetable, fare and vehicle location data to the Bus Open Data Service. bus.rip takes this data and gives it an easy to use UI. It tends to be a lot more reliable than bus operator’s own apps, and doesn’t require you to install a new app for every operator you use.
+Since ~2021, all UK bus operators are legally required to publish timetable, fare and vehicle location data to the <a href="https://www.bus-data.dft.gov.uk/">Bus Open Data Service</a>. bus.rip takes this data and gives it an easy to use UI. It tends to be a lot more reliable than bus operator’s own apps, and doesn’t require you to install a new app for every operator you use.
 
 ## Self-hosting/running locally
 
 bus.rip works anywhere you can run a TanStack Start app (in production, it runs on Cloudflare). You’ll also need to pick a database to store the operator list - either Postgres or Cloudflare D1.
 
-bus.rip also has a companion service called Buslane for accessing timetables and fares data - instead of having a proper API, these use individual XML files, which are not easy to consume in a web app. Buslane ingests this data and turns it into an API which bus.rip can use easily.
+bus.rip also has a companion service called <a href="https://github.com/0sean/buslane">Buslane</a> for accessing timetables and fares data - instead of having a proper API, these use individual XML files, which are not easy to consume in a web app. Buslane ingests this data and turns it into an API which bus.rip can use easily.
 
 You can use bus.rip without Buslane, but you won’t have access to any timetables or fares data.
 
@@ -39,7 +39,7 @@ pnpm build
 pnpm start
 ```
 
-This uses Nitro, which can be deployed to many different providers, such as Vercel, often with no extra config needed.
+This uses <a href="https://nitro.build/deploy">Nitro</a>, which can be deployed to many different providers, such as Vercel, often with no extra config needed.
 
 ### Cloudflare D1 (Workers)
 

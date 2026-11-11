@@ -3,9 +3,9 @@
 
 <table>
   <tr>
-    <td><img width="492" height="492" alt="Track buses" src="https://github.com/user-attachments/assets/fae97bac-c3e9-40d8-95d6-6b3e8dcfe1e9" style="height: 320px; width: 320px;" /></td>
-    <td><img width="492" height="492" alt="View timetables" src="https://github.com/user-attachments/assets/727437d4-429a-4230-b636-3fd17cea83ab"  style="height: 320px; width: 320px;" /></td>
-    <td><img width="492" height="492" alt="Check fares" src="https://github.com/user-attachments/assets/8533b3b8-7b43-4bce-b9c5-4442b852ea23" style="height: 320px; width: 320px;" /></td>
+    <td><img width="492" height="492" alt="Track buses" src="https://github.com/user-attachments/assets/fae97bac-c3e9-40d8-95d6-6b3e8dcfe1e9" style="height: 250px; width: 250px;" /></td>
+    <td><img width="492" height="492" alt="View timetables" src="https://github.com/user-attachments/assets/727437d4-429a-4230-b636-3fd17cea83ab"  style="height: 250px; width: 250px;" /></td>
+    <td><img width="492" height="492" alt="Check fares" src="https://github.com/user-attachments/assets/8533b3b8-7b43-4bce-b9c5-4442b852ea23" style="height: 250px; width: 250px;" /></td>
   </tr>
   <tr>
     <td align="center">📍 <b>Track any bus in the UK</b></td>

@@ -1,0 +1,85 @@
+{
+  "id": "16fe1767-b607-4c0e-8758-8afd92d444f0",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.NocLine": {
+      "name": "NocLine",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "lineNo": {
+          "name": "lineNo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nocCode": {
+          "name": "nocCode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "publicName": {
+          "name": "publicName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "referenceName": {
+          "name": "referenceName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hasMissingLocationData": {
+          "name": "hasMissingLocationData",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {
+        "NocLine_lineNo_key": {
+          "name": "NocLine_lineNo_key",
+          "columns": [
+            {
+              "expression": "lineNo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

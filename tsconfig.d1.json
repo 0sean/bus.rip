@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "@database": ["./src/db/d1.server.ts"],
+      "@database-schema": ["./src/db/schema.d1.ts"]
+    },
+    "tsBuildInfoFile": "./node_modules/.cache/tsconfig.d1.tsbuildinfo"
+  }
+}

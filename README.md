@@ -1,46 +1,104 @@
-![image](https://github.com/user-attachments/assets/81b14bd4-3714-4420-b680-1da5aae508ed)
+<img width="1200" height="450" alt="image" src="https://github.com/user-attachments/assets/9c14397a-6387-4570-9e6d-7137c8d005d3" />
+<br/><br/>
 
-### [bus.rip](https://bus.rip/) - bus tracking powered by [Bus Open Data Service](https://data.bus-data.dft.gov.uk/).
-- 🚌 Works for any UK bus operator
-- 📍 Displays location of every bus for each operator, updating every 10 seconds
-- 🧭 Track, follow and share buses
+<table>
+  <tr>
+    <td><img width="492" height="492" alt="Track buses" src="https://github.com/user-attachments/assets/fae97bac-c3e9-40d8-95d6-6b3e8dcfe1e9" style="height: 250px; width: 250px;" /></td>
+    <td><img width="492" height="492" alt="View timetables" src="https://github.com/user-attachments/assets/727437d4-429a-4230-b636-3fd17cea83ab"  style="height: 250px; width: 250px;" /></td>
+    <td><img width="492" height="492" alt="Check fares" src="https://github.com/user-attachments/assets/8533b3b8-7b43-4bce-b9c5-4442b852ea23" style="height: 250px; width: 250px;" /></td>
+  </tr>
+  <tr>
+    <td align="center">📍 <b>Track any bus in the UK</b></td>
+    <td align="center">🕒 <b>View timetables for any service</b></td>
+    <td align="center">💸 <b>Check fares for any journey</b></td>
+  </tr>
+</table>
 
-| ![image](https://github.com/user-attachments/assets/6bc8fbaf-f455-4eed-8617-918f92fbb020) | ![image](https://github.com/user-attachments/assets/23018253-236f-4846-869c-3a1bacf8f641) | ![image](https://github.com/user-attachments/assets/e25136f0-5180-4426-a1f2-f6084f444f1b) |
-| :-------------: |:-------------:| :-----:|
-| **See all buses for an operator on a map** | **View information and share link to follow** | **Follow a bus along its route** |
 
+## How it works
 
-### Self-hosting/running locally
-The app itself is a Next.js app, with Postgres (via Prisma) for storing operator data and Upstash Redis (via @upstash/ratelimit) for ratelimiting.
-Configuration is done via environent variables - outside of Prisma (`DATABASE_URL`) and Upstash Ratelimit (`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`) environment variables, the only variables you will need to set is:
-- The `BODS_API_KEY` variable, which can be obtained [here](https://data.bus-data.dft.gov.uk/account/settings/)
-- The `CRON_TOKEN` variable, which should be supplied as a Bearer token to the cron job route
-- If not running behind Cloudflare, you will need to set the `IP_HEADER` variable to whichever header your host/proxy supplies for getting a user's IP (it defaults to Cloudflare's `CF-Connecting-IP` header) (this is fine to leave if just running locally)
-- Optionally, Sentry can be used by setting the following environment variables: `SENTRY_DSN` `SENTRY_ORG` `SENTRY_PROJECT`
+Since ~2021, all UK bus operators are legally required to publish timetable, fare and vehicle location data to the <a href="https://www.bus-data.dft.gov.uk/">Bus Open Data Service</a>. bus.rip takes this data and gives it an easy to use UI. It tends to be a lot more reliable than bus operator’s own apps, and doesn’t require you to install a new app for every operator you use.
 
-You will also need to run the job for fetching operator data from Traveline (which in production would be run once a month via a cron job).
-To run the job, send a GET request with the Authorization header set with the `CRON_TOKEN` variable you set earlier to `/api/cron`.
+## Self-hosting/running locally
 
-In production, it is run on Vercel behind Cloudflare, however it should be able to run anywhere you can run a Next.js app.
+bus.rip works anywhere you can run a TanStack Start app (in production, it runs on Cloudflare). You’ll also need to pick a database to store the operator list - either Postgres or Cloudflare D1.
 
-<blockquote>
-  <details>
-  <summary>License</summary>
-  <br>
+bus.rip also has a companion service called <a href="https://github.com/0sean/buslane">Buslane</a> for accessing timetables and fares data - instead of having a proper API, these use individual XML files, which are not easy to consume in a web app. Buslane ingests this data and turns it into an API which bus.rip can use easily.
 
-    Copyright (C) 2023-2025 0sean
-    
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+You can use bus.rip without Buslane, but you won’t have access to any timetables or fares data.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+### PostgreSQL
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-</details>
-</blockquote>
+Set the `DATABASE_URL` environment variable (or set in `.env`) then run the database migrations:
+
+```bash
+pnpm db:migrate
+pnpm dev
+# Production (for running on Node):
+pnpm build
+pnpm start
+```
+
+This uses <a href="https://nitro.build/deploy">Nitro</a>, which can be deployed to many different providers, such as Vercel, often with no extra config needed.
+
+### Cloudflare D1 (Workers)
+
+Create a Wrangler config from the `wrangler.jsonc.example` file - this is set up to use D1 by default. Then, run database migrations:
+
+```bash
+pnpm db:migrate:d1
+pnpm dev
+# Build and run the production Worker locally:
+yarn build
+yarn start
+# To deploy to production:
+yarn db:migrate:d1:remote
+yarn wrangler deploy
+```
+
+### Configuration options
+
+Configure these as environment variables, or in `.env`.
+
+<table>
+  <thead>
+    <tr>
+      <th>Variable</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>DATABASE_PROVIDER</code><br/><b>(required)</b></td>
+      <td>Build-time database choice: <code>postgres</code> (default) or <code>d1</code></td>
+    </tr>
+    <tr>
+      <td><code>DATABASE_URL</code><br/><b>(required if using Postgres)</b></td>
+      <td>PostgreSQL connection URL</td>
+    </tr>
+    <tr>
+      <td><code>BODS_API_KEY</code><br/><b>(required)</b></td>
+      <td>Bus Open Data Service API key; <a href="https://data.bus-data.dft.gov.uk/account/settings/">get here</a></td>
+    </tr>
+    <tr>
+      <td><code>IP_HEADER</code></td>
+      <td>Trusted proxy IP header; defaults to <code>CF-Connecting-IP</code></td>
+    </tr>
+    <tr>
+      <td><code>RATE_LIMIT_ENABLED</code></td>
+      <td>Set to <code>0</code> or <code>false</code> to disable app rate limiting; enabled by default</td>
+    </tr>
+    <tr>
+      <td><code>UPSTASH_REDIS_REST_URL</code>, <code>UPSTASH_REDIS_REST_TOKEN</code><br/><b>(required if using ratelimiting)</b></td>
+      <td>Redis connection details</td>
+    </tr>
+    <tr>
+      <td><code>BUSLANE_BASE_URL</code>, <code>BUSLANE_API_KEY</code></td>
+      <td>Buslane timetable service URL and API key</td>
+    </tr>
+    <tr>
+      <td><code>SENTRY_DSN</code>, <code>SENTRY_AUTH_TOKEN</code>, <code>SENTRY_ORG</code>, <code>SENTRY_PROJECT</code></td>
+      <td>Set to enable Sentry monitoring</td>
+    </tr>
+  </tbody>
+</table>

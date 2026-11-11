@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 
 export function useMediaQuery(query: string) {
-  const [value, setValue] = useState(false);
+  const defaultValue =
+    typeof window !== "undefined" ? matchMedia(query).matches : false;
+  const [value, setValue] = useState(defaultValue);
 
   useEffect(() => {
     function onChange(event: MediaQueryListEvent) {

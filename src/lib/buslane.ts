@@ -1,27 +1,4 @@
-const BASE_URL = process.env.BUSLANE_BASE_URL || "http://localhost:3000",
-  API_KEY = process.env.BUSLANE_API_KEY,
-  ENABLED = process.env.BUSLANE_ENABLED != "0";
-
 export type ApiError = { error: string };
-
-async function get<T>(
-  url: string,
-  cache: boolean = true,
-): Promise<T | ApiError> {
-  if (!ENABLED) return { error: "Buslane is not enabled." };
-  return await (
-    await fetch(`${BASE_URL}/api${url}`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${API_KEY}`,
-      },
-      next: {
-        revalidate: cache ? 43200 : undefined,
-      },
-      cache: cache ? undefined : "no-store",
-    })
-  ).json();
-}
 
 export type Stop = {
   id: string;
@@ -36,10 +13,6 @@ export type Stop = {
   updated_at: string;
   parent_station_id: string | null;
 };
-
-export async function getStops(noc: string): Promise<Stop[] | ApiError> {
-  return await get<Stop[]>(`/timetables/agencies/noc:${noc}/stops`);
-}
 
 export type StopTime = {
   id: number;
@@ -94,6 +67,8 @@ export type TripWithAssociations = Trip & {
 
 export type TripWithStops = Trip & {
   stop_times: StopTimeWithStop[];
+  service?: Service | null;
+  frequencies?: Frequency[];
 };
 
 type Shape = {
@@ -162,55 +137,6 @@ type Service = {
   updated_at: string;
 };
 
-export async function getStopTimes(
-  noc: string,
-  stopId: string,
-): Promise<StopTime[] | ApiError> {
-  const data = await get<StopTimeWithAssociations[]>(
-    `/timetables/stops/${stopId}/stop_times`,
-    true,
-  );
-  if (Array.isArray(data)) {
-    return data.filter(
-      (stopTime) =>
-        stopTime.trip.route.agency.noc.toLowerCase() === noc.toLowerCase(),
-    );
-  } else {
-    return { error: "Failed to fetch stop times" };
-  }
-}
-
-export async function getRoutes(
-  noc: string,
-): Promise<RouteWithTrips[] | ApiError> {
-  const data = await get<RouteWithTrips[]>(`/timetables/agencies/noc:${noc}/routes`);
-  if (Array.isArray(data)) {
-    return data;
-  } else {
-    return { error: "Failed to fetch routes" };
-  }
-}
-
-export async function getTrip(
-  tripId: string,
-): Promise<TripWithAssociations | ApiError> {
-  const data = await get<TripWithAssociations>(`/timetables/trips/${tripId}`);
-  if ("error" in data) {
-    return { error: "Failed to fetch trip" };
-  }
-  return data;
-}
-
-export async function getRoute(
-  routeId: string,
-): Promise<RouteWithStops | ApiError> {
-  const data = await get<RouteWithStops>(`/timetables/routes/${routeId}`);
-  if ("error" in data) {
-    return { error: "Failed to fetch route" };
-  }
-  return data;
-}
-
 export type RouteRow = {
   id: number;
   route: string;
@@ -223,8 +149,10 @@ export function getRouteRow(route: RouteWithTrips): RouteRow {
       (t) => t.direction_id == "outbound",
     ),
     inboundTrips = route.trips?.filter((t) => t.direction_id == "inbound"),
-    allRouteVariations = outboundTrips.map((trip, i) => {
-      const oppositeTrip = inboundTrips[i];
+    allRouteVariations = (
+      outboundTrips.length ? outboundTrips : inboundTrips
+    ).map((trip, i) => {
+      const oppositeTrip = outboundTrips.length ? inboundTrips[i] : undefined;
       if (!oppositeTrip || !oppositeTrip.headsign)
         return (trip.headsign || "-").replaceAll(" - ", " ");
       if (!trip.headsign) return oppositeTrip.headsign.replaceAll(" - ", " ");
@@ -242,7 +170,7 @@ export function getRouteRow(route: RouteWithTrips): RouteRow {
   return {
     id: route.id,
     route: route.short_name,
-    mainRoute: routeVariations[0],
+    mainRoute: routeVariations[0] || route.long_name || route.short_name,
     additionalRoutes: routeVariations.slice(1),
   };
 }

@@ -1,5 +1,5 @@
-import { Marker, useMap } from "react-map-gl/maplibre";
-import { useMemo, useState, memo, useCallback } from "react";
+import { Marker } from "react-map-gl/maplibre";
+import { useMemo, memo } from "react";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 
 import { Vehicle, Validity } from "@/lib/bods";
@@ -11,12 +11,14 @@ function VehicleMarker({
   togglePopup,
   setFollowing,
   following,
+  nearby = false,
 }: {
   vehicle: Vehicle;
   popupOpen: boolean;
   togglePopup: () => void;
   setFollowing: Dispatch<SetStateAction<string | null>>;
   following: boolean;
+  nearby?: boolean;
 }) {
   const bearing = useMemo(() => Number(vehicle.bearing), [vehicle.bearing]);
 
@@ -38,6 +40,7 @@ function VehicleMarker({
           togglePopup={togglePopup}
           setFollowing={setFollowing}
           following={following}
+          nearby={nearby}
         />
       )}
     </>
@@ -59,10 +62,10 @@ function VehicleMarkerDot({ vehicle }: { vehicle: Vehicle }) {
 
   return (
     <div
-      className={`size-[28px] bg-zinc-800 border-2 border-zinc-600/50 rounded-full shadow-xl flex justify-center items-center${validityClass}`}
+      className={`size-[28px] bg-background border rounded-full shadow-xl flex justify-center items-center${validityClass}`}
     >
       <span
-        className={`font-bold ${vehicle.lineName.length > 2 ? "text-[10px]" : "text-xs"} rotate-(--rotation)`}
+        className={`font-semibold ${vehicle.lineName.length > 2 ? "text-[10px]" : "text-xs"} rotate-(--rotation)`}
         style={style}
       >
         {vehicle.lineName}

@@ -1,25 +1,24 @@
-import { getNocLine } from "@/utils/getNocLines";
-import Image from "next/image";
-
-export default async function InfoLayout({
+import type { NocLine } from "@/db/schema";
+import type { ReactNode } from "react";
+import { Header } from "./Header";
+import { Navbar } from "./Navbar";
+export default function InfoLayout({
   children,
-  params,
+  operator,
 }: {
-  children: React.ReactNode;
-  params: Promise<{ nocCode: string }>;
+  children: ReactNode;
+  operator: NocLine;
 }) {
-  const { nocCode } = await params,
-    operator = await getNocLine(nocCode);
-
   return (
-    <div className="p-8">
-      <div className="flex gap-4 items-center mb-8">
-        <Image src="/logo.svg" alt="bus.rip logo" width={32} height={32} />
-        <p className="text-sm text-zinc-400 font-medium">
-          {operator.publicName}
-        </p>
-      </div>
-      <div>{children}</div>
+    <div className="safe-area-page min-h-svh pb-[calc(6rem+var(--safe-area-bottom))]! lg:has-[.fare-zone-page]:pb-[calc(1.5rem+var(--safe-area-bottom))]!">
+      <Header operatorName={operator.publicName} className="mb-6" />
+      {children}
+      <nav
+        aria-label="Operator navigation"
+        className="map-navigation fixed bottom-0 inset-x-0 z-10 pointer-events-none"
+      >
+        <Navbar />
+      </nav>
     </div>
   );
 }

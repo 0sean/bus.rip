@@ -22,12 +22,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           content: "width=device-width, initial-scale=1, viewport-fit=cover",
         },
         { title: "bus.rip" },
-        { name: "description", content: "it's probably not coming" },
+        { name: "description", content: "Bus tracking that actually works." },
         { name: "theme-color", content: "#09090b" },
         { property: "og:type", content: "website" },
         { property: "og:url", content: "https://bus.rip" },
         { property: "og:title", content: "bus.rip" },
-        { property: "og:description", content: "it's probably not coming" },
+        {
+          property: "og:description",
+          content: "Bus tracking that actually works.",
+        },
       ],
       links: [
         { rel: "stylesheet", href: globals },

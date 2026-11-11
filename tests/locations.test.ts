@@ -98,6 +98,18 @@ describe("vehicle feed parsing", () => {
     ).toBe("ABCD");
   });
 
+  it("retains journey identity and direction for timetable matching", () => {
+    expect(
+      parseDatafeed(
+        feed(
+          activity(
+            "<FramedVehicleJourneyRef><DataFrameRef>2026-10-23</DataFrameRef><DatedVehicleJourneyRef> journey-42 </DatedVehicleJourneyRef></FramedVehicleJourneyRef><DirectionRef> Outbound </DirectionRef>",
+          ),
+        ),
+      )?.[0],
+    ).toMatchObject({ journeyRef: "journey-42", directionRef: "outbound" });
+  });
+
   it("keeps vehicles without origin or destination names in nearby feeds", () => {
     const xml = feed(activity("<OperatorRef>ABCD</OperatorRef>"))
       .replace(/<OriginName>.*?<\/OriginName>/, "")

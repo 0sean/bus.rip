@@ -45,6 +45,13 @@ export function parseDatafeed(xml: string): Vehicle[] | null {
     const validUntil = text(required(activity.children, "ValidUntilTime"));
     return {
       operatorRef: optionalText(journey, "OperatorRef")?.trim().toUpperCase(),
+      journeyRef: child(journey.children, "FramedVehicleJourneyRef")
+        ? optionalText(
+            required(journey.children, "FramedVehicleJourneyRef"),
+            "DatedVehicleJourneyRef",
+          )?.trim()
+        : undefined,
+      directionRef: optionalText(journey, "DirectionRef")?.trim().toLowerCase(),
       lineName: text(required(journey.children, "PublishedLineName")),
       ref: text(required(journey.children, "VehicleRef")),
       longitude: Number(text(required(location.children, "Longitude"))),

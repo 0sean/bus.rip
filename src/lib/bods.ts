@@ -26,6 +26,8 @@ export function nearbyBoundingBox(
 
 export type Vehicle = {
   operatorRef?: string;
+  journeyRef?: string;
+  directionRef?: string;
   lineName: string;
   ref: string;
 

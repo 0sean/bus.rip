@@ -1,15 +1,10 @@
 import { Vehicle } from "@/lib/bods";
 import { formatDistanceToNow } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@base-ui/react";
-import {
-  IconArrowRight,
-  IconHourglass,
-  IconClock,
-  IconShare,
-} from "@tabler/icons-react";
-import { Card, CardHeader, CardContent, CardFooter } from "../ui/card";
+import { IconArrowRight, IconClock } from "@tabler/icons-react";
+import { Card, CardHeader, CardContent } from "../ui/card";
 import { renderTime } from "@/lib/map";
+import VehicleLateness from "./VehicleLateness";
 
 export default function FollowCard({ vehicle }: { vehicle: Vehicle }) {
   const departureTime = useMemo(
@@ -56,10 +51,7 @@ export default function FollowCard({ vehicle }: { vehicle: Vehicle }) {
           </div>
         </CardHeader>
         <CardContent className="flex justify-between pt-3">
-          {/* TODO: Lateness */}
-          <p className="text-muted-foreground text-xs flex gap-1">
-            <IconHourglass size={16} /> Running on time
-          </p>
+          <VehicleLateness vehicle={vehicle} />
           <p className="text-muted-foreground text-xs flex gap-1">
             <IconClock size={16} /> {distanceToNow}
           </p>

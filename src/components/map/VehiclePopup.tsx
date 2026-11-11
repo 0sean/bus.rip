@@ -1,5 +1,4 @@
 import { Popup } from "react-map-gl/maplibre";
-import { FaArrowRight, FaArrowUpFromBracket } from "react-icons/fa6";
 import { formatDistanceToNow } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -10,12 +9,8 @@ import { renderTime } from "@/lib/map";
 import type { Dispatch, SetStateAction } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 import { Button } from "../ui/button";
-import {
-  IconArrowRight,
-  IconClock,
-  IconHourglass,
-  IconShare,
-} from "@tabler/icons-react";
+import { IconArrowRight, IconClock, IconShare } from "@tabler/icons-react";
+import VehicleLateness from "./VehicleLateness";
 
 export default function VehiclePopup({
   vehicle,
@@ -95,10 +90,7 @@ export default function VehiclePopup({
           </div>
         </CardHeader>
         <CardContent className="flex justify-between py-3">
-          {/* TODO: Lateness */}
-          <p className="text-muted-foreground text-xs flex gap-1">
-            <IconHourglass size={16} /> Running on time
-          </p>
+          <VehicleLateness vehicle={vehicle} />
           <p className="text-muted-foreground text-xs flex gap-1">
             <IconClock size={16} /> {distanceToNow}
           </p>

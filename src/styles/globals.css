@@ -301,6 +301,36 @@
   }
 }
 
+.lateness-shimmer {
+  background: linear-gradient(
+    100deg,
+    var(--muted-foreground) 35%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 65%
+  );
+  background-size: 250% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: lateness-shimmer 1.6s linear infinite;
+}
+
+@keyframes lateness-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lateness-shimmer {
+    animation: none;
+    background: none;
+    color: inherit;
+  }
+}
+
 /* Header (35px), three 24px insets/gaps, and the map’s 2px border. */
 .fare-zone-page {
   --fare-zone-map-height: max(

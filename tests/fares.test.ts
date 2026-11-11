@@ -72,7 +72,6 @@ const read = async <T = FareItem[]>(data: FareRequest) =>
   readFareResponse<T>(await call({ data }));
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
-  vi.stubEnv("BUSLANE_ENABLED", "1");
   vi.stubEnv("BUSLANE_BASE_URL", "https://buslane.test/");
   vi.stubEnv("BUSLANE_API_KEY", "server-only-key");
   fetchMock.mockReset();
@@ -308,18 +307,25 @@ describe("derived catalogue adapter", () => {
       status: 503,
     });
   });
-  it("handles timeout/network failure and disabled integration", async () => {
-    fetchMock.mockRejectedValue(new Error("network"));
-    await expect(read({ noc: "ANEA", action: "areas" })).rejects.toMatchObject({
-      status: 503,
-    });
-    vi.stubEnv("BUSLANE_ENABLED", "0");
-    fetchMock.mockClear();
-    await expect(read({ noc: "ANEA", action: "areas" })).rejects.toMatchObject({
-      status: 503,
-    });
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
+  it.each([undefined, ""])(
+    "handles network failure and a missing or empty API key (%s)",
+    async (apiKey) => {
+      fetchMock.mockRejectedValue(new Error("network"));
+      await expect(
+        read({ noc: "ANEA", action: "areas" }),
+      ).rejects.toMatchObject({
+        status: 503,
+      });
+      vi.stubEnv("BUSLANE_API_KEY", apiKey);
+      fetchMock.mockClear();
+      await expect(
+        read({ noc: "ANEA", action: "areas" }),
+      ).rejects.toMatchObject({
+        status: 503,
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
   it.each([
     { noc: "../TEST", action: "areas" },
     { noc: "TEST", action: "detail", id: 123 },
@@ -578,13 +584,16 @@ describe("operator map server adapter", () => {
       ).toEqual(data);
     }
   });
-  it("handles network errors and disabled Buslane without a legacy fallback", async () => {
-    fetchMock.mockRejectedValue(new Error("network"));
-    expect((await callMap({ data: "ANEA" })).status).toBe(503);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    fetchMock.mockClear();
-    vi.stubEnv("BUSLANE_ENABLED", "0");
-    expect((await callMap({ data: "ANEA" })).status).toBe(503);
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
+  it.each([undefined, ""])(
+    "handles network errors and a missing or empty API key (%s) without a legacy fallback",
+    async (apiKey) => {
+      fetchMock.mockRejectedValue(new Error("network"));
+      expect((await callMap({ data: "ANEA" })).status).toBe(503);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      fetchMock.mockClear();
+      vi.stubEnv("BUSLANE_API_KEY", apiKey);
+      expect((await callMap({ data: "ANEA" })).status).toBe(503);
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
 });

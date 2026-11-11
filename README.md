@@ -66,8 +66,7 @@ Configure these server-only variables in `.env` for Node, or `.dev.vars` / Wrang
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Redis connection; required only when app rate limiting is enabled                            |
 | `BODS_API_KEY`                                       | Bus Open Data Service API key                                                                |
 | `IP_HEADER`                                          | Trusted proxy IP header; defaults to `CF-Connecting-IP`                                      |
-| `BUSLANE_BASE_URL`, `BUSLANE_API_KEY`                | Buslane timetable service URL and API key                                                    |
-| `BUSLANE_ENABLED`                                    | Set to `0` to disable timetable integration                                                  |
+| `BUSLANE_BASE_URL`, `BUSLANE_API_KEY`                | Buslane service URL and API key; omit the key to disable timetable and fares integration                                                    |
 | `SENTRY_DSN`                                         | Optional Sentry DSN for server monitoring; set at build time too to expose it to the browser |
 | `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`  | Optional build-time source map upload credentials                                            |
 

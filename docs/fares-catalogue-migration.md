@@ -1,6 +1,6 @@
 # Buslane passenger catalogue migration
 
-The WIP fares UI now uses Buslane catalogue interpretation version 1 (fares database schema 2). Deploy the matching Buslane importer/API and complete its catalogue backfill **before** deploying this consumer. Existing server-only `BUSLANE_BASE_URL`, `BUSLANE_API_KEY` and `BUSLANE_ENABLED` configuration continues to apply. No bus.rip database migration or new credential is required. No production deployment is performed by this change.
+The WIP fares UI now uses Buslane catalogue interpretation version 1 (fares database schema 2). Deploy the matching Buslane importer/API and complete its catalogue backfill **before** deploying this consumer. Existing server-only `BUSLANE_BASE_URL` and `BUSLANE_API_KEY` configuration continues to apply. Omit `BUSLANE_API_KEY` to disable Buslane integration. No bus.rip database migration or new credential is required. No production deployment is performed by this change.
 
 ## Passenger flow
 
@@ -54,7 +54,6 @@ For this test environment only, set these ignored `.dev.vars` values:
 
 ```dotenv
 RATE_LIMIT_ENABLED=0
-BUSLANE_ENABLED=1
 BUSLANE_BASE_URL=http://127.0.0.1:3190
 BUSLANE_API_KEY=catalogue-benchmark
 ```

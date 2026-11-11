@@ -131,7 +131,7 @@ export const getFareCatalogue = createServerFn({ method: "GET" })
   .handler(async ({ data }) => requestCatalogue(data));
 
 async function requestCatalogue(data: FareRequest, signal?: AbortSignal) {
-  if (process.env.BUSLANE_ENABLED === "0")
+  if (!process.env.BUSLANE_API_KEY)
     return failure(503, "Fares are temporarily unavailable.");
   const params = new URLSearchParams({ limit: "50" });
   for (const [key, value] of Object.entries({
@@ -228,7 +228,7 @@ export const getFareMapCatalogue = createServerFn({ method: "GET" })
   .middleware([rateLimit("fare-map")])
   .validator(operatorCode)
   .handler(async ({ data: noc }) => {
-    if (process.env.BUSLANE_ENABLED === "0")
+    if (!process.env.BUSLANE_API_KEY)
       return failure(503, "Fares are temporarily unavailable.");
     try {
       const response = await fetch(

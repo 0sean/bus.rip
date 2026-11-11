@@ -22,8 +22,7 @@ async function get<T>(
   url: string,
   signal?: AbortSignal,
 ): Promise<T | ApiError> {
-  if (process.env.BUSLANE_ENABLED === "0")
-    return { error: "Buslane is not enabled." };
+  if (!process.env.BUSLANE_API_KEY) return { error: "Buslane is not enabled." };
   const response = await fetch(
     `${process.env.BUSLANE_BASE_URL || "http://localhost:3000"}/api${url}`,
     {
